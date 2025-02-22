@@ -802,7 +802,7 @@ Value Search::Worker::search(
     // bigger than the previous static evaluation at our turn (if we were in
     // check at our previous move we go back until we weren't in check) and is
     // false otherwise. The improving flag is used in various pruning heuristics.
-    improving = ss->staticEval > (ss - 2)->staticEval + 5;
+    improving = ss->staticEval > (ss - 2)->staticEval + 4 * (depth >= 3);
 
     opponentWorsening = ss->staticEval > -(ss - 1)->staticEval;
 
