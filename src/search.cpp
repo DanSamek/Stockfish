@@ -296,6 +296,7 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
         (ss - i)->reduction                     = 0;
+        (ss - i)->totalDepthReduced             = 0;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
@@ -633,6 +634,7 @@ Value Search::Worker::search(
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
     ss->moveCount      = 0;
+    ss->totalDepthReduced = (ss - 1)->totalDepthReduced;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
 
@@ -828,6 +830,12 @@ Value Search::Worker::search(
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 200)
         depth--;
+
+    if (ss->totalDepthReduced <= 4 && priorReduction >= 4 && depth >= 2
+        && ss->staticEval + (ss - 1)->staticEval > 200){
+        ss->totalDepthReduced++;
+        depth--;
+    }
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
