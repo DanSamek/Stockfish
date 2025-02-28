@@ -831,8 +831,8 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
-    if (!ss->wasDepthReduced && priorReduction >= 4 && depth >= 2
-        && ss->staticEval + (ss - 1)->staticEval > 200){
+    if (!ss->wasDepthReduced && priorReduction >= 4 && depth >= 8
+        && ss->staticEval + (ss - 1)->staticEval > 376){
         ss->wasDepthReduced = true;
         depth--;
     }
