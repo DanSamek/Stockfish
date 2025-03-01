@@ -829,6 +829,13 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
+
+    // Small idea
+    // If we are at lower depths and there were a lot of cuttofs on current ply, increase the depth.
+    if (depth <= 7 && ss->cutoffCnt > depth * 12 * (2 - PvNode))
+        depth++;
+
+
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
