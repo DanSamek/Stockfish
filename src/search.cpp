@@ -829,7 +829,7 @@ Value Search::Worker::search(
     if (priorReduction >= 3 && !opponentWorsening)
         depth++;
 
-    if (!ss->wasDepthIncreased && priorReduction >= 5 && !opponentWorsening){
+    if (!ss->wasDepthIncreased && priorReduction >= 5 && !opponentWorsening && PvNode){
         ss->wasDepthIncreased = true;
         depth++;
     }
