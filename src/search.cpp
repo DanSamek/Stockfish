@@ -297,6 +297,7 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
         (ss - i)->reduction                     = 0;
+        (ss - i)->wasDepthIncreased             = false;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
@@ -629,13 +630,14 @@ Value Search::Worker::search(
     ValueList<Move, 32> quietsSearched;
 
     // Step 1. Initialize node
-    Worker* thisThread = this;
-    ss->inCheck        = pos.checkers();
-    priorCapture       = pos.captured_piece();
-    Color us           = pos.side_to_move();
-    ss->moveCount      = 0;
-    bestValue          = -VALUE_INFINITE;
-    maxValue           = VALUE_INFINITE;
+    Worker* thisThread      = this;
+    ss->inCheck             = pos.checkers();
+    priorCapture            = pos.captured_piece();
+    Color us                = pos.side_to_move();
+    ss->moveCount           = 0;
+    ss->wasDepthIncreased   = (ss - 1)->wasDepthIncreased;
+    bestValue               = -VALUE_INFINITE;
+    maxValue                = VALUE_INFINITE;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -824,8 +826,11 @@ Value Search::Worker::search(
 
     opponentWorsening = ss->staticEval > -(ss - 1)->staticEval;
 
-    if (priorReduction >= 3 && !opponentWorsening)
+    if (!ss->wasDepthIncreased && priorReduction >= 3 && !opponentWorsening){
+        ss->wasDepthIncreased = true;
         depth++;
+    }
+
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
