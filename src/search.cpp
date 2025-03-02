@@ -832,7 +832,7 @@ Value Search::Worker::search(
 
     // Small idea
     // If we are at lower depths and there were a lot of cuttofs on current ply, increase the depth.
-    if (depth <= 4 && ss->ply > 1 && ss->cutoffCnt > (PvNode ? 25 : 50) && priorReduction <= 2)
+    if (ss->ply > 1 && ss->cutoffCnt > (PvNode ? 25 : 50) && priorReduction <= 2)
         depth++;
 
 
