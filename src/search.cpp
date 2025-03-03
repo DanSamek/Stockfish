@@ -669,6 +669,9 @@ Value Search::Worker::search(
 
     bestMove            = Move::none();
     (ss + 2)->cutoffCnt = 0;
+    if (rootNode)
+        ss->cutoffCnt = (ss + 1)->cutoffCnt = 0;
+
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
 
