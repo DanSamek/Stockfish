@@ -966,7 +966,7 @@ moves_loop:  // When in check, search starts here
 
     // Small idea
     // If on current ply was a lot of cuttofs, decrease the depth.
-    if (!priorReduction && ss->ply > 1  && depth >= 2 && ss->cutoffCnt > (PvNode ? 28 : 56))
+    if (!priorReduction && ss->ply > 1 && depth >= 9 && ss->cutoffCnt > (PvNode ? 28 : 56))
         depth--;
 
 
