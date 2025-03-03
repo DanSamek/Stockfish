@@ -964,6 +964,12 @@ moves_loop:  // When in check, search starts here
         && !is_decisive(beta) && is_valid(ttData.value) && !is_decisive(ttData.value))
         return probCutBeta;
 
+    // Small idea
+    // If on current ply was a lot of cuttofs, decrease the depth.
+    if (!priorReduction && ss->ply > 1  && depth >= 2 && ss->cutoffCnt > (PvNode ? 28 : 56))
+        depth--;
+
+
     const PieceToHistory* contHist[] = {
       (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
       (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
