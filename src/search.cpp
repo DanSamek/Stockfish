@@ -1204,6 +1204,9 @@ moves_loop:  // When in check, search starts here
             r += 1171 + (depth < 8) * 985;
 
         // Increase reduction if next ply has a lot of fail high
+        if (!rootNode && (ss + 1)->cutoffCnt > (PvNode ? 27 : 57))
+            r += 200;
+
         if ((ss + 1)->cutoffCnt > 3)
             r += 1042 + allNode * 864;
 
