@@ -50,6 +50,8 @@
 #include "ucioption.h"
 
 namespace Stockfish {
+int ddiDepth = 9, ddiPvCutoffCnt = 28, ddiNonPvCutoffCnt = 56;
+TUNE(ddiDepth, ddiPvCutoffCnt, ddiNonPvCutoffCnt);
 
 namespace TB = Tablebases;
 
@@ -966,9 +968,8 @@ moves_loop:  // When in check, search starts here
 
     // Small idea
     // If on current ply was a lot of cuttofs, decrease the depth.
-    if (!priorReduction && ss->ply > 1 && depth >= 9 && ss->cutoffCnt > (PvNode ? 28 : 56))
+    if (!priorReduction && ss->ply > 1 && depth >= ddiDepth && ss->cutoffCnt > (PvNode ? ddiPvCutoffCnt : ddiNonPvCutoffCnt))
         depth--;
-
 
     const PieceToHistory* contHist[] = {
       (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
