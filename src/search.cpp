@@ -986,12 +986,12 @@ Value Search::Worker::search(
             if (!pos.legal(move))
                 continue;
 
-            pos.do_move(move, st, &tt);
-            thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
-
             movedPiece      = pos.moved_piece(move);
             capture         = pos.capture(move);
             assert(!capture);
+
+            pos.do_move(move, st, &tt);
+            thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
 
             ss->currentMove = move;
             ss->isTTMove    = (move == ttData.move);
