@@ -297,12 +297,14 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
         (ss - i)->reduction                     = 0;
+        (ss - i)->quietCutSearch                = false;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
     {
         (ss + i)->ply       = i;
         (ss + i)->reduction = 0;
+        (ss + i)->quietCutSearch = false;
     }
 
     ss->pv = pv;
@@ -624,6 +626,7 @@ Value Search::Worker::search(
     int   priorReduction = (ss - 1)->reduction;
     (ss - 1)->reduction  = 0;
     Piece movedPiece;
+    int quietReduction = 0;
 
     ValueList<Move, 32> capturesSearched;
     ValueList<Move, 32> quietsSearched;
@@ -634,6 +637,7 @@ Value Search::Worker::search(
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
     ss->moveCount      = 0;
+    ss->quietCutSearch = (ss - 1)->quietCutSearch;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
 
@@ -770,6 +774,11 @@ Value Search::Worker::search(
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
     const auto correctionValue      = correction_value(*thisThread, pos, ss);
+
+    const PieceToHistory* contHist[] = {
+        (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
+        (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
+
     if (ss->inCheck)
     {
         // Skip early pruning when in check
@@ -955,31 +964,19 @@ Value Search::Worker::search(
             }
         }
     }
-moves_loop:  // When in check, search starts here
 
-    const PieceToHistory* contHist[] = {
-            (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
-            (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
-
-
-    // Step 12. A small Probcut idea
-    probCutBeta = beta + 415;
-    if ((ttData.bound & BOUND_LOWER) && ttData.depth >= depth - 4 && ttData.value >= probCutBeta
-        && !is_decisive(beta) && is_valid(ttData.value) && !is_decisive(ttData.value))
-        return probCutBeta;
-
-
-    // Step 12.5 "Quiet cut/reduction"
+    // Step 11.5 Quiet reduction heuristic
     // If the current eval is lower than alpha, try a shallower search on quiet moves.
-    // If there is no quiet move, that beats alpha, add reduction for quiet moves in the moves loop.
-    int quietReduction = 0;
-    if(!rootNode && eval < alpha && !is_decisive(eval) && depth >= 10 && !excludedMove && !ss->inCheck) {
+    // If there is no quiet move, that beats alpha or at least is equal to alpha,
+    // add reduction for quiet moves in the moves loop.
+    if (!rootNode && eval < alpha && !is_loss(beta) && depth >= 10 && !excludedMove
+        && !ss->inCheck && !ss->quietCutSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth      quietSearchDepth = depth / 2;
-        quietReduction              = std::min(depth * 13, 255);
+        Depth quietCutDepth = depth / 2;
+        quietReduction      = 188;
 
         while ((move = mp.next_move()) != Move::none()) {
             assert(move.is_ok());
@@ -1001,20 +998,31 @@ moves_loop:  // When in check, search starts here
             ss->continuationCorrectionHistory =
                     &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
 
-            Value quietCutValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, quietSearchDepth, false);
+            ss->quietCutSearch  = true;
+            Value quietCutValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, quietCutDepth, false);
+            ss->quietCutSearch  = false;
+
             pos.undo_move(move);
 
-            if(quietCutValue <= alpha)
+            if(quietCutValue < alpha)
                 continue;
 
-            if(quietCutValue >= beta && !is_decisive(quietCutValue))
+            if(quietCutValue >= beta && !is_win(quietCutValue) && depth < 16)
                 return quietCutValue;
 
-            // If we beat the alpha, don't reduce the quiet moves.
+            // If value is at least alpha, don't reduce the quiet moves.
             quietReduction = 0;
             break;
         }
     }
+
+moves_loop:  // When in check, search starts here
+
+    // Step 12. A small Probcut idea
+    probCutBeta = beta + 415;
+    if ((ttData.bound & BOUND_LOWER) && ttData.depth >= depth - 4 && ttData.value >= probCutBeta
+        && !is_decisive(beta) && is_valid(ttData.value) && !is_decisive(ttData.value))
+        return probCutBeta;
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                   &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);

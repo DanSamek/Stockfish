@@ -54,10 +54,10 @@ enum Stages {
     QCAPTURE_INIT,
     QCAPTURE,
 
-    // generate quietcut moves
-    QUIET_CUT_TT,
-    QUIET_CUT_INIT,
-    QUIET_CUT,
+    // generate quiet reduction heuristic moves
+    QUIET_RH_TT,
+    QUIET_RH_INIT,
+    QUIET_RH,
 };
 
 // Sort moves in descending order up to and including a given limit.
@@ -109,7 +109,7 @@ MovePicker::MovePicker(const Position&              p,
         stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
 }
 
-// MovePicker constructor for a quiet cut in the search.
+// MovePicker constructor for a quiet reduction heuristic in the search.
 MovePicker::MovePicker(const Position&              p,
                        Move                         ttm,
                        Depth                        d,
@@ -126,7 +126,7 @@ MovePicker::MovePicker(const Position&              p,
     ttMove(ttm),
     depth(d),
     ply(pl) {
-    stage = p.capture(ttm) ? QUIET_CUT_INIT : QUIET_CUT_TT;
+    stage = p.capture(ttm) ? QUIET_RH_INIT : QUIET_RH_TT;
 }
 
 
@@ -248,7 +248,7 @@ top:
     case EVASION_TT :
     case QSEARCH_TT :
     case PROBCUT_TT :
-    case QUIET_CUT_TT:
+    case QUIET_RH_TT:
         ++stage;
         return ttMove;
 
@@ -263,7 +263,7 @@ top:
         ++stage;
         goto top;
 
-    case QUIET_CUT_INIT:
+    case QUIET_RH_INIT:
         cur      = moves;
         endMoves = generate<QUIETS>(pos, cur);
 
@@ -346,7 +346,7 @@ top:
     case PROBCUT :
         return select([&]() { return pos.see_ge(*cur, threshold); });
 
-    case QUIET_CUT:
+    case QUIET_RH:
         return select([]() { return true; });
 
     }
