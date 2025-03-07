@@ -627,7 +627,8 @@ Value Search::Worker::search(
     (ss - 1)->reduction  = 0;
     Piece movedPiece;
     // See step 11.5
-    bool quietMoveReduction = 0;
+    bool quietMoveReduction = false;
+    Move quietMove          = Move::null();
 
     ValueList<Move, 32> capturesSearched;
     ValueList<Move, 32> quietsSearched;
@@ -970,14 +971,14 @@ Value Search::Worker::search(
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
     // If there is no quiet move, that beats alpha or at least is equal to alpha,
     // add reduction for quiet moves in the moves loop.
-    if (!rootNode && eval < alpha - 183 - depth * 383 && !is_loss(beta) && depth >= 8
+    if (!rootNode && eval < alpha - 183 - depth * 363 && !is_loss(beta) && depth >= 8
         && !excludedMove && !ss->inCheck && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
         Depth R             = depth / 3 + 2;
-        quietMoveReduction  = 286;
+        quietMoveReduction  = true;
 
         while ((move = mp.next_move()) != Move::none()) {
             assert(move.is_ok());
@@ -1005,16 +1006,16 @@ Value Search::Worker::search(
 
             pos.undo_move(move);
 
-            if(quietCutValue < alpha)
-                continue;
+            if(quietCutValue >= alpha){
+                // If value is at least alpha, don't reduce the quiet moves.
+                quietMoveReduction = false;
 
-            if(quietCutValue > beta){
-                quietMoveReduction = -286;
-                break;
+                // Extend search for a move, that beats beta.
+                if(quietCutValue > beta){
+                    quietMove = move;
+                    break;
+                }
             }
-
-            // If value is at least alpha, don't reduce the quiet moves.
-            quietMoveReduction = 0;
         }
     }
 
@@ -1249,9 +1250,13 @@ moves_loop:  // When in check, search starts here
 
         r -= std::abs(correctionValue) / 29696;
 
-        // See step 12.5.
-        if(!capture)
-            r += quietMoveReduction;
+        // Reduce reduction for a move, that beats beta in step 11.5.
+        if(move == quietMove)
+            r -= 430;
+
+        // See step 11.5.
+        if(!capture && quietMoveReduction)
+            r += 233;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
