@@ -955,8 +955,12 @@ Value Search::Worker::search(
             }
         }
     }
-
 moves_loop:  // When in check, search starts here
+
+    const PieceToHistory* contHist[] = {
+            (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
+            (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
+
 
     // Step 12. A small Probcut idea
     probCutBeta = beta + 415;
@@ -964,10 +968,53 @@ moves_loop:  // When in check, search starts here
         && !is_decisive(beta) && is_valid(ttData.value) && !is_decisive(ttData.value))
         return probCutBeta;
 
-    const PieceToHistory* contHist[] = {
-      (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
-      (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
 
+    // Step 12.5 "Quiet cut/reduction"
+    // If the current eval is lower than alpha, try a shallower search on quiet moves.
+    // If there is no quiet move, that beats alpha, add reduction for quiet moves in the moves loop.
+    int quietReduction = 0;
+    if(!rootNode && eval < alpha && !is_decisive(eval) && depth >= 10 && !excludedMove && !ss->inCheck) {
+
+        MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
+                      contHist, &thisThread->pawnHistory, ss->ply);
+
+        Depth      quietSearchDepth = depth / 2;
+        quietReduction              = std::min(depth * 13, 255);
+
+        while ((move = mp.next_move()) != Move::none()) {
+            assert(move.is_ok());
+
+            if (!pos.legal(move))
+                continue;
+
+            pos.do_move(move, st, &tt);
+            thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
+
+            movedPiece      = pos.moved_piece(move);
+            capture         = pos.capture(move);
+            assert(!capture);
+
+            ss->currentMove = move;
+            ss->isTTMove    = (move == ttData.move);
+            ss->continuationHistory =
+                    &this->continuationHistory[0][0][movedPiece][move.to_sq()];
+            ss->continuationCorrectionHistory =
+                    &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
+
+            value           = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, quietSearchDepth, false);
+            pos.undo_move(move);
+
+            if(value <= alpha)
+                continue;
+
+            if(value >= beta && !is_decisive(value))
+                return value;
+
+            // If we beat the alpha, don't reduce the quiet moves.
+            quietReduction = 0;
+            break;
+        }
+    }
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                   &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
@@ -1191,6 +1238,10 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
+
+        // See step 12.5.
+        if(!capture)
+            r += quietReduction;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);

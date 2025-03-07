@@ -52,7 +52,12 @@ enum Stages {
     // generate qsearch moves
     QSEARCH_TT,
     QCAPTURE_INIT,
-    QCAPTURE
+    QCAPTURE,
+
+    // generate quietcut moves
+    QUIET_CUT_TT,
+    QUIET_CUT_INIT,
+    QUIET_CUT,
 };
 
 // Sort moves in descending order up to and including a given limit.
@@ -103,6 +108,27 @@ MovePicker::MovePicker(const Position&              p,
     else
         stage = (depth > 0 ? MAIN_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
 }
+
+// MovePicker constructor for a quiet cut in the search.
+MovePicker::MovePicker(const Position&              p,
+                       Move                         ttm,
+                       Depth                        d,
+                       const ButterflyHistory*      mh,
+                       const LowPlyHistory*         lph,
+                       const PieceToHistory**       ch,
+                       const PawnHistory*           ph,
+                       int                          pl) :
+    pos(p),
+    mainHistory(mh),
+    lowPlyHistory(lph),
+    continuationHistory(ch),
+    pawnHistory(ph),
+    ttMove(ttm),
+    depth(d),
+    ply(pl) {
+    stage = p.capture(ttm) ? QUIET_CUT_INIT : QUIET_CUT_TT;
+}
+
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
 // Evaluation (SEE) greater than or equal to the given threshold.
@@ -222,6 +248,7 @@ top:
     case EVASION_TT :
     case QSEARCH_TT :
     case PROBCUT_TT :
+    case QUIET_CUT_TT:
         ++stage;
         return ttMove;
 
@@ -233,6 +260,15 @@ top:
 
         score<CAPTURES>();
         partial_insertion_sort(cur, endMoves, std::numeric_limits<int>::min());
+        ++stage;
+        goto top;
+
+    case QUIET_CUT_INIT:
+        cur      = moves;
+        endMoves = generate<QUIETS>(pos, cur);
+
+        score<QUIETS>();
+        partial_insertion_sort(cur, endMoves, quiet_threshold(depth));
         ++stage;
         goto top;
 
@@ -309,7 +345,12 @@ top:
 
     case PROBCUT :
         return select([&]() { return pos.see_ge(*cur, threshold); });
+
+    case QUIET_CUT:
+        return select([]() { return true; });
+
     }
+
 
     assert(false);
     return Move::none();  // Silence warning

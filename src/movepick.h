@@ -37,6 +37,16 @@ class MovePicker {
 
    public:
     MovePicker(const MovePicker&)            = delete;
+
+    MovePicker(const Position &,
+               Move,
+               Depth,
+               const ButterflyHistory *,
+               const LowPlyHistory *,
+               const PieceToHistory **,
+               const PawnHistory *,
+               int);
+
     MovePicker& operator=(const MovePicker&) = delete;
     MovePicker(const Position&,
                Move,
