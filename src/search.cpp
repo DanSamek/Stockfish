@@ -1001,14 +1001,14 @@ moves_loop:  // When in check, search starts here
             ss->continuationCorrectionHistory =
                     &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
 
-            value           = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, quietSearchDepth, false);
+            Value quietCutValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, quietSearchDepth, false);
             pos.undo_move(move);
 
-            if(value <= alpha)
+            if(quietCutValue <= alpha)
                 continue;
 
-            if(value >= beta && !is_decisive(value))
-                return value;
+            if(quietCutValue >= beta && !is_decisive(quietCutValue))
+                return quietCutValue;
 
             // If we beat the alpha, don't reduce the quiet moves.
             quietReduction = 0;
