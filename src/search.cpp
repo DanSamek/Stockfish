@@ -297,14 +297,14 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
         (ss - i)->reduction                     = 0;
-        (ss - i)->quietCutSearch                = false;
+        (ss - i)->quietHeuristicSearch          = false;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
     {
-        (ss + i)->ply       = i;
-        (ss + i)->reduction = 0;
-        (ss + i)->quietCutSearch = false;
+        (ss + i)->ply                   = i;
+        (ss + i)->reduction             = 0;
+        (ss + i)->quietHeuristicSearch  = false;
     }
 
     ss->pv = pv;
@@ -626,20 +626,21 @@ Value Search::Worker::search(
     int   priorReduction = (ss - 1)->reduction;
     (ss - 1)->reduction  = 0;
     Piece movedPiece;
-    int quietReduction = 0;
+    // See step 11.5
+    bool quietMoveReduction = 0;
 
     ValueList<Move, 32> capturesSearched;
     ValueList<Move, 32> quietsSearched;
 
     // Step 1. Initialize node
-    Worker* thisThread = this;
-    ss->inCheck        = pos.checkers();
-    priorCapture       = pos.captured_piece();
-    Color us           = pos.side_to_move();
-    ss->moveCount      = 0;
-    ss->quietCutSearch = (ss - 1)->quietCutSearch;
-    bestValue          = -VALUE_INFINITE;
-    maxValue           = VALUE_INFINITE;
+    Worker* thisThread          = this;
+    ss->inCheck                 = pos.checkers();
+    priorCapture                = pos.captured_piece();
+    Color us                    = pos.side_to_move();
+    ss->moveCount               = 0;
+    bestValue                   = -VALUE_INFINITE;
+    maxValue                    = VALUE_INFINITE;
+    ss->quietHeuristicSearch    = (ss - 1)->quietHeuristicSearch;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -966,17 +967,17 @@ Value Search::Worker::search(
     }
 
     // Step 11.5 Quiet reduction heuristic
-    // If the current eval is lower than alpha, try a shallower search on quiet moves.
+    // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
     // If there is no quiet move, that beats alpha or at least is equal to alpha,
     // add reduction for quiet moves in the moves loop.
-    if (!rootNode && eval < alpha && !is_loss(beta) && depth >= 10 && !excludedMove
-        && !ss->inCheck && !ss->quietCutSearch) {
+    if (!rootNode && eval < alpha - 183 - depth * 383 && !is_loss(beta) && depth >= 8
+        && !excludedMove && !ss->inCheck && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth quietCutDepth = depth / 2;
-        quietReduction      = 188;
+        Depth R             = depth / 3 + 2;
+        quietMoveReduction  = 286;
 
         while ((move = mp.next_move()) != Move::none()) {
             assert(move.is_ok());
@@ -998,21 +999,22 @@ Value Search::Worker::search(
             ss->continuationCorrectionHistory =
                     &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
 
-            ss->quietCutSearch  = true;
-            Value quietCutValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, quietCutDepth, false);
-            ss->quietCutSearch  = false;
+            ss->quietHeuristicSearch = true;
+            Value quietCutValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, depth - R, false);
+            ss->quietHeuristicSearch = false;
 
             pos.undo_move(move);
 
             if(quietCutValue < alpha)
                 continue;
 
-            if(quietCutValue >= beta && !is_win(quietCutValue) && depth < 16)
-                return quietCutValue;
+            if(quietCutValue > beta){
+                quietMoveReduction = -286;
+                break;
+            }
 
             // If value is at least alpha, don't reduce the quiet moves.
-            quietReduction = 0;
-            break;
+            quietMoveReduction = 0;
         }
     }
 
@@ -1249,7 +1251,7 @@ moves_loop:  // When in check, search starts here
 
         // See step 12.5.
         if(!capture)
-            r += quietReduction;
+            r += quietMoveReduction;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
