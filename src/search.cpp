@@ -1003,7 +1003,7 @@ Value Search::Worker::search(
             ss->currentMove = move;
             ss->isTTMove    = (move == ttData.move);
             ss->continuationHistory =
-                    &this->continuationHistory[0][0][movedPiece][move.to_sq()];
+                    &this->continuationHistory[ss->inCheck][0][movedPiece][move.to_sq()];
             ss->continuationCorrectionHistory =
                     &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
 
