@@ -978,7 +978,7 @@ Value Search::Worker::search(
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
     // If there is no quiet move, that beats alpha or at least is equal to alpha,
     // add reduction for quiet moves in the moves loop.
-    if (!rootNode && eval < alpha - xx3 - depth * xx4 && !is_loss(beta) && depth >= xx5
+    if (eval < alpha - xx3 - depth * xx4 && !is_loss(beta) && depth >= xx5
         && !excludedMove && !ss->inCheck && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
