@@ -126,7 +126,11 @@ MovePicker::MovePicker(const Position&              p,
     ttMove(ttm),
     depth(d),
     ply(pl) {
-    stage = p.capture(ttm) ? QUIET_RH_INIT : QUIET_RH_TT;
+
+    if(ttm && p.pseudo_legal(ttm))
+        stage = QUIET_RH_TT + p.capture(ttm);
+    else
+        stage = QUIET_RH_INIT;
 }
 
 
