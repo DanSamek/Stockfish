@@ -50,12 +50,6 @@
 #include "ucioption.h"
 
 namespace Stockfish {
-int xx1 = 388, xx2 = 125, xx3 = 4, xx4 = 2, xx5 = 188, xx6 = 0;
-TUNE(xx1, xx2, xx5);
-TUNE(SetRange(1,4), xx4);
-TUNE(SetRange(1,12), xx3);
-TUNE(SetRange(0,6), xx6);
-
 
 namespace TB = Tablebases;
 
@@ -976,13 +970,13 @@ Value Search::Worker::search(
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
     // If there is no quiet move, that beats alpha or at least is equal to alpha,
     // add reduction for quiet moves in the moves loop.
-    if (!PvNode && eval < alpha - xx1 - xx2 * depth * depth && !is_loss(beta) && depth >= xx3
-        && !excludedMove && !ss->quietHeuristicSearch) {
+    if (!PvNode && eval < alpha - 433 - depth * 333  && !is_loss(beta) && depth >= 10
+        && !excludedMove && !ss->inCheck && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth R             = depth / xx4 + xx6;
+        Depth R             = depth / 3 + 2;
         reduceQuietMoves  = true;
 
         while ((move = mp.next_move()) != Move::none()) {
@@ -1012,7 +1006,7 @@ Value Search::Worker::search(
             pos.undo_move(move);
 
             // If value is at least alpha, don't reduce the quiet moves.
-            if(quietCutValue >= alpha){
+            if(quietCutValue >= alpha) {
                 reduceQuietMoves = false;
                 break;
             }
@@ -1252,7 +1246,7 @@ moves_loop:  // When in check, search starts here
 
         // See step 11.5.
         if(!capture && reduceQuietMoves)
-            r += xx5;
+            r += 338;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
