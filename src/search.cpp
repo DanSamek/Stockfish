@@ -51,6 +51,13 @@
 
 namespace Stockfish {
 
+int xx1 = 433, xx2 = 333, xx3 = 10, xx4 = 3, xx5 = 2, xx6 = 338;
+
+TUNE(xx1, xx2, xx6);
+TUNE(SetRange(1, 12), xx3);
+TUNE(SetRange(1, 6),  xx4);
+TUNE(SetRange(0, 10), xx5);
+
 namespace TB = Tablebases;
 
 void syzygy_extend_pv(const OptionsMap&            options,
@@ -970,13 +977,13 @@ Value Search::Worker::search(
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
     // If there is no quiet move, that beats alpha or at least is equal to alpha,
     // add reduction for quiet moves in the moves loop.
-    if (!PvNode && eval < alpha - 433 - depth * 333  && !is_loss(beta) && depth >= 10
+    if (!PvNode && eval < alpha - xx1 - depth * xx2 && !is_loss(beta) && depth >= xx3
         && !excludedMove && !ss->inCheck && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth R             = depth / 3 + 2;
+        Depth R           = depth / xx4 + xx5;
         reduceQuietMoves  = true;
 
         while ((move = mp.next_move()) != Move::none()) {
@@ -1006,7 +1013,7 @@ Value Search::Worker::search(
             pos.undo_move(move);
 
             // If value is at least alpha, don't reduce the quiet moves.
-            if(quietCutValue >= alpha) {
+            if(quietCutValue >= alpha){
                 reduceQuietMoves = false;
                 break;
             }
@@ -1246,7 +1253,7 @@ moves_loop:  // When in check, search starts here
 
         // See step 11.5.
         if(!capture && reduceQuietMoves)
-            r += 338;
+            r += xx6;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
