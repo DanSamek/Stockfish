@@ -970,14 +970,16 @@ Value Search::Worker::search(
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
     //  - for all moves, that beats alpha add malus to a reduction. Even more for a move, that beats beta.
     //  - for all moves, that are lower or equal to alpha, add reduction.
+    // If any move beats beta with margin, we will return this value.
     if (!PvNode && eval < alpha - 434 - depth * 226 && !is_loss(beta) && depth >= 10
         && !excludedMove && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth R         = depth / 3 + 2;
-        Depth qrhsDepth = depth - R;
+        const Depth R           = depth / 3 + 2;
+        const Depth qrhsDepth   = depth - R;
+        const int betaMargin    = beta + 378;
 
         while ((move = mp.next_move()) != Move::none()) {
             assert(move.is_ok());
@@ -1005,14 +1007,17 @@ Value Search::Worker::search(
 
             pos.undo_move(move);
 
-            if(value <= alpha)
-                quietMovesData.push_back({move, 232});
+            if(value >= beta)
+                quietMovesData.push_back({move, -688 * (move != ttData.move)});
 
             else if(value > alpha)
                 quietMovesData.push_back({move, -113});
 
-            else if(value >= beta)
-                quietMovesData.push_back({move, move == ttData.move ? -325 : -688 });
+            else
+                quietMovesData.push_back({move, 232});
+
+            if(value > betaMargin)
+                return value;
         }
     }
 
