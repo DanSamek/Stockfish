@@ -627,7 +627,7 @@ Value Search::Worker::search(
     (ss - 1)->reduction  = 0;
     Piece movedPiece;
     // See step 11.5
-    bool reduceQuietMoves = false;
+    std::vector<std::pair<Move, int>> quietMovesData;
 
     ValueList<Move, 32> capturesSearched;
     ValueList<Move, 32> quietsSearched;
@@ -966,18 +966,18 @@ Value Search::Worker::search(
         }
     }
 
-    // Step 11.5 Quiet reduction heuristic
+    // Step 11.5 Quiet reduction heuristic search.
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
-    // If there is no quiet move, that beats alpha or at least is equal to alpha,
-    // add reduction for quiet moves in the moves loop.
+    //  - for all moves, that beats alpha add malus to a reduction. Even more for a move, that beats beta.
+    //  - for all moves, that are lower or equal to alpha, add reduction.
     if (!PvNode && eval < alpha - 434 - depth * 226 && !is_loss(beta) && depth >= 10
         && !excludedMove && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth R           = depth / 3 + 2;
-        reduceQuietMoves  = true;
+        Depth R         = depth / 3 + 2;
+        Depth qrhsDepth = depth - R;
 
         while ((move = mp.next_move()) != Move::none()) {
             assert(move.is_ok());
@@ -1000,16 +1000,19 @@ Value Search::Worker::search(
                     &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
 
             ss->quietHeuristicSearch = true;
-            Value quietCutValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, depth - R, false);
+            value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, qrhsDepth, false);
             ss->quietHeuristicSearch = false;
 
             pos.undo_move(move);
 
-            // If value is at least alpha, don't reduce the quiet moves.
-            if(quietCutValue >= alpha){
-                reduceQuietMoves = false;
-                break;
-            }
+            if(value <= alpha)
+                quietMovesData.push_back({move, 232});
+
+            else if(value > alpha)
+                quietMovesData.push_back({move, -113});
+
+            else if(value >= beta)
+                quietMovesData.push_back({move, move == ttData.move ? -325 : -688 });
         }
     }
 
@@ -1245,8 +1248,14 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 29696;
 
         // See step 11.5.
-        if(!capture && reduceQuietMoves)
-            r += 458;
+        if(!capture){
+            for(const std::pair<Move, int>& toExtendData : quietMovesData){
+                if(toExtendData.first != move) continue;
+
+                r += toExtendData.second;
+                break;
+            }
+        }
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
