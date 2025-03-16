@@ -970,13 +970,13 @@ Value Search::Worker::search(
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
     // If there is no quiet move, that beats alpha or at least is equal to alpha,
     // add reduction for quiet moves in the moves loop.
-    if (!PvNode && eval < alpha - 434 - depth * 336 && !is_loss(beta) && depth >= 10
+    if (!PvNode && eval < alpha - 434 - depth * 226 && !is_loss(beta) && depth >= 10
         && !excludedMove && !ss->inCheck && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth R           = depth / 3 + 2;
+        Depth R           = depth / 2;
         reduceQuietMoves  = true;
 
         while ((move = mp.next_move()) != Move::none()) {
@@ -1246,7 +1246,7 @@ moves_loop:  // When in check, search starts here
 
         // See step 11.5.
         if(!capture && reduceQuietMoves)
-            r += 342;
+            r += 202;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
