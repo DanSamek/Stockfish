@@ -970,13 +970,13 @@ Value Search::Worker::search(
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
     // If there is no quiet move, that beats alpha or at least is equal to alpha,
     // add reduction for quiet moves in the moves loop.
-    if (!PvNode && eval < alpha - 434 - depth * 196 && !is_loss(beta) && depth >= 10
-        && !excludedMove && !ss->inCheck && !ss->quietHeuristicSearch) {
+    if (!rootNode && eval < alpha - 256 - depth * 417 && !is_decisive(beta) && depth >= 8
+        && !excludedMove && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth R           = depth / 3 + 2;
+        Depth searchDepth = depth - 5;
         reduceQuietMoves  = true;
 
         while ((move = mp.next_move()) != Move::none()) {
@@ -1000,12 +1000,11 @@ Value Search::Worker::search(
                     &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
 
             ss->quietHeuristicSearch = true;
-            Value quietCutValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, depth - R, false);
+            Value quietCutValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, searchDepth, false);
             ss->quietHeuristicSearch = false;
 
             pos.undo_move(move);
 
-            // If value is at least alpha, don't reduce the quiet moves.
             if(quietCutValue >= alpha){
                 reduceQuietMoves = false;
                 break;
@@ -1245,8 +1244,8 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 29696;
 
         // See step 11.5.
-        if(!capture && reduceQuietMoves && move != ttData.move)
-            r += 192 + !PvNode * 53;
+        if(!capture && reduceQuietMoves && move != ttData.move && moveCount > 3)
+            r += 388;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
