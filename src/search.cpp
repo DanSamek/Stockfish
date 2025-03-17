@@ -956,6 +956,13 @@ Value Search::Worker::search(
         }
     }
 
+    // An idea from razoring, but the opposite extreme.
+    if (!PvNode && eval > beta + 286 + 766 * depth && !is_decisive(eval)
+        && !is_decisive(beta) && depth <= 2){
+        return qsearch<NonPV>(pos, ss, alpha, beta);
+    }
+
+
 moves_loop:  // When in check, search starts here
 
     // Step 12. A small Probcut idea
