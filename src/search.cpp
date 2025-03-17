@@ -959,7 +959,7 @@ Value Search::Worker::search(
     // An idea from razoring, but the opposite extreme.
     if (!PvNode && eval > beta + 286 + 766 * depth && !is_decisive(eval)
         && !is_decisive(beta) && depth <= 2){
-        return qsearch<NonPV>(pos, ss, alpha, beta);
+        return eval;
     }
 
 
