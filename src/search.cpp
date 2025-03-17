@@ -958,7 +958,7 @@ Value Search::Worker::search(
 
     // An idea from razoring, but the opposite extreme.
     if (!PvNode && eval > beta + 936 * depth && !is_decisive(eval)
-        && !is_decisive(beta) && !excludedMove && improving)
+        && !is_decisive(beta) && !excludedMove)
             return eval;
 
 
