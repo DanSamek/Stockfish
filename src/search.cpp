@@ -956,6 +956,12 @@ Value Search::Worker::search(
         }
     }
 
+    // An idea from razoring, but the opposite extreme.
+    if (!PvNode && eval > beta + 936 * depth && !is_decisive(eval)
+        && !is_decisive(beta) && !excludedMove && improving)
+            return eval;
+
+
 moves_loop:  // When in check, search starts here
 
     // Step 12. A small Probcut idea
