@@ -636,6 +636,7 @@ Value Search::Worker::search(
     ss->moveCount      = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    bool worsening     = false;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -821,13 +822,16 @@ Value Search::Worker::search(
     // check at our previous move we go back until we weren't in check) and is
     // false otherwise. The improving flag is used in various pruning heuristics.
     improving = ss->staticEval > (ss - 2)->staticEval;
-
     opponentWorsening = ss->staticEval > -(ss - 1)->staticEval;
 
     if (priorReduction >= 3 && !opponentWorsening)
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
+
+    if(is_valid((ss - 2)->staticEval) && is_valid((ss - 4)->staticEval))
+        worsening = ss->staticEval < (ss - 2)->staticEval && ss->staticEval < (ss - 4)->staticEval - 77
+                    && priorReduction >= 3;
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
@@ -1191,6 +1195,9 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
+
+        if(worsening && moveCount > 5)
+            r += 77;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
