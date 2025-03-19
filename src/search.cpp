@@ -829,8 +829,9 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
+
     if(is_valid((ss - 2)->staticEval) && is_valid((ss - 4)->staticEval))
-        worsening = ss->staticEval < (ss - 2)->staticEval && ss->staticEval < (ss - 4)->staticEval - 77
+        worsening = ss->staticEval < (ss - 2)->staticEval - 85 && ss->staticEval < (ss - 4)->staticEval - 40
                     && priorReduction >= 3;
 
     // Step 7. Razoring
@@ -1196,8 +1197,8 @@ moves_loop:  // When in check, search starts here
 
         r -= std::abs(correctionValue) / 29696;
 
-        if(worsening && moveCount > 5)
-            r += 77;
+        if(worsening && moveCount > 5 && !capture)
+            r += 190;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
