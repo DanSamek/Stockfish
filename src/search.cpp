@@ -831,8 +831,7 @@ Value Search::Worker::search(
 
 
     if(is_valid((ss - 2)->staticEval) && is_valid((ss - 4)->staticEval))
-        worsening = ss->staticEval < (ss - 2)->staticEval - 85 && ss->staticEval < (ss - 4)->staticEval - 40
-                    && priorReduction >= 3;
+        worsening = ss->staticEval < (ss - 2)->staticEval - 125 && (ss - 2)->staticEval < (ss - 4)->staticEval - 125;
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
@@ -1197,8 +1196,8 @@ moves_loop:  // When in check, search starts here
 
         r -= std::abs(correctionValue) / 29696;
 
-        if(worsening && moveCount > 5 && !capture)
-            r += 190;
+        if(PvNode && worsening)
+            r += 70;
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
