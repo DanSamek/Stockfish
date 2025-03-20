@@ -968,16 +968,18 @@ Value Search::Worker::search(
 
     // Step 11.5 Quiet reduction heuristic
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
-    // If there is no quiet move, that beats alpha or at least is equal to alpha,
-    // add reduction for quiet moves in the moves loop.
+    // If there is no quiet move, that beats alpha or at least is equal to alpha with a margin,
+    // add reduction for all quiet moves in the moves loop (except ttmove)
     if (!rootNode && eval < alpha - 334 - depth * 216 && !is_decisive(beta) && depth >= 8
         && !excludedMove && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth searchDepth = depth - 5;
-        reduceQuietMoves  = true;
+        Depth searchDepth       = depth - 5;
+        const int evalMargin    = 83 + depth * 54;
+        reduceQuietMoves        = true;
+
 
         while ((move = mp.next_move()) != Move::none()) {
             assert(move.is_ok());
@@ -1005,7 +1007,7 @@ Value Search::Worker::search(
 
             pos.undo_move(move);
 
-            if(quietCutValue >= alpha){
+            if(quietCutValue + evalMargin >= alpha){
                 reduceQuietMoves = false;
                 break;
             }
