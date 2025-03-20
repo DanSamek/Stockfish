@@ -123,6 +123,34 @@ int risk_tolerance(const Position& pos, Value v) {
     return (winning_risk + losing_risk) * 58 / b;
 }
 
+
+// The idea comes from simple improving [but reversed].
+// We check, how many plies back we are worsening.
+// The function will be only used, if move that was played was reduced.
+// returns how many plies* is worsening happening.
+// *in our turn [ply - 2, ply - 4],..
+int get_worsening_step_count(const Stack* ss, int priorReduction){
+    if(priorReduction <= 2) return 0;
+
+    constexpr int MAX_STEP_COUNT        = 10; // it's stepped by 2 [2,4,6,..]
+    constexpr int WORSENING_MARGINS[]   = {140, 210, 290, 365, 440};
+    int static_eval                     = ss->staticEval;
+    int worsening_steps                 = 0;
+
+    for(int step = 2; step <= MAX_STEP_COUNT; step += 2){
+        if(!is_valid((ss - step)->staticEval)) break;
+        int margin_index = step / 2 - 1;
+
+        assert(margin_index >= 0 && margin_index < 5);
+        int prev_eval_with_margin = (ss - step)->staticEval - WORSENING_MARGINS[margin_index];
+
+        if(static_eval >= prev_eval_with_margin) break;
+        worsening_steps++;
+    }
+
+    return worsening_steps;
+}
+
 // Add correctionHistory value to raw staticEval and guarantee evaluation
 // does not hit the tablebase range.
 Value to_corrected_static_eval(const Value v, const int cv) {
@@ -621,8 +649,9 @@ Value Search::Worker::search(
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
-    int   priorReduction = (ss - 1)->reduction;
-    (ss - 1)->reduction  = 0;
+    int   priorReduction        = (ss - 1)->reduction;
+    (ss - 1)->reduction         = 0;
+    int   worseningStepCount    = 0;
     Piece movedPiece;
 
     ValueList<Move, 32> capturesSearched;
@@ -828,6 +857,8 @@ Value Search::Worker::search(
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
+
+    worseningStepCount = get_worsening_step_count(ss, priorReduction);
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
@@ -1191,6 +1222,9 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
+
+        if (!capture && !is_decisive(bestValue) && move != ttData.move)
+            r += std::min(worseningStepCount * 20 + moveCount * 3, 250);
 
         if (PvNode && !is_decisive(bestValue))
             r -= risk_tolerance(pos, bestValue);
