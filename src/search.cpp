@@ -50,6 +50,8 @@
 #include "ucioption.h"
 
 namespace Stockfish {
+int xx1 = 336, xx2 = 211, xx3 = 8, xx4 = 5, xx5 = 70;
+TUNE(xx1, xx2, xx3, xx4, xx5);
 
 namespace TB = Tablebases;
 
@@ -299,12 +301,14 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
         (ss - i)->reduction                     = 0;
+        (ss - i)->quietHeuristicSearch          = false;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
     {
         (ss + i)->ply       = i;
         (ss + i)->reduction = 0;
+        (ss + i)->quietHeuristicSearch  = false;
     }
 
     ss->pv = pv;
@@ -644,18 +648,22 @@ Value Search::Worker::search(
     int   priorReduction = (ss - 1)->reduction;
     (ss - 1)->reduction  = 0;
     Piece movedPiece;
+    // See step 11.5
+    bool reduceQuietMoves = false;
 
     ValueList<Move, 32> capturesSearched;
     ValueList<Move, 32> quietsSearched;
 
     // Step 1. Initialize node
-    Worker* thisThread = this;
-    ss->inCheck        = pos.checkers();
-    priorCapture       = pos.captured_piece();
-    Color us           = pos.side_to_move();
-    ss->moveCount      = 0;
-    bestValue          = -VALUE_INFINITE;
-    maxValue           = VALUE_INFINITE;
+    Worker* thisThread          = this;
+    ss->inCheck                 = pos.checkers();
+    priorCapture                = pos.captured_piece();
+    Color us                    = pos.side_to_move();
+    ss->moveCount               = 0;
+    bestValue                   = -VALUE_INFINITE;
+    maxValue                    = VALUE_INFINITE;
+    ss->quietHeuristicSearch    = (ss - 1)->quietHeuristicSearch;
+
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -790,6 +798,10 @@ Value Search::Worker::search(
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
     const auto correctionValue      = correction_value(*thisThread, pos, ss);
+    const PieceToHistory* contHist[] = {
+            (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
+            (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
+
     if (ss->inCheck)
     {
         // Skip early pruning when in check
@@ -976,6 +988,52 @@ Value Search::Worker::search(
         }
     }
 
+    // Step 11.5 Quiet reduction heuristic
+    // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
+    // If there is no quiet move, that beats alpha or at least is equal to alpha,
+    // add reduction for quiet moves in the moves loop.
+    if (!rootNode && eval < alpha - xx1 - depth * xx2 && !is_decisive(beta) && depth >= xx3
+        && !excludedMove && !ss->quietHeuristicSearch) {
+
+        MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
+                      contHist, &thisThread->pawnHistory, ss->ply);
+
+        Depth searchDepth = depth - xx4;
+        reduceQuietMoves  = true;
+
+        while ((move = mp.next_move()) != Move::none()) {
+            assert(move.is_ok());
+
+            if (!pos.legal(move))
+                continue;
+
+            movedPiece      = pos.moved_piece(move);
+            capture         = pos.capture(move);
+            assert(!capture);
+
+            pos.do_move(move, st, &tt);
+            thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
+
+            ss->currentMove = move;
+            ss->isTTMove    = (move == ttData.move);
+            ss->continuationHistory =
+                    &this->continuationHistory[0][0][movedPiece][move.to_sq()];
+            ss->continuationCorrectionHistory =
+                    &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
+
+            ss->quietHeuristicSearch = true;
+            Value quietCutValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, searchDepth, false);
+            ss->quietHeuristicSearch = false;
+
+            pos.undo_move(move);
+
+            if(quietCutValue >= alpha){
+                reduceQuietMoves = false;
+                break;
+            }
+        }
+    }
+
 moves_loop:  // When in check, search starts here
 
     // Step 12. A small Probcut idea
@@ -983,11 +1041,6 @@ moves_loop:  // When in check, search starts here
     if ((ttData.bound & BOUND_LOWER) && ttData.depth >= depth - 4 && ttData.value >= probCutBeta
         && !is_decisive(beta) && is_valid(ttData.value) && !is_decisive(ttData.value))
         return probCutBeta;
-
-    const PieceToHistory* contHist[] = {
-      (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
-      (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
-
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                   &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
@@ -1209,6 +1262,10 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
+
+        // See step 11.5.
+        if(!capture && reduceQuietMoves && move != ttData.move)
+            r += xx5;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
