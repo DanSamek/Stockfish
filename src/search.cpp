@@ -306,8 +306,8 @@ void Search::Worker::iterative_deepening() {
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
     {
-        (ss + i)->ply       = i;
-        (ss + i)->reduction = 0;
+        (ss + i)->ply                   = i;
+        (ss + i)->reduction             = 0;
         (ss + i)->quietHeuristicSearch  = false;
     }
 
