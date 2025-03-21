@@ -1241,7 +1241,7 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 29696;
 
         if (!capture && !is_decisive(bestValue) && move != ttData.move)
-            r += worseningStepCount * 10 + (moveCount * 3) / 2;
+            r += worseningStepCount * 100;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
