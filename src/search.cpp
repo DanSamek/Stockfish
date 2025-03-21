@@ -123,12 +123,11 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
-// The idea comes from simple improving [but reversed].
+// The idea comes from improving [but reversed].
 // We check, how many plies back we are worsening.
 // The function will be only used, if move that was played was reduced.
-// returns how many plies* is worsening happening.
-// *in our turn [ply - 2, ply - 4],..
-int get_worsening_step_count(const Stack* ss, int priorReduction){
+// returns move reduction for a move loop.
+int get_worsening_reduction(const Stack* ss, int priorReduction){
     if(priorReduction <= 3) return 0;
 
     constexpr int MAX_STEP_COUNT        = 10; // it's stepped by 2 [2,4,6,..]
@@ -147,7 +146,7 @@ int get_worsening_step_count(const Stack* ss, int priorReduction){
         worsening_steps++;
     }
 
-    return worsening_steps;
+    return worsening_steps * 100;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -670,7 +669,7 @@ Value Search::Worker::search(
     bool  capture, ttCapture;
     int   priorReduction        = (ss - 1)->reduction;
     (ss - 1)->reduction         = 0;
-    int   worseningStepCount    = 0;
+    int   worseningReduction    = 0;
     Piece movedPiece;
 
     ValueList<Move, 32> capturesSearched;
@@ -877,7 +876,7 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
-    worseningStepCount = get_worsening_step_count(ss, priorReduction);
+    worseningReduction = get_worsening_reduction(ss, priorReduction);
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
@@ -1241,7 +1240,7 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 29696;
 
         if (!capture && !is_decisive(bestValue) && move != ttData.move)
-            r += worseningStepCount * 100;
+            r += worseningReduction;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
