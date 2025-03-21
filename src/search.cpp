@@ -123,6 +123,12 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
+int xx1 = 180, xx2 = 240, xx3 = 320, xx4 = 385, xx5 = 470;
+int yy1 = 100, yy2 = 200, yy3 = 300, yy4 = 400, yy5 = 500;
+
+TUNE(xx1, xx2, xx3, xx4, xx5);
+TUNE(yy1, yy2, yy3, yy4, yy5);
+
 // The idea comes from improving [but reversed].
 // We check, how many plies back we are worsening.
 // The function will be only used, if move that was played was reduced.
@@ -130,23 +136,22 @@ int risk_tolerance(const Position& pos, Value v) {
 int get_worsening_reduction(const Stack* ss, int priorReduction){
     if(priorReduction <= 3) return 0;
 
-    constexpr int MAX_STEP_COUNT        = 10; // it's stepped by 2 [2,4,6,..]
-    constexpr int WORSENING_MARGINS[]   = {180, 240, 320, 385, 470};
-    int static_eval                     = ss->staticEval;
-    int worsening_steps                 = 0;
+    constexpr int MAX_STEP_COUNT    = 10; // it's stepped by 2 [2,4,6,..]
+    int WORSENING_MARGINS[5]        = {xx1, xx2, xx3, xx4, xx5};
+    int WORSENING_REDUCTIONS[5]     = {yy1, yy2, yy3, yy4, yy5};
+    int reduction                   = 0;
 
     for(int step = 2; step <= MAX_STEP_COUNT; step += 2){
         if(!is_valid((ss - step)->staticEval)) break;
+
         int margin_index = step / 2 - 1;
-
         assert(margin_index >= 0 && margin_index < 5);
-        int prev_eval_with_margin = (ss - step)->staticEval - WORSENING_MARGINS[margin_index];
 
-        if(static_eval >= prev_eval_with_margin) break;
-        worsening_steps++;
+        if(ss->staticEval >= (ss - step)->staticEval - WORSENING_MARGINS[margin_index]) break;
+        reduction = WORSENING_REDUCTIONS[margin_index];
     }
 
-    return worsening_steps * 100;
+    return reduction;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
