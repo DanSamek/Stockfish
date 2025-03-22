@@ -118,14 +118,14 @@ MovePicker::MovePicker(const Position&              p,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
                        int                          pl) :
-        pos(p),
-        mainHistory(mh),
-        lowPlyHistory(lph),
-        continuationHistory(ch),
-        pawnHistory(ph),
-        ttMove(ttm),
-        depth(d),
-        ply(pl) {
+    pos(p),
+    mainHistory(mh),
+    lowPlyHistory(lph),
+    continuationHistory(ch),
+    pawnHistory(ph),
+    ttMove(ttm),
+    depth(d),
+    ply(pl) {
 
     if(ttm && p.pseudo_legal(ttm))
         stage = QUIET_RH_TT + p.capture(ttm);
@@ -350,7 +350,7 @@ top:
         return select([&]() { return pos.see_ge(*cur, threshold); });
 
     case QUIET_RH:
-            return select([]() { return true; });
+        return select([]() { return true; });
     }
 
     assert(false);
