@@ -131,8 +131,8 @@ int get_worsening_reduction(const Stack* ss, int priorReduction){
     if(priorReduction <= 3) return 0;
 
     constexpr int MAX_STEP_COUNT            = 10; // it's stepped by 2 [2,4,6,..]
-    constexpr int WORSENING_MARGINS[5]      = {183, 253, 329, 378, 480};
-    constexpr int WORSENING_REDUCTIONS[5]   = {0  , 105, 207, 300, 387};
+    constexpr int WORSENING_MARGINS[5]      = {115, 220, 309, 390, 480};
+    constexpr int WORSENING_REDUCTIONS[5]   = {0  ,  65, 110, 170, 270};
     int reduction                           = 0;
 
     for(int step = 2; step <= MAX_STEP_COUNT; step += 2){
@@ -1239,7 +1239,7 @@ moves_loop:  // When in check, search starts here
 
         r -= std::abs(correctionValue) / 29696;
 
-        if (!is_decisive(bestValue) && move != ttData.move)
+        if (moveCount > 3)
             r += worseningReduction;
 
         if (PvNode && std::abs(bestValue) <= 2000)
