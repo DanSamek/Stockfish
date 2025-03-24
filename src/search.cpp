@@ -123,6 +123,32 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
+// The idea comes from improving [but reversed].
+// We check, how many plies back we are worsening.
+// The function will be only used, if move that was played was reduced.
+// returns move reduction for a move loop.
+int get_worsening_reduction(const Stack* ss, int priorReduction){
+    if(priorReduction <= 3) return 0;
+
+    constexpr int MAX_STEP_COUNT            = 10; // it's stepped by 2 [2,4,6,..]
+    constexpr int WORSENING_MARGINS[5]      = {183, 253, 329, 378, 480};
+    constexpr int WORSENING_REDUCTIONS[5]   = {0  , 105, 207, 300, 387};
+    int reduction                           = 0;
+
+    for(int step = 2; step <= MAX_STEP_COUNT; step += 2){
+        if(!is_valid((ss - step)->staticEval)) break;
+
+        int margin_index = step / 2 - 1;
+        assert(margin_index >= 0 && margin_index < 5);
+
+        if(ss->staticEval >= (ss - step)->staticEval - WORSENING_MARGINS[margin_index]) break;
+        reduction = WORSENING_REDUCTIONS[margin_index];
+    }
+
+    return reduction;
+}
+
+
 // Add correctionHistory value to raw staticEval and guarantee evaluation
 // does not hit the tablebase range.
 Value to_corrected_static_eval(const Value v, const int cv) {
@@ -641,8 +667,9 @@ Value Search::Worker::search(
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
-    int   priorReduction = (ss - 1)->reduction;
-    (ss - 1)->reduction  = 0;
+    int   priorReduction        = (ss - 1)->reduction;
+    (ss - 1)->reduction         = 0;
+    int   worseningReduction    = 0;
     Piece movedPiece;
 
     ValueList<Move, 32> capturesSearched;
@@ -848,6 +875,8 @@ Value Search::Worker::search(
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
+
+    worseningReduction = get_worsening_reduction(ss, priorReduction);
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
@@ -1209,6 +1238,9 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
+
+        if (!is_decisive(bestValue) && move != ttData.move)
+            r += worseningReduction;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
