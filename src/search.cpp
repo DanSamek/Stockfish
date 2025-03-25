@@ -123,12 +123,6 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
-int xx1 = 180, xx2 = 240, xx3 = 320, xx4 = 385, xx5 = 470;
-int yy1 = 100, yy2 = 200, yy3 = 300, yy4 = 400, yy5 = 500;
-
-TUNE(xx1, xx2, xx3, xx4, xx5);
-TUNE(yy1, yy2, yy3, yy4, yy5);
-
 // The idea comes from improving [but reversed].
 // We check, how many plies back we are worsening.
 // The function will be only used, if move that was played was reduced.
@@ -136,10 +130,10 @@ TUNE(yy1, yy2, yy3, yy4, yy5);
 int get_worsening_reduction(const Stack* ss, int priorReduction){
     if(priorReduction <= 3) return 0;
 
-    constexpr int MAX_STEP_COUNT    = 10; // it's stepped by 2 [2,4,6,..]
-    int WORSENING_MARGINS[5]        = {xx1, xx2, xx3, xx4, xx5};
-    int WORSENING_REDUCTIONS[5]     = {yy1, yy2, yy3, yy4, yy5};
-    int reduction                   = 0;
+    constexpr int MAX_STEP_COUNT            = 10; // it's stepped by 2 [2,4,6,..]
+    constexpr int WORSENING_MARGINS[5]      = {183, 252, 328, 382, 484};
+    constexpr int WORSENING_REDUCTIONS[5]   = {106, 209, 300, 386, 488};
+    int reduction                           = 0;
 
     for(int step = 2; step <= MAX_STEP_COUNT; step += 2){
         if(!is_valid((ss - step)->staticEval)) break;
