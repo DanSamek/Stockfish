@@ -130,16 +130,16 @@ int risk_tolerance(const Position& pos, Value v) {
 int get_worsening_reduction(const Stack* ss, int priorReduction){
     if(priorReduction <= 3) return 0;
 
-    constexpr int MAX_STEP_COUNT            = 10; // it's stepped by 2 [2,4,6,..]
-    constexpr int WORSENING_MARGINS[5]      = {183, 253, 329, 378, 480};
-    constexpr int WORSENING_REDUCTIONS[5]   = {0  , 105, 207, 300, 387};
+    constexpr int MAX_STEP_COUNT            = 6; // it's stepped by 2 [2,4,6]
+    constexpr int WORSENING_MARGINS[3]      = {188, 253, 329};
+    constexpr int WORSENING_REDUCTIONS[3]   = {0  , 105, 207};
     int reduction                           = 0;
 
     for(int step = 2; step <= MAX_STEP_COUNT; step += 2){
         if(!is_valid((ss - step)->staticEval)) break;
 
         int margin_index = step / 2 - 1;
-        assert(margin_index >= 0 && margin_index < 5);
+        assert(margin_index >= 0 && margin_index < MAX_STEP_COUNT / 2);
 
         if(ss->staticEval >= (ss - step)->staticEval - WORSENING_MARGINS[margin_index]) break;
         reduction = WORSENING_REDUCTIONS[margin_index];
