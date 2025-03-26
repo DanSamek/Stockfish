@@ -1239,7 +1239,7 @@ moves_loop:  // When in check, search starts here
 
         r -= std::abs(correctionValue) / 29696;
 
-        if (moveCount > 3)
+        if (!is_decisive(bestValue) && move != ttData.move)
             r += worseningReduction;
 
         if (PvNode && std::abs(bestValue) <= 2000)
