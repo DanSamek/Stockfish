@@ -145,6 +145,7 @@ int get_worsening_reduction(const Stack* ss, int priorReduction){
         reduction = WORSENING_REDUCTIONS[margin_index];
     }
 
+    reduction = (priorReduction - 3) * reduction / 4;
     return reduction;
 }
 
