@@ -50,8 +50,6 @@
 #include "ucioption.h"
 
 namespace Stockfish {
-int xx1 = 336, xx2 = 212, xx3 = 8, xx4 = 5, xx5 = 71;
-TUNE(xx1, xx2, xx3, xx4, xx5);
 
 namespace TB = Tablebases;
 
@@ -992,13 +990,13 @@ Value Search::Worker::search(
     // If the current eval is lower than alpha (even with some margin), try a shallower search on quiet moves.
     // If there is no quiet move, that beats alpha or at least is equal to alpha,
     // add reduction for quiet moves in the moves loop.
-    if (!rootNode && eval < alpha - xx1 - depth * xx2 && !is_decisive(beta) && depth >= xx3
+    if (!rootNode && eval < alpha - 340 - depth * 213 && !is_decisive(beta) && depth >= 8
         && !excludedMove && !ss->quietHeuristicSearch) {
 
         MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
                       contHist, &thisThread->pawnHistory, ss->ply);
 
-        Depth searchDepth = depth - xx4;
+        Depth searchDepth = depth - 5;
         reduceQuietMoves  = true;
 
         while ((move = mp.next_move()) != Move::none()) {
@@ -1265,7 +1263,7 @@ moves_loop:  // When in check, search starts here
 
         // See step 11.5.
         if(!capture && reduceQuietMoves && move != ttData.move)
-            r += xx5;
+            r += 67;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
