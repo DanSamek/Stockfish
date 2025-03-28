@@ -1410,12 +1410,13 @@ moves_loop:  // When in check, search starts here
                     alpha = value;  // Update alpha! Always alpha < beta
                 }
             }
-            if(!rootNode && !beatenAlpha && moveCount > 32 && depth > 7 && depth < 12){
-                depth--;
-                beatenAlpha = true;
+        }
 
-                assert(depth > 0);
-            }
+        if(!rootNode && !beatenAlpha && moveCount > 32 && depth > 8 && depth < 16){
+            depth--;
+            beatenAlpha = true;
+
+            assert(depth > 0);
         }
 
         // If the move is worse than some previously searched move,
