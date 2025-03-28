@@ -849,6 +849,9 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
+    if((ss - 1)->moveCount > 32 && PvNode && !improving && depth >= 2 && ss->ply > 2)
+        depth--;
+
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
