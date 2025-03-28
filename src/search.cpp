@@ -124,21 +124,18 @@ int risk_tolerance(const Position& pos, Value v) {
 }
 
 
-// The idea comes from improving [but reversed].
-// We check, how many plies back we are worsening.
-// returns true, if we are worsening for at least 6 plies [with margins], else returns false.
-int is_worsening(const Stack* ss){
-    constexpr int MAX_STEP_COUNT        = 6;
-    constexpr int WORSENING_MARGINS[3]  = {183, 253, 329};
+bool is_improving(const Stack* ss){
+    constexpr int MAX_STEP_COUNT        = 10;
+    constexpr int IMPROVING_MARGINS[5]  = {208, 349, 549, 833, 1248};
 
-    for(int step = 2; step <= MAX_STEP_COUNT; step += 2){
-        if(!is_valid((ss - step)->staticEval))
+    for (int step = 2; step <= MAX_STEP_COUNT; step += 2){
+        if (!is_valid((ss - step)->staticEval))
             return false;
 
         int margin_index = step / 2 - 1;
-        assert(margin_index >= 0 && margin_index < MAX_STEP_COUNT/2);
+        assert(margin_index >= 0 && margin_index < MAX_STEP_COUNT / 2);
 
-        if(ss->staticEval + WORSENING_MARGINS[margin_index] < (ss - step)->staticEval)
+        if (ss->staticEval > (ss - step)->staticEval + IMPROVING_MARGINS[margin_index])
             continue;
 
         return false;
@@ -875,8 +872,8 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
-    if(priorReduction >= 3 && depth >= 2 && is_worsening(ss))
-        depth--;
+    if (PvNode && !priorReduction && is_improving(ss))
+        depth++;
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
