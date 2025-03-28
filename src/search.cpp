@@ -663,9 +663,8 @@ Value Search::Worker::search(
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
-    int   priorReduction        = (ss - 1)->reduction;
-    (ss - 1)->reduction         = 0;
-    int   worseningReduction    = 0;
+    int   priorReduction = (ss - 1)->reduction;
+    (ss - 1)->reduction  = 0;
     Piece movedPiece;
 
     ValueList<Move, 32> capturesSearched;
@@ -1235,9 +1234,6 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
-
-        if (!is_decisive(bestValue) && move != ttData.move)
-            r += worseningReduction;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
