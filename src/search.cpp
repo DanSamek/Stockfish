@@ -123,29 +123,28 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
+
 // The idea comes from improving [but reversed].
 // We check, how many plies back we are worsening.
-// The function will be only used, if move that was played was reduced.
-// returns move reduction for a move loop.
-int get_worsening_reduction(const Stack* ss, int priorReduction){
-    if(priorReduction <= 3) return 0;
-
-    constexpr int MAX_STEP_COUNT            = 10; // it's stepped by 2 [2,4,6,..]
-    constexpr int WORSENING_MARGINS[5]      = {183, 253, 329, 378, 480};
-    constexpr int WORSENING_REDUCTIONS[5]   = {0  , 105, 207, 300, 387};
-    int reduction                           = 0;
+// returns true, if we are worsening for at least 6 plies [with margins], else returns false.
+int is_worsening(const Stack* ss){
+    constexpr int MAX_STEP_COUNT        = 6;
+    constexpr int WORSENING_MARGINS[3]  = {183, 253, 329};
 
     for(int step = 2; step <= MAX_STEP_COUNT; step += 2){
-        if(!is_valid((ss - step)->staticEval)) break;
+        if(!is_valid((ss - step)->staticEval))
+            return false;
 
         int margin_index = step / 2 - 1;
-        assert(margin_index >= 0 && margin_index < 5);
+        assert(margin_index >= 0 && margin_index < MAX_STEP_COUNT/2);
 
-        if(ss->staticEval >= (ss - step)->staticEval - WORSENING_MARGINS[margin_index]) break;
-        reduction = WORSENING_REDUCTIONS[margin_index];
+        if(ss->staticEval + WORSENING_MARGINS[margin_index] < (ss - step)->staticEval)
+            continue;
+
+        return false;
     }
 
-    return reduction;
+    return true;
 }
 
 
@@ -876,7 +875,8 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
-    worseningReduction = get_worsening_reduction(ss, priorReduction);
+    if(priorReduction >= 3 && depth >= 2 && is_worsening(ss))
+        depth--;
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
