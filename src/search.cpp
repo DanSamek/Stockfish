@@ -994,7 +994,8 @@ moves_loop:  // When in check, search starts here
 
     value = bestValue;
 
-    int moveCount = 0;
+    int moveCount    = 0;
+    bool beatenAlpha = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1386,7 +1387,8 @@ moves_loop:  // When in check, search starts here
 
             if (value + inc > alpha)
             {
-                bestMove = move;
+                beatenAlpha = true;
+                bestMove    = move;
 
                 if (PvNode && !rootNode)  // Update pv even in fail-high case
                     update_pv(ss->pv, move, (ss + 1)->pv);
@@ -1407,6 +1409,12 @@ moves_loop:  // When in check, search starts here
                     assert(depth > 0);
                     alpha = value;  // Update alpha! Always alpha < beta
                 }
+            }
+            if(!rootNode && !beatenAlpha && moveCount > 32 && depth > 7 && depth < 12){
+                depth--;
+                beatenAlpha = true;
+
+                assert(depth > 0);
             }
         }
 
