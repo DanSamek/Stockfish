@@ -123,6 +123,28 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
+
+bool is_improving(const Stack* ss){
+    constexpr int MAX_STEP_COUNT        = 10;
+    constexpr int IMPROVING_MARGINS[5]  = {-1245, -325, 283, 630, 1233};
+
+    for (int step = 2; step <= MAX_STEP_COUNT; step += 2){
+        if (!is_valid((ss - step)->staticEval))
+            return false;
+
+        int margin_index = step / 2 - 1;
+        assert(margin_index >= 0 && margin_index < MAX_STEP_COUNT / 2);
+
+        if (ss->staticEval > (ss - step)->staticEval + IMPROVING_MARGINS[margin_index])
+            continue;
+
+        return false;
+    }
+
+    return true;
+}
+
+
 // Add correctionHistory value to raw staticEval and guarantee evaluation
 // does not hit the tablebase range.
 Value to_corrected_static_eval(const Value v, const int cv) {
@@ -848,6 +870,9 @@ Value Search::Worker::search(
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
+
+    if (PvNode && (ss - 1)->isTTMove && is_improving(ss))
+        depth++;
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
