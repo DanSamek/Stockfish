@@ -126,7 +126,7 @@ int risk_tolerance(const Position& pos, Value v) {
 
 bool is_improving(const Stack* ss){
     constexpr int MAX_STEP_COUNT        = 10;
-    constexpr int IMPROVING_MARGINS[5]  = {208, 349, 549, 833, 1248};
+    constexpr int IMPROVING_MARGINS[5]  = {-1245, -325, 283, 630, 1233};
 
     for (int step = 2; step <= MAX_STEP_COUNT; step += 2){
         if (!is_valid((ss - step)->staticEval))
@@ -871,7 +871,7 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
-    if (PvNode && !priorReduction && is_improving(ss))
+    if (PvNode && (ss - 1)->isTTMove && is_improving(ss))
         depth++;
 
     // Step 7. Razoring
