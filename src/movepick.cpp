@@ -86,6 +86,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
+                       const HeuristicHistory*      hh,
                        int                          pl) :
     pos(p),
     mainHistory(mh),
@@ -93,10 +94,10 @@ MovePicker::MovePicker(const Position&              p,
     captureHistory(cph),
     continuationHistory(ch),
     pawnHistory(ph),
+    heuristicHistory(hh),
     ttMove(ttm),
     depth(d),
     ply(pl) {
-
     if (pos.checkers())
         stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
 
@@ -164,6 +165,7 @@ void MovePicker::score() {
             m.value += (*continuationHistory[3])[pc][to];
             m.value += (*continuationHistory[4])[pc][to] / 3;
             m.value += (*continuationHistory[5])[pc][to];
+            m.value += (*heuristicHistory)[pc][to];
 
             // bonus for checks
             m.value += bool(pos.check_squares(pt) & to) * 16384;

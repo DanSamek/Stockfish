@@ -123,6 +123,15 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
+void update_heuristic_history(const Square prevSq,
+                              const Position& pos,
+                              Search::Worker& workerThread){
+
+    if(!pos.captured_piece() && prevSq != SQ_NONE)
+        workerThread.heuristicHistory[pos.piece_on(prevSq)][prevSq] << 100;
+
+}
+
 // Add correctionHistory value to raw staticEval and guarantee evaluation
 // does not hit the tablebase range.
 Value to_corrected_static_eval(const Value v, const int cv) {
@@ -582,6 +591,7 @@ void Search::Worker::clear() {
     pawnCorrectionHistory.fill(6);
     minorPieceCorrectionHistory.fill(0);
     nonPawnCorrectionHistory.fill(0);
+    heuristicHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -900,8 +910,10 @@ Value Search::Worker::search(
 
             thisThread->nmpMinPly = 0;
 
-            if (v >= beta)
+            if (v >= beta){
+                update_heuristic_history(prevSq, pos, *this);
                 return nullValue;
+            }
         }
     }
 
@@ -970,6 +982,8 @@ Value Search::Worker::search(
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
 
+                update_heuristic_history(prevSq, pos, *this);
+
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);
             }
@@ -990,7 +1004,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, &thisThread->heuristicHistory, ss->ply);
 
     value = bestValue;
 
@@ -1633,7 +1647,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, &thisThread->heuristicHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
