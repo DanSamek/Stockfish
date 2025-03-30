@@ -125,10 +125,11 @@ int risk_tolerance(const Position& pos, Value v) {
 
 void update_heuristic_history(const Square prevSq,
                               const Position& pos,
-                              Search::Worker& workerThread){
+                              Search::Worker& workerThread,
+                              int bonus){
 
     if(!pos.captured_piece() && prevSq != SQ_NONE)
-        workerThread.heuristicHistory[pos.piece_on(prevSq)][prevSq] << 100;
+        workerThread.heuristicHistory[pos.piece_on(prevSq)][prevSq] << std::clamp(bonus / 64, 0, 16);
 
 }
 
@@ -911,7 +912,7 @@ Value Search::Worker::search(
             thisThread->nmpMinPly = 0;
 
             if (v >= beta){
-                update_heuristic_history(prevSq, pos, *this);
+                update_heuristic_history(prevSq, pos, *this, v - beta);
                 return nullValue;
             }
         }
@@ -982,7 +983,7 @@ Value Search::Worker::search(
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
 
-                update_heuristic_history(prevSq, pos, *this);
+                update_heuristic_history(prevSq, pos, *this, value - beta);
 
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);
