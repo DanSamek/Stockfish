@@ -121,6 +121,12 @@ int risk_tolerance(const Position& pos, Value v) {
     int losing_risk  = sigmoid_d2(v + a, b);
 
     return -(winning_risk + losing_risk) * 32;
+
+}
+
+void update_heuristic_history(const Square prevSq, const Position& pos, Search::Worker& workerThread){
+    if(!pos.captured_piece() && prevSq != SQ_NONE)
+        workerThread.heuristicHistory[pos.piece_on(prevSq)][prevSq] << 100;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -582,6 +588,7 @@ void Search::Worker::clear() {
     pawnCorrectionHistory.fill(6);
     minorPieceCorrectionHistory.fill(0);
     nonPawnCorrectionHistory.fill(0);
+    heuristicHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -644,6 +651,7 @@ Value Search::Worker::search(
     int   priorReduction = (ss - 1)->reduction;
     (ss - 1)->reduction  = 0;
     Piece movedPiece;
+    Value heuristicHistoryValue = 0;
 
     ValueList<Move, 32> capturesSearched;
     ValueList<Move, 32> quietsSearched;
@@ -836,6 +844,9 @@ Value Search::Worker::search(
               << bonus * 1196 / 1024;
     }
 
+    if(prevSq != SQ_NONE)
+        heuristicHistoryValue = heuristicHistory[pos.piece_on(prevSq)][prevSq] / 256;
+
     // Set up the improving flag, which is true if current static evaluation is
     // bigger than the previous static evaluation at our turn (if we were in
     // check at our previous move we go back until we weren't in check) and is
@@ -866,8 +877,8 @@ Value Search::Worker::search(
 
     // Step 9. Null move search with verification search
     if (cutNode && (ss - 1)->currentMove != Move::null() && eval >= beta
-        && ss->staticEval >= beta - 19 * depth + 418 && !excludedMove && pos.non_pawn_material(us)
-        && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
+        && ss->staticEval >= beta - 19 * depth + 418 - heuristicHistoryValue
+        && !excludedMove && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
         assert(eval - beta >= 0);
 
@@ -900,8 +911,10 @@ Value Search::Worker::search(
 
             thisThread->nmpMinPly = 0;
 
-            if (v >= beta)
+            if (v >= beta) {
+                update_heuristic_history(prevSq, pos, *this);
                 return nullValue;
+            }
         }
     }
 
@@ -916,7 +929,7 @@ Value Search::Worker::search(
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
-    probCutBeta = beta + 185 - 58 * improving;
+    probCutBeta = beta + 185 - 58 * improving - heuristicHistoryValue;
     if (depth >= 3
         && !is_decisive(beta)
         // If value from transposition table is lower than probCutBeta, don't attempt
@@ -969,6 +982,8 @@ Value Search::Worker::search(
                 // Save ProbCut data into transposition table
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
+
+                update_heuristic_history(prevSq, pos, *this);
 
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);

@@ -292,6 +292,8 @@ class Worker {
     CorrectionHistory<NonPawn>      nonPawnCorrectionHistory;
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
+    HeuristicHistory heuristicHistory;
+
    private:
     void iterative_deepening();
 
