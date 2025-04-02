@@ -688,7 +688,7 @@ Value Search::Worker::search(
 
     bestMove              = Move::none();
     (ss + 2)->cutoffCnt   = 0;
-    (ss + 2)->PvCutoffCnt = 0;
+    (ss + 2)->pvCutoffCnt = 0;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
 
@@ -1218,8 +1218,11 @@ moves_loop:  // When in check, search starts here
         if (ttCapture && !capture)
             r += 1171 + (depth < 8) * 985;
 
+        if (PvNode && !(ss + 1)->pvCutoffCnt)
+            r -= 512;
+
         // Increase reduction if next ply has a lot of fail high
-        if ((ss + 1)->cutoffCnt > 2 || (ss + 1)->PvCutoffCnt > 1)
+        else if ((ss + 1)->cutoffCnt > 2)
             r += 1042 + allNode * 864;
 
         // For first picked move (ttMove) reduce reduction
@@ -1392,7 +1395,7 @@ moves_loop:  // When in check, search starts here
                     // (* Scaler) Especially if they make cutoffCnt increment more often.
                     ss->cutoffCnt   += (extension < 2) || PvNode;
 
-                    ss->PvCutoffCnt += PvNode;
+                    ss->pvCutoffCnt += PvNode;
                     assert(value >= beta);  // Fail high
                     break;
                 }
