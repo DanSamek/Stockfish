@@ -1218,9 +1218,6 @@ moves_loop:  // When in check, search starts here
         if (ttCapture && !capture)
             r += 1171 + (depth < 8) * 985;
 
-        if (PvNode && !(ss + 1)->pvCutoffCnt)
-            r -= 512;
-
         // Increase reduction if next ply has a lot of fail high
         if ((ss + 1)->cutoffCnt > 2)
             r += 1042 + allNode * 864;
@@ -1456,7 +1453,8 @@ moves_loop:  // When in check, search starts here
           (std::clamp(80 * depth - 320, 0, 200) + 34 * !allNode + 164 * ((ss - 1)->moveCount > 8)
            + 141 * (!ss->inCheck && bestValue <= ss->staticEval - 100)
            + 121 * (!(ss - 1)->inCheck && bestValue <= -(ss - 1)->staticEval - 75)
-           + 86 * ((ss - 1)->isTTMove) + 86 * (ss->cutoffCnt <= 3)
+           + 86  * ((ss - 1)->isTTMove) + 86 * (ss->cutoffCnt <= 3)
+           + 33  * ((ss + 1)->pvCutoffCnt <= 1)
            + std::min(-(ss - 1)->statScore / 112, 303));
 
         bonusScale = std::max(bonusScale, 0);
