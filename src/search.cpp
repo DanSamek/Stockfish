@@ -1279,7 +1279,7 @@ moves_loop:  // When in check, search starts here
             else if (value > alpha && value < bestValue + 9)
                 newDepth--;
 
-            else if (value > bestValue + 500 && value >= beta)
+            else if (value > bestValue + 500 && value >= beta + 100)
                 newDepth++;
         }
 
