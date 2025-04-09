@@ -123,8 +123,19 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
+int xx1 = 3000, xx2 = 4000, xx3 = 1000;
+TUNE(xx1);
+TUNE(SetRange(1, 1000), xx2);
+
+TUNE(SetRange(0, 5000), xx3);
+
+int wx1 = 8000;
+int wx2 = 1000;
+TUNE(wx1);
+TUNE(SetRange(1, 2000), wx2);
+
 bool is_improving(const Stack* ss){
-    int w     = 8;
+    int w     = wx1 / wx2;
     int total = 0;
     int w_sum = 0;
 
@@ -133,13 +144,13 @@ bool is_improving(const Stack* ss){
 
         total += w * (ss->staticEval - (ss - i)->staticEval);
         w_sum += w;
-        w      = (w * 3) / 4;
+        w      = (w * xx1) / xx2;
     }
 
     assert(w_sum != 0);
 
     int avg = total / w_sum;
-    return avg >= 1000;
+    return avg >= xx3;
 }
 
 
