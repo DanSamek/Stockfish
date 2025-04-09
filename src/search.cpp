@@ -123,6 +123,27 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
+bool is_improving(const Stack* ss){
+    int w     = 8;
+    int total = 0;
+    int w_sum = 0;
+
+    for (int i = 2; i <= 6; i += 2){
+        if (!is_valid((ss - i)->staticEval)) return false;
+
+        total += w * (ss->staticEval - (ss - i)->staticEval);
+        w_sum += w;
+        w      = (w * 3) / 4;
+    }
+
+    assert(w_sum != 0);
+
+    int avg = total / w_sum;
+    return avg >= 1000;
+}
+
+
+
 // Add correctionHistory value to raw staticEval and guarantee evaluation
 // does not hit the tablebase range.
 Value to_corrected_static_eval(const Value v, const int cv) {
@@ -641,6 +662,7 @@ Value Search::Worker::search(
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
     int   priorReduction = (ss - 1)->reduction;
+    bool  isImproving    = false;
     (ss - 1)->reduction  = 0;
     Piece movedPiece;
 
@@ -846,6 +868,8 @@ Value Search::Worker::search(
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
+
+    isImproving = is_improving(ss);
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
@@ -1208,6 +1232,9 @@ moves_loop:  // When in check, search starts here
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
+
+        if (PvNode && isImproving)
+            r -= 512;
 
         // Increase reduction for cut nodes
         if (cutNode)
