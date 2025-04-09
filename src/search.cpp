@@ -124,21 +124,28 @@ int risk_tolerance(const Position& pos, Value v) {
 }
 
 bool is_improving(const Stack* ss){
-    int w     = 8;
-    int total = 0;
-    int w_sum = 0;
+    constexpr int MAX_CONFIDENCE = 3;
+
+    int w          = 8;
+    int total      = 0;
+    int w_sum      = 0;
+    int confidence = 0;
 
     for (int i = 2; i <= 6; i += 2){
-        if (!is_valid((ss - i)->staticEval)) return false;
+        if (!is_valid((ss - i)->staticEval)) break;
 
         total += w * (ss->staticEval - (ss - i)->staticEval);
         w_sum += w;
         w      = (w * 3) / 4;
+        ++confidence;
     }
+    
+    if (w_sum == 0)
+        return false;
 
     assert(w_sum != 0);
+    int avg = ((total / w_sum) * confidence) / MAX_CONFIDENCE;
 
-    int avg = total / w_sum;
     return avg >= 1000;
 }
 
