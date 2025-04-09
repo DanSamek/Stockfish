@@ -133,7 +133,7 @@ bool is_improving(const Stack* ss){
 
         total += w * (ss->staticEval - (ss - i)->staticEval);
         w_sum += w;
-        w      = (w * 3) / 4;
+        w      = (w * 2) / 3;
     }
 
     assert(w_sum != 0);
