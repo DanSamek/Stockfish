@@ -168,7 +168,7 @@ using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_SIZE, COLOR_NB>;
 
-using CutoffHistory = Stats<std::int16_t, 4096, PIECE_NB, SQUARE_NB>;
+using CutoffHistory = Stats<std::int16_t, 4096, PIECE_NB, int(SQUARE_NB) * int(SQUARE_NB)>;
 
 }  // namespace Stockfish
 

@@ -197,7 +197,7 @@ void MovePicker::score() {
         }
 
         if (cutoffHistory)
-            m.value += (*cutoffHistory)[pos.moved_piece(m)][m.to_sq()] / 128;
+            m.value += (*cutoffHistory)[pos.moved_piece(m)][m.from_to()] / 2;
     }
 }
 
