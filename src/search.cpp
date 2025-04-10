@@ -1425,7 +1425,6 @@ moves_loop:  // When in check, search starts here
 
     assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
 
-    const int cutoffBonus = value >= beta ? 100 : -100;
     // Adjust best value for fail high cases
     if (bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta) && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
@@ -1445,7 +1444,8 @@ moves_loop:  // When in check, search starts here
             ttMoveHistory[pawn_structure_index(pos)][us] << bonus;
         }
 
-        cutoffHistory[pos.moved_piece(bestMove)][bestMove.to_sq()] << cutoffBonus;
+        const int cutoffBonus = value >= beta ? std::min(30 * depth, 750) : -std::min(25 * depth, 500);
+        cutoffHistory[pos.moved_piece(bestMove)][bestMove.from_to()] << cutoffBonus;
     }
 
     // Bonus for prior quiet countermove that caused the fail low
@@ -1858,8 +1858,9 @@ void update_all_stats(const Position&      pos,
     Piece                  moved_piece    = pos.moved_piece(bestMove);
     PieceType              captured;
 
-    int bonus = std::min(141 * depth - 89, 1613) + 311 * isTTMove;
-    int malus = std::min(695 * depth - 215, 2808) - 31 * (moveCount - 1);
+    int bonus       = std::min(141 * depth - 89, 1613) + 311 * isTTMove;
+    int malus       = std::min(695 * depth - 215, 2808) - 31 * (moveCount - 1);
+    int cutoffMalus = -std::min(25 * depth, 500);
 
     if (!pos.capture_stage(bestMove))
     {
@@ -1869,7 +1870,7 @@ void update_all_stats(const Position&      pos,
         for (Move move : quietsSearched) {
             update_quiet_histories(pos, ss, workerThread, move, -malus * 1246 / 1024);
 
-            workerThread.cutoffHistory[pos.moved_piece(move)][move.to_sq()] << -100;
+            workerThread.cutoffHistory[pos.moved_piece(move)][move.from_to()] << cutoffMalus;
         }
     }
     else
@@ -1891,7 +1892,7 @@ void update_all_stats(const Position&      pos,
         captured    = type_of(pos.piece_on(move.to_sq()));
         captureHistory[moved_piece][move.to_sq()][captured] << -malus * 1377 / 1024;
 
-        workerThread.cutoffHistory[moved_piece][move.to_sq()] << -100;
+        workerThread.cutoffHistory[moved_piece][move.to_sq()] << cutoffMalus;
     }
 }
 
