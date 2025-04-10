@@ -294,7 +294,9 @@ class Worker {
 
     TTMoveHistory ttMoveHistory;
 
-   private:
+    CutoffHistory cutoffHistory;
+
+private:
     void iterative_deepening();
 
     void do_move(Position& pos, const Move move, StateInfo& st);

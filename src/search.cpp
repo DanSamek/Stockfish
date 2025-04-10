@@ -582,6 +582,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory.fill(0);
 
+    cutoffHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(5);
@@ -985,7 +987,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, &thisThread->cutoffHistory, ss->ply);
 
     value = bestValue;
 
@@ -1423,6 +1425,7 @@ moves_loop:  // When in check, search starts here
 
     assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
 
+    const int cutoffBonus = value >= beta ? 100 : -100;
     // Adjust best value for fail high cases
     if (bestValue >= beta && !is_decisive(bestValue) && !is_decisive(beta) && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
@@ -1441,6 +1444,8 @@ moves_loop:  // When in check, search starts here
             int bonus = (ttData.move == move) ? 800 : -600 * moveCount;
             ttMoveHistory[pawn_structure_index(pos)][us] << bonus;
         }
+
+        cutoffHistory[pos.moved_piece(bestMove)][bestMove.to_sq()] << cutoffBonus;
     }
 
     // Bonus for prior quiet countermove that caused the fail low
@@ -1636,7 +1641,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, &thisThread->cutoffHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1861,8 +1866,11 @@ void update_all_stats(const Position&      pos,
         update_quiet_histories(pos, ss, workerThread, bestMove, bonus * 1129 / 1024);
 
         // Decrease stats for all non-best quiet moves
-        for (Move move : quietsSearched)
+        for (Move move : quietsSearched) {
             update_quiet_histories(pos, ss, workerThread, move, -malus * 1246 / 1024);
+
+            workerThread.cutoffHistory[pos.moved_piece(move)][move.to_sq()] << -100;
+        }
     }
     else
     {
@@ -1882,6 +1890,8 @@ void update_all_stats(const Position&      pos,
         moved_piece = pos.moved_piece(move);
         captured    = type_of(pos.piece_on(move.to_sq()));
         captureHistory[moved_piece][move.to_sq()][captured] << -malus * 1377 / 1024;
+
+        workerThread.cutoffHistory[moved_piece][move.to_sq()] << -100;
     }
 }
 
