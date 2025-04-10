@@ -168,7 +168,8 @@ void update_all_stats(const Position&      pos,
                       ValueList<Move, 32>& capturesSearched,
                       Depth                depth,
                       bool                 isTTMove,
-                      int                  moveCount);
+                      int                  moveCount,
+                      bool                 pvNode);
 
 }  // namespace
 
@@ -1437,15 +1438,18 @@ moves_loop:  // When in check, search starts here
     else if (bestMove)
     {
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
-                         bestMove == ttData.move, moveCount);
+                         bestMove == ttData.move, moveCount, PvNode);
         if (!PvNode)
         {
             int bonus = (ttData.move == move) ? 800 : -600 * moveCount;
             ttMoveHistory[pawn_structure_index(pos)][us] << bonus;
         }
 
-        const int cutoffBonus = value >= beta ? std::min(30 * depth, 750) : -std::min(25 * depth, 500);
-        cutoffHistory[pos.moved_piece(bestMove)][bestMove.from_to()] << cutoffBonus;
+        if (PvNode)
+        {
+            const int cutoffBonus = value >= beta ? std::min(30 * depth, 750) : -std::min(25 * depth, 500);
+            cutoffHistory[pos.moved_piece(bestMove)][bestMove.from_to()] << cutoffBonus;
+        }
     }
 
     // Bonus for prior quiet countermove that caused the fail low
@@ -1852,7 +1856,8 @@ void update_all_stats(const Position&      pos,
                       ValueList<Move, 32>& capturesSearched,
                       Depth                depth,
                       bool                 isTTMove,
-                      int                  moveCount) {
+                      int                  moveCount,
+                      bool                 pvNode) {
 
     CapturePieceToHistory& captureHistory = workerThread.captureHistory;
     Piece                  moved_piece    = pos.moved_piece(bestMove);
@@ -1860,7 +1865,7 @@ void update_all_stats(const Position&      pos,
 
     int bonus       = std::min(141 * depth - 89, 1613) + 311 * isTTMove;
     int malus       = std::min(695 * depth - 215, 2808) - 31 * (moveCount - 1);
-    int cutoffMalus = -std::min(25 * depth, 500);
+    int cutoffMalus = -std::min(25 * depth, 500) * pvNode;
 
     if (!pos.capture_stage(bestMove))
     {
@@ -1892,7 +1897,7 @@ void update_all_stats(const Position&      pos,
         captured    = type_of(pos.piece_on(move.to_sq()));
         captureHistory[moved_piece][move.to_sq()][captured] << -malus * 1377 / 1024;
 
-        workerThread.cutoffHistory[moved_piece][move.to_sq()] << cutoffMalus;
+        workerThread.cutoffHistory[moved_piece][move.from_to()] << cutoffMalus;
     }
 }
 
