@@ -123,19 +123,26 @@ int risk_tolerance(const Position& pos, Value v) {
     return -(winning_risk + losing_risk) * 32;
 }
 
-int xx1 = 3000, xx2 = 4000, xx3 = 1000;
-TUNE(xx1);
-TUNE(SetRange(1, 1000), xx2);
 
+// W
+int wx1 = 8;
+TUNE(wx1);
+
+// 3 / 4 [3000/4000]
+int xx1 = 3000, xx2 = 4000;
+TUNE(xx1);
+TUNE(SetRange(1, 10000), xx2);
+
+// >= bound.
+int xx3 = 1000;
 TUNE(SetRange(0, 5000), xx3);
 
-int wx1 = 8000;
-int wx2 = 1000;
-TUNE(wx1);
-TUNE(SetRange(1, 2000), wx2);
+// move reduction.
+int rx1 = 512;
+TUNE(rx1);
 
 bool is_improving(const Stack* ss){
-    int w     = wx1 / wx2;
+    int w     = wx1;
     int total = 0;
     int w_sum = 0;
 
@@ -1245,7 +1252,7 @@ moves_loop:  // When in check, search starts here
             r -= risk_tolerance(pos, bestValue);
 
         if (PvNode && isImproving)
-            r -= 512;
+            r -= rx1;
 
         // Increase reduction for cut nodes
         if (cutNode)
