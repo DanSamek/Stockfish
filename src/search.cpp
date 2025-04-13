@@ -298,10 +298,13 @@ void Search::Worker::iterative_deepening() {
           &this->continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
+        (ss - i)->pvCutoffCnt                   = 0;
     }
 
-    for (int i = 0; i <= MAX_PLY + 2; ++i)
-        (ss + i)->ply = i;
+    for (int i = 0; i <= MAX_PLY + 2; ++i) {
+        (ss + i)->ply         = i;
+        (ss + i)->pvCutoffCnt = 0;
+    }
 
     ss->pv = pv;
 
@@ -687,7 +690,8 @@ Value Search::Worker::search(
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
     bestMove            = Move::none();
-    (ss + 2)->cutoffCnt = 0;
+    (ss + 2)->cutoffCnt   = 0;
+    (ss + 2)->pvCutoffCnt = 0;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
 
@@ -1389,7 +1393,9 @@ moves_loop:  // When in check, search starts here
                 if (value >= beta)
                 {
                     // (* Scaler) Especially if they make cutoffCnt increment more often.
-                    ss->cutoffCnt += (extension < 2) || PvNode;
+                    ss->cutoffCnt   += (extension < 2) || PvNode;
+
+                    ss->pvCutoffCnt += PvNode;
                     assert(value >= beta);  // Fail high
                     break;
                 }
@@ -1450,7 +1456,7 @@ moves_loop:  // When in check, search starts here
           (std::clamp(80 * depth - 320, 0, 200) + 34 * !allNode + 164 * ((ss - 1)->moveCount > 8)
            + 141 * (!ss->inCheck && bestValue <= ss->staticEval - 100)
            + 121 * (!(ss - 1)->inCheck && bestValue <= -(ss - 1)->staticEval - 75)
-           + 86 * ((ss - 1)->isTTMove) + 86 * (ss->cutoffCnt <= 3)
+           + 86 * ((ss - 1)->isTTMove) + 86 * (ss->cutoffCnt <= 3) + 60 * (!ss->pvCutoffCnt && PvNode)
            + std::min(-(ss - 1)->statScore / 112, 303));
 
         bonusScale = std::max(bonusScale, 0);
