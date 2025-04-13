@@ -646,6 +646,8 @@ Value Search::Worker::search(
 
     ss->reSearch         = ss->reSearch || (ss - 1)->reSearch;
     int   priorReduction = (ss - 1)->reduction;
+    bool  shouldRs = true;
+
     (ss - 1)->reduction  = 0;
 
     Piece movedPiece;
@@ -873,6 +875,8 @@ Value Search::Worker::search(
         && ss->staticEval >= beta - 19 * depth + 418 && !excludedMove && pos.non_pawn_material(us)
         && ss->ply >= thisThread->nmpMinPly && !is_loss(beta))
     {
+        shouldRs = false;
+
         assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and eval
@@ -929,6 +933,8 @@ Value Search::Worker::search(
         // but we also do a move before it. So effective depth is equal to depth - 3.
         && !(is_valid(ttData.value) && ttData.value < probCutBeta))
     {
+        shouldRs = false;
+
         assert(probCutBeta < VALUE_INFINITE && probCutBeta > beta);
 
         MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory);
@@ -980,10 +986,9 @@ Value Search::Worker::search(
     // Step 11.5 - ReSearch.
     // If the current position was not in the TT, probably a large part of the subtree will not be in TT.
     // Let's perform smaller search to prepare TT.
-    if (!PvNode && !ttHit && !ss->reSearch && depth >= 8
-        && !improving && !opponentWorsening){
+    if (!ttHit && !ss->reSearch && shouldRs && !improving && !opponentWorsening){
         ss->reSearch = true;
-        search<NonPV>(pos, ss, alpha, alpha + 1, depth - 5, cutNode);
+        search<NonPV>(pos, ss, alpha, alpha + 1, std::max(depth / 2, 1), cutNode);
         ss->reSearch = false;
     }
 
