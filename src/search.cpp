@@ -298,10 +298,13 @@ void Search::Worker::iterative_deepening() {
           &this->continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
+        (ss - i)->reSearch                      = false;
     }
 
-    for (int i = 0; i <= MAX_PLY + 2; ++i)
-        (ss + i)->ply = i;
+    for (int i = 0; i <= MAX_PLY + 2; ++i) {
+        (ss + i)->ply      = i;
+        (ss + i)->reSearch = false;
+    }
 
     ss->pv = pv;
 
@@ -640,8 +643,11 @@ Value Search::Worker::search(
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
+
+    ss->reSearch         = ss->reSearch || (ss - 1)->reSearch;
     int   priorReduction = (ss - 1)->reduction;
     (ss - 1)->reduction  = 0;
+
     Piece movedPiece;
 
     ValueList<Move, 32> capturesSearched;
@@ -969,6 +975,16 @@ Value Search::Worker::search(
                     return value - (probCutBeta - beta);
             }
         }
+    }
+
+    // Step 11.5 - ReSearch.
+    // If the current position was not in the TT, probably a large part of the subtree will not be in TT.
+    // Let's perform smaller search to prepare TT.
+    if (!PvNode && !ttHit && !ss->reSearch && depth >= 8
+        && !improving && !opponentWorsening){
+        ss->reSearch = true;
+        search<NonPV>(pos, ss, alpha, alpha + 1, depth - 5, cutNode);
+        ss->reSearch = false;
     }
 
 moves_loop:  // When in check, search starts here
