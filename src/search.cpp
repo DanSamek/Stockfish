@@ -1209,8 +1209,10 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 29696;
 
         if (PvNode)
-            r -= cutoffHistory[movedPiece][move.to_sq()] / 16;
-
+        {
+            const int reductionMalus = cutoffHistory[movedPiece][move.to_sq()] / 16;
+            r -= reductionMalus < 0 ? 0 : reductionMalus;
+        }
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
 
@@ -1449,7 +1451,8 @@ moves_loop:  // When in check, search starts here
 
         if (PvNode)
         {
-            const int cutoffBonus = value >= beta ? std::min(30 * depth, 750) : -std::min(25 * depth, 500);
+            const int bonusBase   = std::min(20 * depth, 240);
+            const int cutoffBonus = eval >= beta ? bonusBase : -(bonusBase + 40);
             cutoffHistory[pos.moved_piece(bestMove)][bestMove.to_sq()] << cutoffBonus;
         }
     }
