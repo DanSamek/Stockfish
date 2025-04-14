@@ -133,13 +133,13 @@ bool is_improving(const Stack* ss){
 
         total += w * (ss->staticEval - (ss - i)->staticEval);
         w_sum += w;
-        w      = (w * 2857) / 3819;
+        w      = (w * 2941) / 4051;
     }
 
     assert(w_sum != 0);
 
     int avg = total / w_sum;
-    return avg >= 924;
+    return avg >= 916;
 }
 
 
@@ -1234,7 +1234,7 @@ moves_loop:  // When in check, search starts here
             r -= risk_tolerance(pos, bestValue);
 
         if (PvNode && isImproving)
-            r -= 551;
+            r -= 540;
 
         // Increase reduction for cut nodes
         if (cutNode)
