@@ -582,6 +582,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    cutoffHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(5);
@@ -1217,6 +1219,12 @@ moves_loop:  // When in check, search starts here
 
         r -= std::abs(correctionValue) / 29696;
 
+        if (PvNode)
+        {
+            const int reductionMalus = cutoffHistory[movedPiece][move.to_sq()] / 16;
+            r -= reductionMalus < 0 ? 0 : reductionMalus;
+        }
+
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
 
@@ -1451,6 +1459,14 @@ moves_loop:  // When in check, search starts here
         {
             int bonus = (ttData.move == move) ? 800 : -870;
             ttMoveHistory << bonus;
+        }
+
+
+        if (PvNode)
+        {
+            const int bonusBase   = std::min(40 * depth, 480);
+            const int cutoffBonus = eval >= beta ? bonusBase : -(bonusBase + 80);
+            cutoffHistory[pos.moved_piece(bestMove)][bestMove.to_sq()] << cutoffBonus;
         }
     }
 
