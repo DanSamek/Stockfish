@@ -1464,7 +1464,7 @@ moves_loop:  // When in check, search starts here
 
         if (PvNode)
         {
-            const int bonusBase   = std::min(40 * depth, 480);
+            constexpr int bonusBase   = 480;
             const int cutoffBonus = eval >= beta ? bonusBase : -(bonusBase + 80);
             cutoffHistory[pos.moved_piece(bestMove)][bestMove.to_sq()] << cutoffBonus;
         }
