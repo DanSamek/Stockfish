@@ -297,11 +297,14 @@ void Search::Worker::iterative_deepening() {
           &this->continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
+        (ss - i)->goodCapture                   = false;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
-        (ss + i)->ply = i;
-
+    {
+        (ss + i)->ply         = i;
+        (ss + i)->goodCapture = false;
+    }
     ss->pv = pv;
 
     if (mainThread)
@@ -1191,6 +1194,8 @@ moves_loop:  // When in check, search starts here
             }
         }
 
+        ss->goodCapture = capture && pos.see_ge(move, PawnValue + 1);
+
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck);
 
@@ -1216,6 +1221,9 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
+
+        if ((ss - 1)->goodCapture && ttHit && !ttCapture && capture)
+            r += 256;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
