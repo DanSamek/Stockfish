@@ -850,6 +850,9 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
+    if ((ss - 1)->goodCapture && ttHit && ttCapture && depth >= 2)
+        depth--;
+
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
@@ -1220,9 +1223,6 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
-
-        if ((ss - 1)->goodCapture && ttHit && !ttCapture && capture && !ss->inCheck)
-            r += 256;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
