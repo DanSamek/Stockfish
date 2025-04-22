@@ -305,7 +305,7 @@ void Search::Worker::iterative_deepening() {
     {
         (ss + i)->ply             = i;
         (ss + i)->goodCapture     = false;
-        (ss - i)->goodCaptureToSq = SQ_NONE;
+        (ss + i)->goodCaptureToSq = SQ_NONE;
     }
     ss->pv = pv;
 
