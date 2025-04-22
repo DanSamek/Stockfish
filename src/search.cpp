@@ -298,12 +298,14 @@ void Search::Worker::iterative_deepening() {
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
         (ss - i)->goodCapture                   = false;
+        (ss - i)->goodCaptureToSq               = SQ_NONE;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
     {
-        (ss + i)->ply         = i;
-        (ss + i)->goodCapture = false;
+        (ss + i)->ply             = i;
+        (ss + i)->goodCapture     = false;
+        (ss - i)->goodCaptureToSq = SQ_NONE;
     }
     ss->pv = pv;
 
@@ -643,11 +645,11 @@ Value Search::Worker::search(
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
-    int   priorReduction  = (ss - 1)->reduction;
-    (ss - 1)->reduction   = 0;
+    int   priorReduction      = (ss - 1)->reduction;
+    (ss - 1)->reduction       = 0;
 
-    bool goodCapture      = (ss - 1)->goodCapture;
-    (ss - 1)->goodCapture = false;
+    bool goodCapture          = (ss - 1)->goodCapture;
+    Square goodCaptureToSq    = (ss - 1)->goodCaptureToSq;
 
     Piece movedPiece;
 
@@ -852,6 +854,15 @@ Value Search::Worker::search(
     if (priorReduction >= 3 && !opponentWorsening)
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
+        depth--;
+
+    // If previous move was a good capture and our best response is a recapture
+    // + it was losing for us and there is not a big difference between current eval and ttEval,
+    // we will decrease a depth.
+    if (goodCapture && depth >= 2 && ttHit && ttCapture && ttData.depth > depth
+        && ttData.move.is_ok() && ttData.move.to_sq() == goodCaptureToSq && pos.legal(ttData.move)
+        && std::abs(std::abs(ttData.eval) - std::abs(ss->staticEval)) < 30
+        && is_valid((ss - 1)->staticEval) && -(ss - 1)->staticEval - ss->staticEval > PawnValue)
         depth--;
 
     // Step 7. Razoring
@@ -1197,7 +1208,8 @@ moves_loop:  // When in check, search starts here
             }
         }
 
-        ss->goodCapture = capture && pos.see_ge(move, PawnValue + 1);
+        ss->goodCapture     = capture && pos.see_ge(move, PawnValue + 1);
+        ss->goodCaptureToSq = move.to_sq();
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck);
@@ -1224,9 +1236,6 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
-
-        if (goodCapture && ttHit && !ttCapture && capture && !ss->inCheck)
-            r += 256;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(pos, bestValue);
@@ -1330,6 +1339,9 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         undo_move(pos, move);
+
+        ss->goodCaptureToSq = SQ_NONE;
+        ss->goodCapture     = false;
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
