@@ -993,7 +993,6 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
-
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move()) != Move::none())
@@ -1222,7 +1221,7 @@ moves_loop:  // When in check, search starts here
 
         r -= std::abs(correctionValue) / 29696;
 
-        if ((ss - 1)->goodCapture && ttHit && !ttCapture && capture)
+        if ((ss - 1)->goodCapture && ttHit && !ttCapture && capture && !ss->inCheck)
             r += 256;
 
         if (PvNode && std::abs(bestValue) <= 2000)
