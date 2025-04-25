@@ -1229,8 +1229,8 @@ moves_loop:  // When in check, search starts here
             r += 1171 + (depth < 8) * 985;
 
         // Increase reduction if next ply has a lot of fail high
-        if ((ss + 1)->cutoffCnt > 2)
-            r += 1042 + allNode * 864 - PvNode * 256;
+        if ((ss + 1)->cutoffCnt > 2 && !PvNode)
+            r += 1042 + allNode * 864;
 
         // For first picked move (ttMove) reduce reduction
         else if (move == ttData.move)
