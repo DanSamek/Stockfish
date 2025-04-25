@@ -158,6 +158,7 @@ void  update_pv(Move* pv, Move move, const Move* childPv);
 void  update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
 void  update_quiet_histories(
    const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus);
+
 void update_all_stats(const Position&      pos,
                       Stack*               ss,
                       Search::Worker&      workerThread,
@@ -167,7 +168,8 @@ void update_all_stats(const Position&      pos,
                       ValueList<Move, 32>& capturesSearched,
                       Depth                depth,
                       bool                 isTTMove,
-                      int                  moveCount);
+                      int                  moveCount,
+                      bool                 pvNode);
 
 }  // namespace
 
@@ -582,6 +584,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    pvNodeHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(5);
@@ -985,7 +989,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, &thisThread->pvNodeHistory, PvNode);
 
     value = bestValue;
 
@@ -1446,7 +1450,7 @@ moves_loop:  // When in check, search starts here
     else if (bestMove)
     {
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
-                         bestMove == ttData.move, moveCount);
+                         bestMove == ttData.move, moveCount, PvNode);
         if (!PvNode)
         {
             int bonus = (ttData.move == move) ? 800 : -870;
@@ -1648,7 +1652,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply, &thisThread->pvNodeHistory, PvNode);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1874,22 +1878,28 @@ void update_all_stats(const Position&      pos,
                       ValueList<Move, 32>& capturesSearched,
                       Depth                depth,
                       bool                 isTTMove,
-                      int                  moveCount) {
+                      int                  moveCount,
+                      bool                 pvNode) {
 
     CapturePieceToHistory& captureHistory = workerThread.captureHistory;
+    PvNodeHistory&         pvNodeHistory  = workerThread.pvNodeHistory;
     Piece                  moved_piece    = pos.moved_piece(bestMove);
     PieceType              captured;
 
     int bonus = std::min(141 * depth - 89, 1613) + 311 * isTTMove;
     int malus = std::min(695 * depth - 215, 2808) - 31 * (moveCount - 1);
 
+    pvNodeHistory[moved_piece][bestMove.to_sq()] << bonus * pvNode;
+
     if (!pos.capture_stage(bestMove))
     {
         update_quiet_histories(pos, ss, workerThread, bestMove, bonus * 1129 / 1024);
 
         // Decrease stats for all non-best quiet moves
-        for (Move move : quietsSearched)
+        for (Move move : quietsSearched) {
             update_quiet_histories(pos, ss, workerThread, move, -malus * 1246 / 1024);
+            pvNodeHistory[pos.moved_piece(move)][move.to_sq()] << -malus * pvNode;
+        }
     }
     else
     {
@@ -1909,6 +1919,8 @@ void update_all_stats(const Position&      pos,
         moved_piece = pos.moved_piece(move);
         captured    = type_of(pos.piece_on(move.to_sq()));
         captureHistory[moved_piece][move.to_sq()][captured] << -malus * 1377 / 1024;
+
+        pvNodeHistory[pos.moved_piece(move)][move.to_sq()] << -malus * pvNode;
     }
 }
 
@@ -1930,7 +1942,6 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 }
 
 // Updates move sorting heuristics
-
 void update_quiet_histories(
   const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus) {
 

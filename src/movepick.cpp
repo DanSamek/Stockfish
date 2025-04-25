@@ -87,16 +87,20 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
-                       int                          pl) :
+                       int                          pl,
+                       const PvNodeHistory*         pvh,
+                       bool                         pv) :
     pos(p),
     mainHistory(mh),
     lowPlyHistory(lph),
     captureHistory(cph),
     continuationHistory(ch),
     pawnHistory(ph),
+    pvNodeHistory(pvh),
+    pvNode(pv),
     ttMove(ttm),
     depth(d),
-    ply(pl) {
+    ply(pl){
 
     if (pos.checkers())
         stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
@@ -110,8 +114,9 @@ MovePicker::MovePicker(const Position&              p,
 MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph) :
     pos(p),
     captureHistory(cph),
+    pvNode(false),
     ttMove(ttm),
-    threshold(th) {
+    threshold(th){
     assert(!pos.checkers());
 
     stage = PROBCUT_TT
@@ -143,7 +148,7 @@ void MovePicker::score() {
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
     }
 
-    for (auto& m : *this)
+    for (auto& m : *this){
         if constexpr (Type == CAPTURES)
             m.value =
               7 * int(PieceValue[pos.piece_on(m.to_sq())])
@@ -193,6 +198,10 @@ void MovePicker::score() {
                         + (*continuationHistory[0])[pos.moved_piece(m)][m.to_sq()]
                         + (*pawnHistory)[pawn_structure_index(pos)][pos.moved_piece(m)][m.to_sq()];
         }
+
+        if (pvNode)
+            m.value += (*pvNodeHistory)[pos.moved_piece(m)][m.to_sq()];
+    }
 }
 
 // Returns the next move satisfying a predicate function.
