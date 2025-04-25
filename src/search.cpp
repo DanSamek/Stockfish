@@ -582,7 +582,7 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
-    cutoffHistory.fill(0);
+    cutoffHistory.fill(-480);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -1464,8 +1464,8 @@ moves_loop:  // When in check, search starts here
 
         if (PvNode)
         {
-            constexpr int bonusBase   = 480;
-            const int cutoffBonus = eval >= beta ? bonusBase : -(bonusBase + 80);
+            constexpr int bonusBase = 240;
+            const int cutoffBonus   = eval >= beta ? bonusBase : -(bonusBase + 80);
             cutoffHistory[pos.moved_piece(bestMove)][bestMove.to_sq()] << cutoffBonus;
         }
     }
