@@ -918,8 +918,10 @@ Value Search::Worker::search(
 
             thisThread->nmpMinPly = 0;
 
-            if (v >= beta)
+            if (v >= beta) {
+                ss->cutoffCnt++;
                 return nullValue;
+            }
         }
     }
 
