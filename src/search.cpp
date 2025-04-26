@@ -847,7 +847,7 @@ Value Search::Worker::search(
                         && (ss - 4)->staticEval > (ss - 6)->staticEval;
 
     if (priorReduction >= 3 && !opponentWorsening)
-        depth += 1 + longTermImproving;
+        depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
@@ -919,7 +919,7 @@ Value Search::Worker::search(
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
-    probCutBeta = beta + 185 - 58 * improving;
+    probCutBeta = beta + 185 - 58 * improving - 29 * longTermImproving;
     if (depth >= 3
         && !is_decisive(beta)
         // If value from transposition table is lower than probCutBeta, don't attempt
