@@ -1889,7 +1889,7 @@ void update_all_stats(const Position&      pos,
     int bonus = std::min(141 * depth - 89, 1613) + 311 * isTTMove;
     int malus = std::min(695 * depth - 215, 2808) - 31 * (moveCount - 1);
 
-    pvNodeHistory[moved_piece][bestMove.to_sq()] << bonus * pvNode;
+    pvNodeHistory[moved_piece][bestMove.to_sq()] << 160 * pvNode;
 
     if (!pos.capture_stage(bestMove))
     {
@@ -1898,7 +1898,7 @@ void update_all_stats(const Position&      pos,
         // Decrease stats for all non-best quiet moves
         for (Move move : quietsSearched) {
             update_quiet_histories(pos, ss, workerThread, move, -malus * 1246 / 1024);
-            pvNodeHistory[pos.moved_piece(move)][move.to_sq()] << -malus * pvNode;
+            pvNodeHistory[pos.moved_piece(move)][move.to_sq()] << -200 * pvNode;
         }
     }
     else
@@ -1920,7 +1920,7 @@ void update_all_stats(const Position&      pos,
         captured    = type_of(pos.piece_on(move.to_sq()));
         captureHistory[moved_piece][move.to_sq()][captured] << -malus * 1377 / 1024;
 
-        pvNodeHistory[pos.moved_piece(move)][move.to_sq()] << -malus * pvNode;
+        pvNodeHistory[pos.moved_piece(move)][move.to_sq()] << -200 * pvNode;
     }
 }
 
