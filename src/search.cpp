@@ -638,7 +638,7 @@ Value Search::Worker::search(
     Move  move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
-    bool  givesCheck, improving, priorCapture, opponentWorsening;
+    bool  givesCheck, improving, priorCapture, opponentWorsening, longTermImproving;
     bool  capture, ttCapture;
     int   priorReduction = (ss - 1)->reduction;
     (ss - 1)->reduction  = 0;
@@ -842,8 +842,12 @@ Value Search::Worker::search(
 
     opponentWorsening = ss->staticEval > -(ss - 1)->staticEval;
 
+    longTermImproving = ss->staticEval > (ss - 2)->staticEval
+                        && (ss - 2)->staticEval > (ss - 4)->staticEval
+                        && (ss - 4)->staticEval > (ss - 6)->staticEval;
+
     if (priorReduction >= 3 && !opponentWorsening)
-        depth++;
+        depth += 1 + longTermImproving;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
