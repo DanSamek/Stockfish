@@ -201,7 +201,7 @@ void MovePicker::score() {
         }
 
         if (m == pbBestMove)
-            m.value += depth * 50;
+            m.value += depth * 10;
     }
 }
 
