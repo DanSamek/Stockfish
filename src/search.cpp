@@ -1245,7 +1245,7 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 29696;
 
         if (move == pbBestMove.first)
-            r -= 512;
+            r -= 256;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(bestValue);
