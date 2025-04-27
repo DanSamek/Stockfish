@@ -694,10 +694,11 @@ Value Search::Worker::search(
     Square prevSq  = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     bestMove       = Move::none();
     priorReduction = (ss - 1)->reduction;
-    (ss - 1)->reduction = 0;
-    ss->statScore       = 0;
-    ss->isPvNode        = PvNode;
-    (ss + 2)->cutoffCnt = 0;
+    (ss - 1)->reduction      = 0;
+    ss->statScore            = 0;
+    ss->isPvNode             = PvNode;
+    (ss + 2)->cutoffCnt      = 0;
+    (ss + 2)->pvImprovingCnt = 0;
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -855,6 +856,8 @@ Value Search::Worker::search(
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 175)
         depth--;
+
+    ss->pvImprovingCnt += PvNode && improving;
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
@@ -1224,6 +1227,9 @@ moves_loop:  // When in check, search starts here
         r += 316;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 66;
         r -= std::abs(correctionValue) / 28047;
+
+        if (PvNode && !(ss + 2)->pvImprovingCnt)
+            r -= 512;
 
         if (PvNode && std::abs(bestValue) <= 2078)
             r -= risk_tolerance(bestValue);
