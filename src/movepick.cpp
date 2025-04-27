@@ -87,7 +87,8 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
-                       int                          pl) :
+                       int                          pl,
+                       Move                         pbm) :
     pos(p),
     mainHistory(mh),
     lowPlyHistory(lph),
@@ -96,7 +97,8 @@ MovePicker::MovePicker(const Position&              p,
     pawnHistory(ph),
     ttMove(ttm),
     depth(d),
-    ply(pl) {
+    ply(pl),
+    pbBestMove(pbm){
 
     if (pos.checkers())
         stage = EVASION_TT + !(ttm && pos.pseudo_legal(ttm));
@@ -143,7 +145,7 @@ void MovePicker::score() {
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
     }
 
-    for (auto& m : *this)
+    for (auto& m : *this){
         if constexpr (Type == CAPTURES)
             m.value =
               (2
@@ -197,6 +199,10 @@ void MovePicker::score() {
                         + (*continuationHistory[0])[pos.moved_piece(m)][m.to_sq()]
                         + (*pawnHistory)[pawn_structure_index(pos)][pos.moved_piece(m)][m.to_sq()];
         }
+
+        if (m == pbBestMove)
+            m.value += 3000;
+    }
 }
 
 // Returns the next move satisfying a predicate function.
