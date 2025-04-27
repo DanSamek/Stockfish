@@ -704,9 +704,9 @@ Value Search::Worker::search(
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
-    bestMove            = Move::none();
-    (ss + 2)->cutoffCnt = 0;
-    (ss + 2)->nmpCutoffCnt = 0;
+    bestMove                     = Move::none();
+    (ss + 2)->cutoffCnt          = 0;
+    (ss + 2)->heuristicCutoffCnt = 0;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
     ss->isPvNode  = PvNode;
@@ -921,7 +921,7 @@ Value Search::Worker::search(
 
             if (v >= beta)
             {
-                ss->nmpCutoffCnt++;
+                ss->heuristicCutoffCnt++;
                 return nullValue;
             }
         }
@@ -989,7 +989,10 @@ Value Search::Worker::search(
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
 
                 if (!is_decisive(value))
+                {
+                    ss->heuristicCutoffCnt++;
                     return value - (probCutBeta - beta);
+                }
             }
         }
     }
@@ -1241,8 +1244,8 @@ moves_loop:  // When in check, search starts here
 
         r -= std::abs(correctionValue) / 29696;
 
-        if (!PvNode && ss->nmpCutoffCnt > 1)
-            r += 512;
+        if (!PvNode && ss->heuristicCutoffCnt > 4 && ss->cutoffCnt)
+            r += 256;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(bestValue);
