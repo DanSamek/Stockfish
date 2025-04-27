@@ -1241,7 +1241,7 @@ moves_loop:  // When in check, search starts here
 
         r -= std::abs(correctionValue) / 29696;
 
-        if (!PvNode && ss->nmpCutoffCnt > 1)
+        if (!PvNode && ss->nmpCutoffCnt > 1 && ss->cutoffCnt)
             r += 512;
 
         if (PvNode && std::abs(bestValue) <= 2000)
