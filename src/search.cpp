@@ -706,6 +706,7 @@ Value Search::Worker::search(
 
     bestMove            = Move::none();
     (ss + 2)->cutoffCnt = 0;
+    (ss + 2)->nmpCutoffCnt = 0;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
     ss->isPvNode  = PvNode;
@@ -918,8 +919,9 @@ Value Search::Worker::search(
 
             thisThread->nmpMinPly = 0;
 
-            if (v >= beta) {
-                ss->cutoffCnt++;
+            if (v >= beta)
+            {
+                ss->nmpCutoffCnt++;
                 return nullValue;
             }
         }
@@ -1238,6 +1240,9 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
+
+        if (!PvNode && ss->nmpCutoffCnt > 1)
+            r += 512;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(bestValue);
