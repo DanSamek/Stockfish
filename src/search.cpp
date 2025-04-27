@@ -656,7 +656,7 @@ Value Search::Worker::search(
     Move  move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
-    bool  givesCheck, improving, priorCapture, opponentWorsening;
+    bool  givesCheck, improving, priorCapture, opponentWorsening, longTermImproving;
     bool  capture, ttCapture;
     int   priorReduction = (ss - 1)->reduction;
     (ss - 1)->reduction  = 0;
@@ -861,6 +861,9 @@ Value Search::Worker::search(
 
     opponentWorsening = ss->staticEval > -(ss - 1)->staticEval;
 
+    longTermImproving = ss->staticEval > (ss - 2)->staticEval
+                        && (ss - 2)->staticEval > (ss - 4)->staticEval;
+
     if (priorReduction >= 3 && !opponentWorsening)
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
@@ -934,7 +937,7 @@ Value Search::Worker::search(
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
-    probCutBeta = beta + 185 - 58 * improving;
+    probCutBeta = beta + 185 - 58 * improving + 19 * !longTermImproving;
     if (depth >= 3
         && !is_decisive(beta)
         // If value from transposition table is lower than probCutBeta, don't attempt
