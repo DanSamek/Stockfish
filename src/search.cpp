@@ -662,6 +662,8 @@ Value Search::Worker::search(
     (ss - 1)->reduction  = 0;
     Piece movedPiece;
 
+    std::pair<Move, Value> pbBestMove = {Move::none(), VALUE_TB_LOSS_IN_MAX_PLY};
+
     ValueList<Move, 32> capturesSearched;
     ValueList<Move, 32> quietsSearched;
 
@@ -972,9 +974,13 @@ Value Search::Worker::search(
             value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
 
             // If the qsearch held, perform the regular search
-            if (value >= probCutBeta && probCutDepth > 0)
+            if (value >= probCutBeta && probCutDepth > 0) {
                 value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, probCutDepth,
                                        !cutNode);
+
+                if(value >= beta && pbBestMove.second < value)
+                    pbBestMove = {move, value};
+            }
 
             undo_move(pos, move);
 
@@ -987,6 +993,7 @@ Value Search::Worker::search(
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);
             }
+
         }
     }
 
@@ -1236,6 +1243,9 @@ moves_loop:  // When in check, search starts here
         r += 306 - moveCount * 34;
 
         r -= std::abs(correctionValue) / 29696;
+
+        if (move == pbBestMove.first)
+            r -= 512;
 
         if (PvNode && std::abs(bestValue) <= 2000)
             r -= risk_tolerance(bestValue);
