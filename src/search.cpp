@@ -856,6 +856,12 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 175)
         depth--;
 
+    // Razoring idea, with tt.
+    if (!PvNode && ttHit && ttData.bound == BOUND_EXACT && ttData.depth > depth + 6
+        && is_valid(ttData.value) && !is_decisive(ttData.value) && !is_decisive(alpha)
+        && ttData.value < alpha - 330 - 295 * depth * depth)
+        return ttData.value;
+
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
