@@ -1229,7 +1229,7 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 28047;
 
         if (PvNode && !(ss + 2)->pvImprovingCnt)
-            r -= 512;
+            r -= 256;
 
         if (PvNode && std::abs(bestValue) <= 2078)
             r -= risk_tolerance(bestValue);
