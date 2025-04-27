@@ -857,9 +857,9 @@ Value Search::Worker::search(
         depth--;
 
     // Razoring idea, with tt.
-    if (!PvNode && ttHit && ttData.bound == BOUND_EXACT && ttData.depth > depth + 6
+    if (!PvNode && ttHit && ttData.bound == BOUND_EXACT && ttData.depth > depth + 4
         && is_valid(ttData.value) && !is_decisive(ttData.value) && !is_decisive(alpha)
-        && ttData.value < alpha - 200 - 200 * depth * depth)
+        && ttData.value < alpha - 240 - 5 * depth * depth)
         return ttData.value;
 
     // Step 7. Razoring
