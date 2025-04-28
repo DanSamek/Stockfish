@@ -168,6 +168,8 @@ using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
 
+using RootHistory = Stats<std::int16_t, 8192, COLOR_NB, int(SQUARE_NB) * int(SQUARE_NB)>;
+
 }  // namespace Stockfish
 
 #endif  // #ifndef HISTORY_H_INCLUDED
