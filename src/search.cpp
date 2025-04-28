@@ -660,6 +660,7 @@ Value Search::Worker::search(
     ss->moveCount      = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    ss->isImproving    = false;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -847,7 +848,7 @@ Value Search::Worker::search(
     // bigger than the previous static evaluation at our turn (if we were in
     // check at our previous move we go back until we weren't in check) and is
     // false otherwise. The improving flag is used in various pruning heuristics.
-    improving = ss->staticEval > (ss - 2)->staticEval;
+    ss->isImproving = improving = ss->staticEval > (ss - 2)->staticEval;
 
     opponentWorsening = ss->staticEval > -(ss - 1)->staticEval;
 
@@ -913,7 +914,7 @@ Value Search::Worker::search(
         }
     }
 
-    improving |= ss->staticEval >= beta + 94;
+    ss->isImproving = improving |= ss->staticEval >= beta + 94;
 
     // Step 10. Internal iterative reductions
     // For PV nodes without a ttMove as well as for deep enough cutNodes, we decrease depth.
@@ -1479,6 +1480,7 @@ moves_loop:  // When in check, search starts here
         bonusScale += 90 * (ss->cutoffCnt <= 3);
         bonusScale += 144 * (!ss->inCheck && bestValue <= ss->staticEval - 104);
         bonusScale += 128 * (!(ss - 1)->inCheck && bestValue <= -(ss - 1)->staticEval - 82);
+        bonusScale += 64  * !(ss - 1)->isImproving;
 
         bonusScale = std::max(bonusScale, 0);
 
