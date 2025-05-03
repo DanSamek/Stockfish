@@ -173,7 +173,8 @@ void update_all_stats(const Position&      pos,
                       ValueList<Move, 32>& capturesSearched,
                       Depth                depth,
                       Move                 TTMove,
-                      int                  moveCount);
+                      int                  moveCount,
+                      bool                 failHigh);
 
 }  // namespace
 
@@ -1460,7 +1461,7 @@ moves_loop:  // When in check, search starts here
     else if (bestMove)
     {
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
-                         ttData.move, moveCount);
+                         ttData.move, moveCount, bestValue >= beta);
         if (!PvNode)
         {
             int bonus = ss->isTTMove ? 800 : -879;
@@ -1890,7 +1891,8 @@ void update_all_stats(const Position&      pos,
                       ValueList<Move, 32>& capturesSearched,
                       Depth                depth,
                       Move                 ttMove,
-                      int                  moveCount) {
+                      int                  moveCount,
+                      bool                 failHigh) {
 
     CapturePieceToHistory& captureHistory = workerThread.captureHistory;
     Piece                  moved_piece    = pos.moved_piece(bestMove);
@@ -1918,6 +1920,9 @@ void update_all_stats(const Position&      pos,
     // previous ply when it gets refuted.
     if (prevSq != SQ_NONE && ((ss - 1)->moveCount == 1 + (ss - 1)->ttHit) && !pos.captured_piece())
         update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, -malus * 980 / 1024);
+
+    if (failHigh && prevSq != SQ_NONE && !pos.captured_piece())
+        update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, -malus * 430 / 1024);
 
     // Decrease stats for all non-best capture moves
     for (Move move : capturesSearched)
