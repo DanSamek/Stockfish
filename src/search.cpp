@@ -1461,7 +1461,7 @@ moves_loop:  // When in check, search starts here
     else if (bestMove)
     {
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
-                         ttData.move, moveCount, bestValue >= beta);
+                         ttData.move, moveCount, bestValue >= beta && PvNode);
         if (!PvNode)
         {
             int bonus = ss->isTTMove ? 800 : -879;
