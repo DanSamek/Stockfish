@@ -175,6 +175,13 @@ void update_all_stats(const Position&      pos,
                       Move                 TTMove,
                       int                  moveCount);
 
+void update_history_from_heuristic(const Position& pos,
+                                   Stack* ss,
+                                   Search::Worker& workerThread,
+                                   Square prevSq,
+                                   bool priorCapture,
+                                   int bonus);
+
 }  // namespace
 
 Search::Worker::Worker(SharedState&                    sharedState,
@@ -909,7 +916,10 @@ Value Search::Worker::search(
             thisThread->nmpMinPly = 0;
 
             if (v >= beta)
+            {
+                update_history_from_heuristic(pos, ss, *this, prevSq, priorCapture, -std::min(15 * depth, 300));
                 return nullValue;
+            }
         }
     }
 
@@ -973,6 +983,8 @@ Value Search::Worker::search(
                 // Save ProbCut data into transposition table
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
+
+                update_history_from_heuristic(pos, ss, *this, prevSq, priorCapture, -std::min(15 * depth, 300));
 
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);
@@ -1879,6 +1891,20 @@ void update_pv(Move* pv, Move move, const Move* childPv) {
     *pv = Move::none();
 }
 
+void update_history_from_heuristic(const Position& pos,
+                                   Stack* ss,
+                                   Search::Worker& workerThread,
+                                   Square square,
+                                   bool priorCapture,
+                                   int bonus){
+    if (square == SQ_NONE) return;
+    Color us = pos.side_to_move();
+
+    if (priorCapture)
+        workerThread.captureHistory[pos.piece_on(square)][square][pos.captured_piece()] << bonus;
+    else
+        workerThread.mainHistory[~us][((ss - 1)->currentMove).from_to()] << bonus;
+}
 
 // Updates stats at the end of search() when a bestMove is found
 void update_all_stats(const Position&      pos,
