@@ -1310,7 +1310,7 @@ moves_loop:  // When in check, search starts here
             r -= ttMoveHistory / 8;
 
             if ((ss + 1)->cutoffCnt > 2)
-                r += 256;
+                r += 350;
 
             if (cutNode)
                 r += 520;
