@@ -857,9 +857,9 @@ Value Search::Worker::search(
         depth--;
 
     // If TT eval is low, decrease depth.
-    if (depth >= 2 && ttHit && ttData.bound == BOUND_EXACT && ttData.depth > depth + 4
-        && is_valid(ttData.value) && !is_decisive(ttData.value) && !is_decisive(alpha)
-        && ttData.value < alpha - 100 - 10 * depth)
+    if (depth >= 2 && !excludedMove && ttHit && ttData.bound == BOUND_EXACT
+        && ttData.depth > depth + 4 + PvNode && ttData.value < alpha
+        && is_valid(ttData.value) && !is_decisive(ttData.value) && !is_decisive(alpha))
         depth--;
 
     // Step 7. Razoring
