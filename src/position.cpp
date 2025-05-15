@@ -201,6 +201,8 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si) {
     std::istringstream ss(fenStr);
 
     std::memset(this, 0, sizeof(Position));
+    moveRankingNet = new MoveRankingNet();
+
     std::memset(si, 0, sizeof(StateInfo));
     st = si;
 
@@ -686,7 +688,8 @@ bool Position::gives_check(Move m) const {
 DirtyPiece Position::do_move(Move                      m,
                              StateInfo&                newSt,
                              bool                      givesCheck,
-                             const TranspositionTable* tt = nullptr) {
+                             const TranspositionTable* tt = nullptr,
+                             bool                      updateSearchPly = false) {
 
     assert(m.is_ok());
     assert(&newSt != st);
@@ -699,6 +702,9 @@ DirtyPiece Position::do_move(Move                      m,
     std::memcpy(&newSt, st, offsetof(StateInfo, key));
     newSt.previous = st;
     st             = &newSt;
+
+    if (updateSearchPly)
+        st->searchPly = newSt.previous->searchPly + 1;
 
     // Increment ply counters. In particular, rule50 will be reset to zero later on
     // in case of a capture or a pawn move.

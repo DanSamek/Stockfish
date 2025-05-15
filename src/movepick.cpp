@@ -183,6 +183,13 @@ void MovePicker::score() {
 
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.from_to()] / (1 + 2 * ply);
+
+            if (ply <= MoveRankingNet::MRN_MAX_PLY && pos.moveRankingNet)
+            {
+                m.value += 3 * (pos.side_to_move() == WHITE ?
+                           pos.moveRankingNet->evaluate<WHITE>(pc, m) :
+                           pos.moveRankingNet->evaluate<BLACK>(pc, m));
+            }
         }
 
         else  // Type == EVASIONS

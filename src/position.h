@@ -27,6 +27,7 @@
 
 #include "bitboard.h"
 #include "types.h"
+#include "move_ranking_net.h"
 
 namespace Stockfish {
 
@@ -58,6 +59,7 @@ struct StateInfo {
     Bitboard   checkSquares[PIECE_TYPE_NB];
     Piece      capturedPiece;
     int        repetition;
+    int        searchPly;
 };
 
 
@@ -133,7 +135,7 @@ class Position {
 
     // Doing and undoing moves
     void       do_move(Move m, StateInfo& newSt, const TranspositionTable* tt);
-    DirtyPiece do_move(Move m, StateInfo& newSt, bool givesCheck, const TranspositionTable* tt);
+    DirtyPiece do_move(Move m, StateInfo& newSt, bool givesCheck, const TranspositionTable* tt, bool updateSearchPly);
     void       undo_move(Move m);
     void       do_null_move(StateInfo& newSt, const TranspositionTable& tt);
     void       undo_null_move();
@@ -169,6 +171,7 @@ class Position {
     void put_piece(Piece pc, Square s);
     void remove_piece(Square s);
 
+    MoveRankingNet* moveRankingNet;
    private:
     // Initialization helpers (used while setting up a position)
     void set_castling_right(Color c, Square rfrom);
@@ -337,6 +340,9 @@ inline void Position::put_piece(Piece pc, Square s) {
     byColorBB[color_of(pc)] |= s;
     pieceCount[pc]++;
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]++;
+
+    if (state()->searchPly > MoveRankingNet::MRN_MAX_PLY) return;
+    moveRankingNet->add(pc, s);
 }
 
 inline void Position::remove_piece(Square s) {
@@ -348,6 +354,9 @@ inline void Position::remove_piece(Square s) {
     board[s] = NO_PIECE;
     pieceCount[pc]--;
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]--;
+
+    if (state()->searchPly > MoveRankingNet::MRN_MAX_PLY) return;
+    moveRankingNet->remove(pc, s);
 }
 
 inline void Position::move_piece(Square from, Square to) {
@@ -359,10 +368,14 @@ inline void Position::move_piece(Square from, Square to) {
     byColorBB[color_of(pc)] ^= fromTo;
     board[from] = NO_PIECE;
     board[to]   = pc;
+
+    if (state()->searchPly > MoveRankingNet::MRN_MAX_PLY) return;
+    moveRankingNet->remove(pc, from);
+    moveRankingNet->add(pc, to);
 }
 
 inline void Position::do_move(Move m, StateInfo& newSt, const TranspositionTable* tt = nullptr) {
-    do_move(m, newSt, gives_check(m), tt);
+    do_move(m, newSt, gives_check(m), tt, false);
 }
 
 inline StateInfo* Position::state() const { return st; }
