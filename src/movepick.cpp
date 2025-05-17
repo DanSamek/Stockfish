@@ -155,6 +155,7 @@ void MovePicker::score() {
             PieceType pt   = type_of(pc);
             Square    from = m.from_sq();
             Square    to   = m.to_sq();
+            Color     us   = pos.side_to_move();
 
             // histories
             m.value = 2 * (*mainHistory)[pos.side_to_move()][m.from_to()];
@@ -179,6 +180,9 @@ void MovePicker::score() {
 
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.from_to()] / (1 + ply);
+
+            if (pt == KING && pos.non_pawn_material(us) > 2 * BishopValue)
+                m.value -= 350;
         }
 
         else  // Type == EVASIONS
