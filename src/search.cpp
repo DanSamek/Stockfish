@@ -815,6 +815,33 @@ Value Search::Worker::search(
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 175)
         depth--;
 
+    if (ttHit && ttData.bound == BOUND_EXACT
+        && ttData.depth > depth + 4 && ttData.value > beta
+        && is_valid(ttData.value) && !is_decisive(ttData.value) && !is_decisive(beta)
+        && pos.legal(ttData.move) && !excludedMove){
+
+        move = ttData.move;
+        assert(move.is_ok());
+        do_move(pos, move, st);
+
+        movedPiece = pos.moved_piece(move);
+        capture    = pos.capture_stage(move);
+
+        ss->currentMove = move;
+        ss->isTTMove    = true;
+        ss->continuationHistory =
+                &this->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
+        ss->continuationCorrectionHistory =
+                &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
+
+        Value result = -search<NonPV>(pos, ss, -(ttData.value + 1), -ttData.value, depth / 2, cutNode);
+
+        undo_move(pos, move);
+
+        if (result > beta + 500)
+            return result;
+    }
+
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
