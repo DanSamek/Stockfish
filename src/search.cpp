@@ -1413,7 +1413,7 @@ moves_loop:  // When in check, search starts here
             }
         }
 
-        if (value < alpha - 500 && extension > 1)
+        if (value < alpha - 750 && extension > 1)
             depth--;
 
         // If the move is worse than some previously searched move,
