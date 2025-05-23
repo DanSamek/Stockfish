@@ -1410,7 +1410,7 @@ moves_loop:  // When in check, search starts here
             }
         }
 
-        if (value < alpha - 400 && extension > 1 && !ss->inCheck
+        if (value < alpha - 600 && extension > 1 && !ss->inCheck
             && !is_decisive(alpha) && !is_decisive(beta))
             depth--;
 
