@@ -1408,7 +1408,12 @@ moves_loop:  // When in check, search starts here
                     alpha = value;  // Update alpha! Always alpha < beta
                 }
             }
+
+            if (value < alpha - 500 && extension >= 1 && !ss->inCheck
+                && !is_decisive(alpha) && !is_decisive(beta))
+                depth--;
         }
+
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
