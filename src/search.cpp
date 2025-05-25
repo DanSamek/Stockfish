@@ -939,7 +939,14 @@ Value Search::Worker::search(
 
             assert(pos.capture_stage(move));
 
-            movedPiece = pos.moved_piece(move);
+            movedPiece          = pos.moved_piece(move);
+            Piece capturedPiece = pos.piece_on(move.to_sq());
+
+            int captHist = thisThread->captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
+            int seeHist  = std::clamp(captHist / 31, -137 * depth, 125 * depth);
+
+            if (!pos.see_ge(move, -158 * depth - seeHist))
+                continue;
 
             do_move(pos, move, st);
 
