@@ -168,6 +168,8 @@ using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
 
+using CaptureContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
+
 }  // namespace Stockfish
 
 #endif  // #ifndef HISTORY_H_INCLUDED

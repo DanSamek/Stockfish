@@ -129,6 +129,7 @@ void update_all_stats(const Position&      pos,
                       Depth                depth,
                       Move                 TTMove,
                       int                  moveCount);
+void update_capture_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
 
 }  // namespace
 
@@ -1883,6 +1884,8 @@ void update_all_stats(const Position&      pos,
         // Increase stats for the best move in case it was a capture move
         capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
         captureHistory[movedPiece][bestMove.to_sq()][capturedPiece] << bonus * 1213 / 1024;
+
+        update_capture_continuation_histories(ss, movedPiece, bestMove.to_sq(), bonus);
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1896,6 +1899,8 @@ void update_all_stats(const Position&      pos,
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
         captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1388 / 1024;
+
+        update_capture_continuation_histories(ss, movedPiece, move.to_sq(), -malus);
     }
 }
 
@@ -1913,6 +1918,21 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
             break;
         if (((ss - i)->currentMove).is_ok())
             (*(ss - i)->continuationHistory)[pc][to] << bonus * weight / 1024;
+    }
+}
+
+
+void update_capture_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
+    static constexpr std::array<ConthistBonus, 6> conthist_bonuses = {
+            {{1, 1000}, {2, 500}, {3, 250}}};
+
+    for (const auto [i, weight] : conthist_bonuses)
+    {
+        // Only update the first 2 continuation histories if we are in check
+        if (ss->inCheck && i > 2)
+            break;
+        if (((ss - i)->currentMove).is_ok())
+            (*(ss - i)->captureContinuationHistory)[pc][to] << bonus * weight / 1024;
     }
 }
 
