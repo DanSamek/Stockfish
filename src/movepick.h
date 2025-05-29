@@ -45,9 +45,14 @@ class MovePicker {
                const LowPlyHistory*,
                const CapturePieceToHistory*,
                const PieceToHistory**,
+               const PieceToHistory**,
                const PawnHistory*,
                int);
-    MovePicker(const Position&, Move, int, const CapturePieceToHistory*);
+    MovePicker(const Position&,
+               Move,
+               int,
+               const CapturePieceToHistory*,
+               const PieceToHistory**);
     Move next_move();
     void skip_quiet_moves();
     bool can_move_king_or_pawn();
@@ -65,6 +70,7 @@ class MovePicker {
     const LowPlyHistory*         lowPlyHistory;
     const CapturePieceToHistory* captureHistory;
     const PieceToHistory**       continuationHistory;
+    const PieceToHistory**       captureContinuationHistory;
     const PawnHistory*           pawnHistory;
     Move                         ttMove;
     ExtMove *                    cur, *endCur, *endBadCaptures, *endBadQuiets;

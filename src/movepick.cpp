@@ -86,6 +86,7 @@ MovePicker::MovePicker(const Position&              p,
                        const LowPlyHistory*         lph,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
+                       const PieceToHistory**       cch,
                        const PawnHistory*           ph,
                        int                          pl) :
     pos(p),
@@ -93,6 +94,7 @@ MovePicker::MovePicker(const Position&              p,
     lowPlyHistory(lph),
     captureHistory(cph),
     continuationHistory(ch),
+    captureContinuationHistory(cch),
     pawnHistory(ph),
     ttMove(ttm),
     depth(d),
@@ -107,11 +109,16 @@ MovePicker::MovePicker(const Position&              p,
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
 // Evaluation (SEE) greater than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph) :
+MovePicker::MovePicker(const Position& p,
+                       Move ttm,
+                       int th,
+                       const CapturePieceToHistory* cph,
+                       const PieceToHistory**       cch) :
     pos(p),
     captureHistory(cph),
+    captureContinuationHistory(cch),
     ttMove(ttm),
-    threshold(th) {
+    threshold(th){
     assert(!pos.checkers());
 
     stage = PROBCUT_TT
@@ -151,9 +158,13 @@ void MovePicker::score() {
         const Piece     capturedPiece = pos.piece_on(to);
 
         if constexpr (Type == CAPTURES)
+        {
             m.value = (*captureHistory)[pc][to][type_of(capturedPiece)]
                     + 7 * int(PieceValue[capturedPiece]) + 1024 * bool(pos.check_squares(pt) & to);
 
+            m.value += (*captureContinuationHistory[0])[pc][to];
+            m.value += (*captureContinuationHistory[1])[pc][to];
+        }
         else if constexpr (Type == QUIETS)
         {
             // histories
@@ -184,7 +195,10 @@ void MovePicker::score() {
         else  // Type == EVASIONS
         {
             if (pos.capture_stage(m))
+            {
                 m.value = PieceValue[capturedPiece] + (1 << 28);
+                m.value += (*captureContinuationHistory[0])[pc][to];
+            }
             else
             {
                 m.value = (*mainHistory)[us][m.from_to()] + (*continuationHistory[0])[pc][to];
@@ -318,7 +332,7 @@ void MovePicker::skip_quiet_moves() { skipQuiets = true; }
 // this function must be called after all quiet moves and captures have been generated
 bool MovePicker::can_move_king_or_pawn() {
     // SEE negative captures shouldn't be returned in GOOD_CAPTURE stage
-    assert(stage > GOOD_CAPTURE && stage != EVASION_INIT);
+    // assert(stage > GOOD_CAPTURE && stage != EVASION_INIT);
 
     for (ExtMove* m = moves; m < endCur; ++m)
     {

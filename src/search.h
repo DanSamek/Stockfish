@@ -295,6 +295,7 @@ class Worker {
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
     TTMoveHistory ttMoveHistory;
+    CaptureContinuationHistory captureContinuationHistory[2][2];
 
    private:
     void iterative_deepening();

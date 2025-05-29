@@ -257,6 +257,8 @@ void Search::Worker::iterative_deepening() {
     {
         (ss - i)->continuationHistory =
           &this->continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
+        (ss - i)->captureContinuationHistory =
+                &this->captureContinuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
     }
@@ -543,7 +545,6 @@ void Search::Worker::clear() {
     pawnCorrectionHistory.fill(5);
     minorPieceCorrectionHistory.fill(0);
     nonPawnCorrectionHistory.fill(0);
-
     ttMoveHistory = 0;
 
     for (auto& to : continuationCorrectionHistory)
@@ -555,6 +556,12 @@ void Search::Worker::clear() {
             for (auto& to : continuationHistory[inCheck][c])
                 for (auto& h : to)
                     h.fill(-473);
+
+    for (bool inCheck : {false, true})
+        for (StatsType c : {NoCaptures, Captures})
+            for (auto& to : captureContinuationHistory[inCheck][c])
+                for (auto& h : to)
+                    h.fill(0);
 
     for (size_t i = 1; i < reductions.size(); ++i)
         reductions[i] = int(2796 / 128.0 * std::log(i));
@@ -873,6 +880,7 @@ Value Search::Worker::search(
 
         ss->currentMove                   = Move::null();
         ss->continuationHistory           = &thisThread->continuationHistory[0][0][NO_PIECE][0];
+        ss->captureContinuationHistory    = &thisThread->captureContinuationHistory[0][0][NO_PIECE][0];
         ss->continuationCorrectionHistory = &thisThread->continuationCorrectionHistory[NO_PIECE][0];
 
         do_null_move(pos, st);
@@ -924,7 +932,10 @@ Value Search::Worker::search(
     {
         assert(probCutBeta < VALUE_INFINITE && probCutBeta > beta);
 
-        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory);
+        const PieceToHistory* captConstHist[] ={
+                (ss - 1)->captureContinuationHistory, (ss - 2)->captureContinuationHistory};
+
+        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory, captConstHist);
         Depth      probCutDepth = std::max(depth - (4 + cutNode), 0);
 
         while ((move = mp.next_move()) != Move::none())
@@ -942,7 +953,9 @@ Value Search::Worker::search(
 
             ss->currentMove = move;
             ss->continuationHistory =
-              &this->continuationHistory[ss->inCheck][true][movedPiece][move.to_sq()];
+                    &this->continuationHistory[ss->inCheck][true][movedPiece][move.to_sq()];
+            ss->captureContinuationHistory =
+                    &this->captureContinuationHistory[ss->inCheck][true][movedPiece][move.to_sq()];
             ss->continuationCorrectionHistory =
               &this->continuationCorrectionHistory[movedPiece][move.to_sq()];
 
@@ -981,8 +994,11 @@ moves_loop:  // When in check, search starts here
       (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
 
 
+    const PieceToHistory* captConstHist[] ={
+        (ss - 1)->captureContinuationHistory, (ss - 2)->captureContinuationHistory};
+
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, captConstHist, &thisThread->pawnHistory, ss->ply);
 
     value = bestValue;
 
@@ -1194,6 +1210,8 @@ moves_loop:  // When in check, search starts here
         ss->currentMove = move;
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
+        ss->captureContinuationHistory =
+                &thisThread->captureContinuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
         ss->continuationCorrectionHistory =
           &thisThread->continuationCorrectionHistory[movedPiece][move.to_sq()];
         uint64_t nodeCount = rootNode ? uint64_t(nodes) : 0;
@@ -1473,6 +1491,7 @@ moves_loop:  // When in check, search starts here
         Piece capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
         thisThread->captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1080;
+        update_capture_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, 285);
     }
 
     if (PvNode)
@@ -1630,13 +1649,16 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
                                         (ss - 2)->continuationHistory};
 
+    const PieceToHistory* capConstHist[] = {(ss - 1)->captureContinuationHistory,
+                                            (ss - 2)->captureContinuationHistory};
+
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
 
     // Initialize a MovePicker object for the current position, and prepare to search
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, capConstHist, &thisThread->pawnHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1703,6 +1725,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         ss->currentMove = move;
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
+        ss->captureContinuationHistory =
+                &thisThread->captureContinuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
         ss->continuationCorrectionHistory =
           &thisThread->continuationCorrectionHistory[movedPiece][move.to_sq()];
 
@@ -1923,14 +1947,11 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
 
 void update_capture_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
-    static constexpr std::array<ConthistBonus, 6> conthist_bonuses = {
-            {{1, 1000}, {2, 500}, {3, 250}}};
+    static constexpr std::array<ConthistBonus, 2> conthist_bonuses = {
+            {{1, 900}, {2, 450}}};
 
     for (const auto [i, weight] : conthist_bonuses)
     {
-        // Only update the first 2 continuation histories if we are in check
-        if (ss->inCheck && i > 2)
-            break;
         if (((ss - i)->currentMove).is_ok())
             (*(ss - i)->captureContinuationHistory)[pc][to] << bonus * weight / 1024;
     }
