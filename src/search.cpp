@@ -1491,7 +1491,7 @@ moves_loop:  // When in check, search starts here
         Piece capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
         thisThread->captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1080;
-        update_capture_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, 200);
+        update_capture_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, std::min(depth * 100, 1000));
     }
 
     if (PvNode)
@@ -1948,7 +1948,7 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
 void update_capture_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
     static constexpr std::array<ConthistBonus, 2> conthist_bonuses = {
-            {{1, 1000}, {2, 500}}};
+            {{1, 1024}, {2, 512}}};
 
     for (const auto [i, weight] : conthist_bonuses)
     {
