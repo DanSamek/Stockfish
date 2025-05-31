@@ -542,7 +542,7 @@ void Search::Worker::clear() {
     pawnCorrectionHistory.fill(5);
     minorPieceCorrectionHistory.fill(0);
     nonPawnCorrectionHistory.fill(0);
-    kingHistory.fill(0);
+    kingHistory.fill(-500);
 
     ttMoveHistory = 0;
 
