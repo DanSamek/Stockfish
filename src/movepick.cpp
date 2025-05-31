@@ -131,6 +131,7 @@ void MovePicker::score() {
     Color us = pos.side_to_move();
 
     [[maybe_unused]] Bitboard threatenedPieces, threatByLesser[QUEEN + 1];
+    [[maybe_unused]] Square kingSquare;
     if constexpr (Type == QUIETS)
     {
         threatByLesser[KNIGHT] = threatByLesser[BISHOP] = pos.attacks_by<PAWN>(~us);
@@ -142,6 +143,8 @@ void MovePicker::score() {
         threatenedPieces = (pos.pieces(us, QUEEN) & threatByLesser[QUEEN])
                          | (pos.pieces(us, ROOK) & threatByLesser[ROOK])
                          | (pos.pieces(us, KNIGHT, BISHOP) & threatByLesser[KNIGHT]);
+
+        kingSquare = pos.square<KING>(us);
     }
 
     for (auto& m : *this)
@@ -182,7 +185,7 @@ void MovePicker::score() {
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.from_to()] / (1 + ply);
 
-            m.value += (*kingHistory)[us][rank_of(pos.square<KING>(us))][m.from_to()];
+            m.value += (*kingHistory)[kingSquare][pc][to];
         }
 
         else  // Type == EVASIONS
