@@ -1935,7 +1935,7 @@ void update_quiet_histories(
     workerThread.pawnHistory[pIndex][pos.moved_piece(move)][move.to_sq()]
       << bonus * (bonus > 0 ? 705 : 450) / 1024;
 
-    workerThread.kingHistory[us][rank_of(pos.square<KING>(us))][move.from_to()] << bonus / 2;
+    workerThread.kingHistory[pos.square<KING>(us)][pos.moved_piece(move)][move.to_sq()] << bonus / 2;
 }
 
 }
