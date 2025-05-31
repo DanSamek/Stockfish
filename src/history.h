@@ -33,10 +33,11 @@
 
 namespace Stockfish {
 
-constexpr int PAWN_HISTORY_SIZE        = 512;    // has to be a power of 2
-constexpr int CORRECTION_HISTORY_SIZE  = 32768;  // has to be a power of 2
-constexpr int CORRECTION_HISTORY_LIMIT = 1024;
-constexpr int LOW_PLY_HISTORY_SIZE     = 5;
+constexpr int PAWN_HISTORY_SIZE            = 512;    // has to be a power of 2
+constexpr int CORRECTION_HISTORY_SIZE      = 32768;  // has to be a power of 2
+constexpr int CORRECTION_HISTORY_LIMIT     = 1024;
+constexpr int LOW_PLY_HISTORY_SIZE         = 5;
+constexpr int LOW_PLY_CAPTURE_HISTORY_SIZE = 4;
 
 static_assert((PAWN_HISTORY_SIZE & (PAWN_HISTORY_SIZE - 1)) == 0,
               "PAWN_HISTORY_SIZE has to be a power of 2");
@@ -167,6 +168,9 @@ template<CorrHistType T>
 using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
+
+using LowPlyCaptureHistory =
+        Stats<std::int16_t, 7183, LOW_PLY_CAPTURE_HISTORY_SIZE, int(SQUARE_NB) * int(SQUARE_NB)>;
 
 }  // namespace Stockfish
 

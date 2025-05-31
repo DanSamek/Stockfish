@@ -286,6 +286,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(86);
+    lowPlyCaptureHistory.fill(0);
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
@@ -544,6 +545,8 @@ void Search::Worker::clear() {
     nonPawnCorrectionHistory.fill(0);
 
     ttMoveHistory = 0;
+
+    lowPlyCaptureHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -981,7 +984,8 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, &thisThread->lowPlyCaptureHistory,
+                  ss->ply);
 
     value = bestValue;
 
@@ -1635,7 +1639,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, &thisThread->lowPlyCaptureHistory,
+                  ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1883,6 +1888,9 @@ void update_all_stats(const Position&      pos,
         // Increase stats for the best move in case it was a capture move
         capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
         captureHistory[movedPiece][bestMove.to_sq()][capturedPiece] << bonus * 1213 / 1024;
+
+        if (ss->ply < LOW_PLY_CAPTURE_HISTORY_SIZE)
+            workerThread.lowPlyCaptureHistory[ss->ply][bestMove.from_to()] << bonus * 750 / 1024;
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1896,6 +1904,10 @@ void update_all_stats(const Position&      pos,
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
         captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1388 / 1024;
+
+        if (ss->ply < LOW_PLY_CAPTURE_HISTORY_SIZE)
+            workerThread.lowPlyCaptureHistory[ss->ply][move.from_to()] << -malus * 750 / 1024;
+
     }
 }
 

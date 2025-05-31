@@ -23,7 +23,6 @@
 #include <utility>
 
 #include "bitboard.h"
-#include "misc.h"
 #include "position.h"
 
 namespace Stockfish {
@@ -87,6 +86,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const PawnHistory*           ph,
+                       const LowPlyCaptureHistory * lpch,
                        int                          pl) :
     pos(p),
     mainHistory(mh),
@@ -94,6 +94,7 @@ MovePicker::MovePicker(const Position&              p,
     captureHistory(cph),
     continuationHistory(ch),
     pawnHistory(ph),
+    lowPlyCaptureHistory(lpch),
     ttMove(ttm),
     depth(d),
     ply(pl) {
@@ -107,7 +108,10 @@ MovePicker::MovePicker(const Position&              p,
 
 // MovePicker constructor for ProbCut: we generate captures with Static Exchange
 // Evaluation (SEE) greater than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceToHistory* cph) :
+MovePicker::MovePicker(const Position& p,
+                       Move ttm,
+                       int th,
+                       const CapturePieceToHistory* cph) :
     pos(p),
     captureHistory(cph),
     ttMove(ttm),
@@ -151,9 +155,13 @@ void MovePicker::score() {
         const Piece     capturedPiece = pos.piece_on(to);
 
         if constexpr (Type == CAPTURES)
+        {
             m.value = (*captureHistory)[pc][to][type_of(capturedPiece)]
                     + 7 * int(PieceValue[capturedPiece]) + 1024 * bool(pos.check_squares(pt) & to);
 
+            if (ply < LOW_PLY_CAPTURE_HISTORY_SIZE && lowPlyCaptureHistory)
+                m.value += (*lowPlyCaptureHistory)[ply][m.from_to()] / (1 + ply);
+        }
         else if constexpr (Type == QUIETS)
         {
             // histories
