@@ -168,7 +168,7 @@ using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
 
-using KingHistory = Stats<std::int16_t, 10692, COLOR_NB, RANK_NB, int(SQUARE_NB) * int(SQUARE_NB)>;
+using KingHistory = Stats<std::int16_t, 10692, SQUARE_NB, PIECE_NB, SQUARE_NB>;
 
 }  // namespace Stockfish
 
