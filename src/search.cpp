@@ -258,6 +258,7 @@ void Search::Worker::iterative_deepening() {
           &this->continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
+        (ss - i)->captureMoveStreak             = 0;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
@@ -655,6 +656,7 @@ Value Search::Worker::search(
     ss->statScore       = 0;
     ss->isPvNode        = PvNode;
     (ss + 2)->cutoffCnt = 0;
+    ss->captureMoveStreak = ((ss - 1)->captureMoveStreak + 1) * (priorCapture && priorReduction <= 1);
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -835,6 +837,11 @@ Value Search::Worker::search(
         depth++;
     if (priorReduction >= 1 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 175)
         depth--;
+
+    if (ss->captureMoveStreak > 2) {
+        depth++;
+        ss->captureMoveStreak = 0;
+    }
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
