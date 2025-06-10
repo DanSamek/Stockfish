@@ -602,7 +602,7 @@ Value Search::Worker::search(
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
-    bool  capture, ttCapture;
+    bool  capture;
     int   priorReduction;
     Piece movedPiece;
 
@@ -667,7 +667,7 @@ Value Search::Worker::search(
                             : Move::none();
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
-    ttCapture    = ttData.move && pos.capture_stage(ttData.move);
+    ss->ttCapture= ttData.move && pos.capture_stage(ttData.move);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
@@ -682,7 +682,7 @@ Value Search::Worker::search(
         if (ttData.move && ttData.value >= beta)
         {
             // Bonus for a quiet ttMove that fails high
-            if (!ttCapture)
+            if (!ss->ttCapture)
                 update_quiet_histories(pos, ss, *this, ttData.move,
                                        std::min(125 * depth - 77, 1157));
 
@@ -846,7 +846,7 @@ Value Search::Worker::search(
         };
 
         if (!ss->ttPv && depth < 14 && eval - futility_margin(depth) >= beta && eval >= beta
-            && (!ttData.move || ttCapture) && !is_loss(beta) && !is_win(eval))
+            && (!ttData.move || ss->ttCapture) && !is_loss(beta) && !is_win(eval))
             return beta + (eval - beta) / 3;
     }
 
@@ -1132,10 +1132,10 @@ moves_loop:  // When in check, search starts here
             if (value < singularBeta)
             {
                 int corrValAdj   = std::abs(correctionValue) / 248400;
-                int doubleMargin = -4 + 244 * PvNode - 206 * !ttCapture - corrValAdj
+                int doubleMargin = -4 + 244 * PvNode - 206 * !ss->ttCapture - corrValAdj
                                  - 997 * ttMoveHistory / 131072
                                  - (ss->ply > thisThread->rootDepth) * 47;
-                int tripleMargin = 84 + 269 * PvNode - 253 * !ttCapture + 91 * ss->ttPv - corrValAdj
+                int tripleMargin = 84 + 269 * PvNode - 253 * !ss->ttCapture + 91 * ss->ttPv - corrValAdj
                                  - (ss->ply * 2 > thisThread->rootDepth * 3) * 54;
 
                 extension =
@@ -1200,7 +1200,7 @@ moves_loop:  // When in check, search starts here
             r += 2864 + 966 * !ttData.move;
 
         // Increase reduction if ttMove is a capture
-        if (ttCapture)
+        if (ss->ttCapture)
             r += 1210 + (depth < 8) * 963;
 
         // Increase reduction if next ply has a lot of fail high
@@ -1434,6 +1434,7 @@ moves_loop:  // When in check, search starts here
         bonusScale += 174 * ((ss - 1)->moveCount > 8);
         bonusScale += 144 * (!ss->inCheck && bestValue <= ss->staticEval - 104);
         bonusScale += 128 * (!(ss - 1)->inCheck && bestValue <= -(ss - 1)->staticEval - 82);
+        bonusScale +=  64 * (ss - 1)->ttCapture;
 
         bonusScale = std::max(bonusScale, 0);
 
