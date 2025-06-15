@@ -258,6 +258,7 @@ void Search::Worker::iterative_deepening() {
           &this->continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->continuationCorrectionHistory = &this->continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
+        (ss - i)->inRzls                        = false;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
@@ -603,7 +604,7 @@ Value Search::Worker::search(
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
-    int   priorReduction;
+    int   priorReduction, rzlsBound;
     Piece movedPiece;
 
     ValueList<Move, 32> capturesSearched;
@@ -668,6 +669,7 @@ Value Search::Worker::search(
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
+    ss->inRzls   = (ss - 1)->inRzls;
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
@@ -955,6 +957,17 @@ Value Search::Worker::search(
         }
     }
 
+    rzlsBound = 200 + 125 * depth * depth;
+    if (!PvNode && !excludedMove && depth <= 8 && !ss->inRzls
+        && !is_decisive(alpha) && !improving && eval + rzlsBound <= alpha)
+    {
+        ss->inRzls = true;
+        value = search<NonPV>(pos, ss, alpha - 1, alpha, depth - 3, false);
+        ss->inRzls = false;
+        if (value + rzlsBound / 2 <= alpha)
+            return value;
+    }
+
 moves_loop:  // When in check, search starts here
 
     // Step 12. A small Probcut idea
@@ -1122,6 +1135,7 @@ moves_loop:  // When in check, search starts here
             && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
             && ttData.depth >= depth - 3)
         {
+
             Value singularBeta  = ttData.value - (58 + 76 * (ss->ttPv && !PvNode)) * depth / 57;
             Depth singularDepth = newDepth / 2;
 
