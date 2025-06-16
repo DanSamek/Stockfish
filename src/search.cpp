@@ -74,8 +74,8 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
     const auto  m     = (ss - 1)->currentMove;
     const auto  pcv   = w.pawnCorrectionHistory[pawn_structure_index<Correction>(pos)][us];
     const auto  micv  = w.minorPieceCorrectionHistory[minor_piece_index(pos)][us];
-    const auto  wnpcv = w.nonPawnCorrectionHistory[non_pawn_index<WHITE>(pos)][WHITE][us];
-    const auto  bnpcv = w.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us];
+    const auto  wnpcv = w.nonPawnCorrectionHistory[non_pawn_index<WHITE, Correction>(pos)][WHITE][us];
+    const auto  bnpcv = w.nonPawnCorrectionHistory[non_pawn_index<BLACK, Correction>(pos)][BLACK][us];
     const auto  cntcv =
       m.is_ok() ? (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                  : 0;
@@ -101,9 +101,9 @@ void update_correction_history(const Position& pos,
     workerThread.pawnCorrectionHistory[pawn_structure_index<Correction>(pos)][us]
       << bonus * 111 / 128;
     workerThread.minorPieceCorrectionHistory[minor_piece_index(pos)][us] << bonus * 151 / 128;
-    workerThread.nonPawnCorrectionHistory[non_pawn_index<WHITE>(pos)][WHITE][us]
+    workerThread.nonPawnCorrectionHistory[non_pawn_index<WHITE, Correction>(pos)][WHITE][us]
       << bonus * nonPawnWeight / 128;
-    workerThread.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]
+    workerThread.nonPawnCorrectionHistory[non_pawn_index<BLACK, Correction>(pos)][BLACK][us]
       << bonus * nonPawnWeight / 128;
 
     if (m.is_ok())
@@ -544,6 +544,7 @@ void Search::Worker::clear() {
     nonPawnCorrectionHistory.fill(0);
 
     ttMoveHistory = 0;
+    nonPawnHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -969,7 +970,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, &thisThread->nonPawnHistory, ss->ply);
 
     value = bestValue;
 
@@ -1618,7 +1619,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->lowPlyHistory,
-                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, ss->ply);
+                  &thisThread->captureHistory, contHist, &thisThread->pawnHistory, &thisThread->nonPawnHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1916,6 +1917,9 @@ void update_quiet_histories(
     int pIndex = pawn_structure_index(pos);
     workerThread.pawnHistory[pIndex][pos.moved_piece(move)][move.to_sq()]
       << bonus * (bonus > 0 ? 705 : 450) / 1024;
+
+    int npIndex = us == WHITE ? non_pawn_index<WHITE>(pos) : non_pawn_index<BLACK>(pos);
+    workerThread.nonPawnHistory[npIndex][pos.moved_piece(move)][move.to_sq()] << bonus * 400 / 1024;
 }
 
 }

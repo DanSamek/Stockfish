@@ -46,6 +46,7 @@ class MovePicker {
                const CapturePieceToHistory*,
                const PieceToHistory**,
                const PawnHistory*,
+               const NonPawnHistory*,
                int);
     MovePicker(const Position&, Move, int, const CapturePieceToHistory*);
     Move next_move();
@@ -66,6 +67,7 @@ class MovePicker {
     const CapturePieceToHistory* captureHistory;
     const PieceToHistory**       continuationHistory;
     const PawnHistory*           pawnHistory;
+    const NonPawnHistory*        nonPawnHistory;
     Move                         ttMove;
     ExtMove *                    cur, *endCur, *endBadCaptures, *endBadQuiets;
     int                          stage;

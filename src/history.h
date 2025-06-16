@@ -37,6 +37,7 @@ constexpr int PAWN_HISTORY_SIZE        = 512;    // has to be a power of 2
 constexpr int CORRECTION_HISTORY_SIZE  = 32768;  // has to be a power of 2
 constexpr int CORRECTION_HISTORY_LIMIT = 1024;
 constexpr int LOW_PLY_HISTORY_SIZE     = 5;
+constexpr int NON_PAWN_HISTORY_SIZE    = 1024;
 
 static_assert((PAWN_HISTORY_SIZE & (PAWN_HISTORY_SIZE - 1)) == 0,
               "PAWN_HISTORY_SIZE has to be a power of 2");
@@ -58,9 +59,9 @@ inline int minor_piece_index(const Position& pos) {
     return pos.minor_piece_key() & (CORRECTION_HISTORY_SIZE - 1);
 }
 
-template<Color c>
+template<Color c, PawnHistoryType T = Normal>
 inline int non_pawn_index(const Position& pos) {
-    return pos.non_pawn_key(c) & (CORRECTION_HISTORY_SIZE - 1);
+    return pos.non_pawn_key(c) & ((T == Normal ? NON_PAWN_HISTORY_SIZE : CORRECTION_HISTORY_SIZE) - 1);
 }
 
 // StatsEntry is the container of various numerical statistics. We use a class
@@ -167,6 +168,8 @@ template<CorrHistType T>
 using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
+
+using NonPawnHistory = Stats<std::int16_t, 8192, NON_PAWN_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
 
 }  // namespace Stockfish
 
