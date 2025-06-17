@@ -37,6 +37,8 @@ constexpr int PAWN_HISTORY_SIZE        = 512;    // has to be a power of 2
 constexpr int CORRECTION_HISTORY_SIZE  = 32768;  // has to be a power of 2
 constexpr int CORRECTION_HISTORY_LIMIT = 1024;
 constexpr int LOW_PLY_HISTORY_SIZE     = 5;
+constexpr int MINOR_PIECE_HISTORY_SIZE = 512;    // has to be a power of 2
+
 
 static_assert((PAWN_HISTORY_SIZE & (PAWN_HISTORY_SIZE - 1)) == 0,
               "PAWN_HISTORY_SIZE has to be a power of 2");
@@ -44,18 +46,19 @@ static_assert((PAWN_HISTORY_SIZE & (PAWN_HISTORY_SIZE - 1)) == 0,
 static_assert((CORRECTION_HISTORY_SIZE & (CORRECTION_HISTORY_SIZE - 1)) == 0,
               "CORRECTION_HISTORY_SIZE has to be a power of 2");
 
-enum PawnHistoryType {
+enum HistoryType {
     Normal,
     Correction
 };
 
-template<PawnHistoryType T = Normal>
+template<HistoryType T = Normal>
 inline int pawn_structure_index(const Position& pos) {
     return pos.pawn_key() & ((T == Normal ? PAWN_HISTORY_SIZE : CORRECTION_HISTORY_SIZE) - 1);
 }
 
+template<HistoryType T = Normal>
 inline int minor_piece_index(const Position& pos) {
-    return pos.minor_piece_key() & (CORRECTION_HISTORY_SIZE - 1);
+    return pos.minor_piece_key() & ((T == Normal ? MINOR_PIECE_HISTORY_SIZE : CORRECTION_HISTORY_SIZE) - 1);
 }
 
 template<Color c>
@@ -167,6 +170,8 @@ template<CorrHistType T>
 using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
+
+using MinorPieceHistory = Stats<std::int16_t, 8192, MINOR_PIECE_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
 
 }  // namespace Stockfish
 
