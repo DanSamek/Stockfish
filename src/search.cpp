@@ -544,6 +544,7 @@ void Search::Worker::clear() {
     nonPawnCorrectionHistory.fill(0);
 
     ttMoveHistory = 0;
+    singularCorrectionHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -1122,7 +1123,8 @@ moves_loop:  // When in check, search starts here
             && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
             && ttData.depth >= depth - 3)
         {
-            Value singularBeta  = ttData.value - (58 + 76 * (ss->ttPv && !PvNode)) * depth / 57;
+            Value schBonus = singularCorrectionHistory[us][move.from_to()] / 100;
+            Value singularBeta  = ttData.value - (58 + 76 * (ss->ttPv && !PvNode)) * depth / 57 + schBonus;
             Depth singularDepth = newDepth / 2;
 
             ss->excludedMove = move;
@@ -1168,6 +1170,13 @@ moves_loop:  // When in check, search starts here
             // over current beta
             else if (cutNode)
                 extension = -2;
+
+            if (!ss->inCheck && !pos.capture(move))
+            {
+                const Value difference = singularBeta - value;
+                const Value bonus = std::clamp((difference * depth) / 16, -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
+                singularCorrectionHistory[us][move.from_to()] << bonus;
+            }
         }
 
         // Step 16. Make the move

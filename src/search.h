@@ -294,6 +294,7 @@ class Worker {
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
     TTMoveHistory ttMoveHistory;
+    SingularCorrectionHistory singularCorrectionHistory;
 
    private:
     void iterative_deepening();
