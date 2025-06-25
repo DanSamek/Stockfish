@@ -1123,7 +1123,7 @@ moves_loop:  // When in check, search starts here
             && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
             && ttData.depth >= depth - 3)
         {
-            Value schBonus = singularCorrectionHistory[us][move.from_to()] / 100;
+            Value schBonus = !PvNode * singularCorrectionHistory[us][move.from_to()] / 200;
             Value singularBeta  = ttData.value - (58 + 76 * (ss->ttPv && !PvNode)) * depth / 57 + schBonus;
             Depth singularDepth = newDepth / 2;
 
@@ -1174,7 +1174,7 @@ moves_loop:  // When in check, search starts here
             if (!ss->inCheck && !pos.capture(move))
             {
                 const Value difference = singularBeta - value;
-                const Value bonus = std::clamp((difference * depth) / 16, -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
+                const Value bonus = std::clamp((difference * depth) / 8, -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
                 singularCorrectionHistory[us][move.from_to()] << bonus;
             }
         }
