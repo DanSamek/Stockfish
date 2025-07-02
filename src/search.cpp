@@ -1125,6 +1125,10 @@ moves_loop:  // When in check, search starts here
             Value singularBeta  = ttData.value - (58 + 76 * (ss->ttPv && !PvNode)) * depth / 57;
             Depth singularDepth = newDepth / 2;
 
+            Value windowSize = std::abs(alpha - beta);
+            if (windowSize > 500)
+                singularDepth++;
+
             ss->excludedMove = move;
             value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
             ss->excludedMove = Move::none();
