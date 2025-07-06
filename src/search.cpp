@@ -51,13 +51,6 @@
 
 namespace Stockfish {
 
-int hp0 = 0, hp1 = 0;
-int chp[6] {0, 0, 0, 0, 0, 0};
-
-TUNE(SetRange(-1024, 1024), chp);
-TUNE(SetRange(-1024, 1024), hp0,
-     SetRange(-1024, 1024), hp1);
-
 namespace TB = Tablebases;
 
 void syzygy_extend_pv(const OptionsMap&            options,
@@ -1897,6 +1890,8 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
     static constexpr std::array<ConthistBonus, 6> conthist_bonuses = {
       {{1, 1092}, {2, 631}, {3, 294}, {4, 517}, {5, 126}, {6, 445}}};
 
+    static constexpr int chp[6] {66, 99, 5, -34, 40, -45};
+
     for (const auto [i, weight] : conthist_bonuses)
     {
         // Only update the first 2 continuation histories if we are in check
@@ -1916,14 +1911,14 @@ void update_quiet_histories(
     workerThread.mainHistory[us][move.from_to()] << bonus;  // Untuned to prevent duplicate effort
 
     if (ss->ply < LOW_PLY_HISTORY_SIZE)
-        workerThread.lowPlyHistory[ss->ply][move.from_to()] << (bonus * 792 / 1024) + hp0;
+        workerThread.lowPlyHistory[ss->ply][move.from_to()] << (bonus * 792 / 1024) + 39;
 
     update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(),
                                   bonus * (bonus > 0 ? 1082 : 784) / 1024);
 
     int pIndex = pawn_structure_index(pos);
     workerThread.pawnHistory[pIndex][pos.moved_piece(move)][move.to_sq()]
-      << (bonus * (bonus > 0 ? 705 : 450) / 1024) + hp1;
+      << (bonus * (bonus > 0 ? 705 : 450) / 1024) + 65;
 }
 
 }
