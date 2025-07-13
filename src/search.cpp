@@ -92,6 +92,10 @@ Value to_corrected_static_eval(const Value v, const int cv) {
     return std::clamp(v + cv / 131072, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 }
 
+
+int cho[5] {0, 0, 0, 0, 0};
+TUNE(SetRange(-1024, 1024), cho);
+
 void update_correction_history(const Position& pos,
                                Stack* const    ss,
                                Search::Worker& workerThread,
@@ -102,16 +106,16 @@ void update_correction_history(const Position& pos,
     static constexpr int nonPawnWeight = 172;
 
     workerThread.pawnCorrectionHistory[pawn_structure_index<Correction>(pos)][us]
-      << bonus * 111 / 128;
-    workerThread.minorPieceCorrectionHistory[minor_piece_index(pos)][us] << bonus * 151 / 128;
+      << (bonus * 111 / 128) + cho[0];
+    workerThread.minorPieceCorrectionHistory[minor_piece_index(pos)][us] << (bonus * 151 / 128) + cho[1];
     workerThread.nonPawnCorrectionHistory[non_pawn_index<WHITE>(pos)][WHITE][us]
-      << bonus * nonPawnWeight / 128;
+      << (bonus * nonPawnWeight / 128) + cho[2];
     workerThread.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]
-      << bonus * nonPawnWeight / 128;
+      << (bonus * nonPawnWeight / 128) + cho[3];
 
     if (m.is_ok())
         (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
-          << bonus * 141 / 128;
+          << (bonus * 141 / 128) + cho[4];
 }
 
 // Add a small random component to draw evaluations to avoid 3-fold blindness
