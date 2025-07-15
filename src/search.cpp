@@ -93,9 +93,6 @@ Value to_corrected_static_eval(const Value v, const int cv) {
 }
 
 
-int cho[5] {0, 0, 0, 0, 0};
-TUNE(SetRange(-1024, 1024), cho);
-
 void update_correction_history(const Position& pos,
                                Stack* const    ss,
                                Search::Worker& workerThread,
@@ -104,18 +101,19 @@ void update_correction_history(const Position& pos,
     const Color us = pos.side_to_move();
 
     static constexpr int nonPawnWeight = 172;
+    static constexpr int offsets[5] {-13, 11, 36, 22, 36};
 
     workerThread.pawnCorrectionHistory[pawn_structure_index<Correction>(pos)][us]
-      << (bonus * 111 / 128) + cho[0];
-    workerThread.minorPieceCorrectionHistory[minor_piece_index(pos)][us] << (bonus * 151 / 128) + cho[1];
+      << (bonus * 111 / 128) + offsets[0];
+    workerThread.minorPieceCorrectionHistory[minor_piece_index(pos)][us] << (bonus * 151 / 128) + offsets[1];
     workerThread.nonPawnCorrectionHistory[non_pawn_index<WHITE>(pos)][WHITE][us]
-      << (bonus * nonPawnWeight / 128) + cho[2];
+      << (bonus * nonPawnWeight / 128) + offsets[2];
     workerThread.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]
-      << (bonus * nonPawnWeight / 128) + cho[3];
+      << (bonus * nonPawnWeight / 128) + offsets[3];
 
     if (m.is_ok())
         (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
-          << (bonus * 141 / 128) + cho[4];
+          << (bonus * 141 / 128) + offsets[4];
 }
 
 // Add a small random component to draw evaluations to avoid 3-fold blindness
