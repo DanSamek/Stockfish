@@ -1263,7 +1263,7 @@ moves_loop:  // When in check, search starts here
                 update_continuation_histories(ss, movedPiece, move.to_sq(), 1508);
 
                 if (ss->ply < LOW_PLY_HISTORY_SIZE && !capture)
-                    this->lowPlyHistory[ss->ply][move.from_to()] << 450;
+                    this->lowPlyHistory[ss->ply][move.from_to()] << 700;
             }
             else if (value > alpha && value < bestValue + 9)
                 newDepth--;
