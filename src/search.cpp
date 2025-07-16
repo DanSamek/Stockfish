@@ -1261,6 +1261,9 @@ moves_loop:  // When in check, search starts here
 
                 // Post LMR continuation history updates
                 update_continuation_histories(ss, movedPiece, move.to_sq(), 1508);
+
+                if (ss->ply < LOW_PLY_HISTORY_SIZE && !capture)
+                    this->lowPlyHistory[ss->ply][move.from_to()] << 200;
             }
             else if (value > alpha && value < bestValue + 9)
                 newDepth--;
