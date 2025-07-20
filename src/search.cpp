@@ -606,7 +606,7 @@ Value Search::Worker::search(
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
     int   priorReduction;
-    Piece movedPiece;
+    Piece movedPiece, capturedPiece;
 
     SearchedList capturesSearched;
     SearchedList quietsSearched;
@@ -1008,10 +1008,11 @@ moves_loop:  // When in check, search starts here
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
-        extension  = 0;
-        capture    = pos.capture_stage(move);
-        movedPiece = pos.moved_piece(move);
-        givesCheck = pos.gives_check(move);
+        extension       = 0;
+        capture         = pos.capture_stage(move);
+        movedPiece      = pos.moved_piece(move);
+        givesCheck      = pos.gives_check(move);
+        capturedPiece   = pos.piece_on(move.to_sq());
 
         (ss + 1)->quietMoveStreak = (!capture && !givesCheck) ? (ss->quietMoveStreak + 1) : 0;
 
@@ -1041,7 +1042,7 @@ moves_loop:  // When in check, search starts here
 
             if (capture || givesCheck)
             {
-                Piece capturedPiece = pos.piece_on(move.to_sq());
+                capturedPiece = pos.piece_on(move.to_sq());
                 int   captHist =
                   thisThread->captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
 
@@ -1261,6 +1262,9 @@ moves_loop:  // When in check, search starts here
 
                 // Post LMR continuation history updates
                 update_continuation_histories(ss, movedPiece, move.to_sq(), 1508);
+
+                if (capture)
+                    captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)] << 100;
             }
             else if (value > alpha && value < bestValue + 9)
                 newDepth--;
@@ -1454,7 +1458,7 @@ moves_loop:  // When in check, search starts here
     // Bonus for prior capture countermove that caused the fail low
     else if (priorCapture && prevSq != SQ_NONE)
     {
-        Piece capturedPiece = pos.captured_piece();
+        capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
         thisThread->captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1080;
     }
