@@ -1170,6 +1170,10 @@ moves_loop:  // When in check, search starts here
             // over current beta
             else if (cutNode)
                 extension = -2;
+
+            else if (value + 7 >= beta && !is_decisive(value))
+                extension = -1;
+
         }
 
         // Step 16. Make the move
