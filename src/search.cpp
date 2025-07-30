@@ -1353,7 +1353,7 @@ moves_loop:  // When in check, search starts here
                 if (value >= beta)
                 {
                     // (* Scaler) Especially if they make cutoffCnt increment more often.
-                    ss->cutoffCnt += (extension < 2) || PvNode;
+                    ss->cutoffCnt += (extension < 2 && cutNode) || PvNode;
                     assert(value >= beta);  // Fail high
                     break;
                 }
