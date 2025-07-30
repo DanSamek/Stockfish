@@ -612,9 +612,8 @@ Value Search::Worker::search(
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
-    bool  capture, ttCapture;
+    bool  ttCapture;
     int   priorReduction;
-    Piece movedPiece;
 
     SearchedList capturesSearched;
     SearchedList quietsSearched;
@@ -867,7 +866,8 @@ Value Search::Worker::search(
         ss->currentMove                   = Move::null();
         ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
         ss->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
-
+        ss->movedPiece                    = NO_PIECE;
+        ss->isCapture                     = false;
         do_null_move(pos, st);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
@@ -927,7 +927,8 @@ Value Search::Worker::search(
 
             assert(pos.capture_stage(move));
 
-            movedPiece = pos.moved_piece(move);
+            ss->movedPiece = pos.moved_piece(move);
+            ss->isCapture  = true;
 
             do_move(pos, move, st, ss);
 
@@ -1002,12 +1003,12 @@ moves_loop:  // When in check, search starts here
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
-        extension  = 0;
-        capture    = pos.capture_stage(move);
-        movedPiece = pos.moved_piece(move);
-        givesCheck = pos.gives_check(move);
+        extension       = 0;
+        ss->isCapture   = pos.capture_stage(move);
+        ss->movedPiece  = pos.moved_piece(move);
+        givesCheck      = pos.gives_check(move);
 
-        (ss + 1)->quietMoveStreak = (!capture && !givesCheck) ? (ss->quietMoveStreak + 1) : 0;
+        (ss + 1)->quietMoveStreak = (!ss->isCapture && !givesCheck) ? (ss->quietMoveStreak + 1) : 0;
 
         // Calculate new depth for this move
         newDepth = depth - 1;
@@ -1033,10 +1034,10 @@ moves_loop:  // When in check, search starts here
             // Reduced depth of the next LMR search
             int lmrDepth = newDepth - r / 1024;
 
-            if (capture || givesCheck)
+            if (ss->isCapture || givesCheck)
             {
                 Piece capturedPiece = pos.piece_on(move.to_sq());
-                int   captHist = captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
+                int   captHist = captureHistory[ss->movedPiece][move.to_sq()][type_of(capturedPiece)];
 
                 // Futility pruning for captures
                 if (!givesCheck && lmrDepth < 7 && !ss->inCheck)
@@ -1053,8 +1054,8 @@ moves_loop:  // When in check, search starts here
                 if (!pos.see_ge(move, -margin))
                 {
                     bool mayStalemateTrap =
-                      depth > 2 && alpha < 0 && pos.non_pawn_material(us) == PieceValue[movedPiece]
-                      && PieceValue[movedPiece] >= RookValue
+                      depth > 2 && alpha < 0 && pos.non_pawn_material(us) == PieceValue[ss->movedPiece]
+                      && PieceValue[ss->movedPiece] >= RookValue
                       // it can't be stalemate if we moved a piece adjacent to the king
                       && !(attacks_bb<KING>(pos.square<KING>(us)) & move.from_sq())
                       && !mp.can_move_king_or_pawn();
@@ -1066,9 +1067,9 @@ moves_loop:  // When in check, search starts here
             }
             else
             {
-                int history = (*contHist[0])[movedPiece][move.to_sq()]
-                            + (*contHist[1])[movedPiece][move.to_sq()]
-                            + pawnHistory[pawn_structure_index(pos)][movedPiece][move.to_sq()];
+                int history = (*contHist[0])[ss->movedPiece][move.to_sq()]
+                            + (*contHist[1])[ss->movedPiece][move.to_sq()]
+                            + pawnHistory[pawn_structure_index(pos)][ss->movedPiece][move.to_sq()];
 
                 // Continuation history based pruning
                 if (history < -4361 * depth)
@@ -1123,6 +1124,9 @@ moves_loop:  // When in check, search starts here
             ss->excludedMove = move;
             value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
             ss->excludedMove = Move::none();
+
+            ss->movedPiece = pos.moved_piece(move); // reset moved piece.
+            ss->isCapture  = pos.capture_stage(move);
 
             if (value < singularBeta)
             {
@@ -1200,13 +1204,13 @@ moves_loop:  // When in check, search starts here
         if (move == ttData.move)
             r -= 2043;
 
-        if (capture)
+        if (ss->isCapture)
             ss->statScore = 782 * int(PieceValue[pos.captured_piece()]) / 128
-                          + captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())];
+                          + captureHistory[ss->movedPiece][move.to_sq()][type_of(pos.captured_piece())];
         else
             ss->statScore = 2 * mainHistory[us][move.from_to()]
-                          + (*contHist[0])[movedPiece][move.to_sq()]
-                          + (*contHist[1])[movedPiece][move.to_sq()];
+                          + (*contHist[0])[ss->movedPiece][move.to_sq()]
+                          + (*contHist[1])[ss->movedPiece][move.to_sq()];
 
         // Decrease/increase reduction for moves with a good/bad history
         r -= ss->statScore * 789 / 8192;
@@ -1241,7 +1245,7 @@ moves_loop:  // When in check, search starts here
                     value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
 
                 // Post LMR continuation history updates
-                update_continuation_histories(ss, movedPiece, move.to_sq(), 1412);
+                update_continuation_histories(ss, ss->movedPiece, move.to_sq(), 1412);
             }
         }
 
@@ -1371,7 +1375,7 @@ moves_loop:  // When in check, search starts here
         // remember it, to update its stats later.
         if (move != bestMove && moveCount <= SEARCHEDLIST_CAPACITY)
         {
-            if (capture)
+            if (ss->isCapture)
                 capturesSearched.push_back(move);
             else
                 quietsSearched.push_back(move);
@@ -1424,6 +1428,14 @@ moves_loop:  // When in check, search starts here
         if (type_of(pos.piece_on(prevSq)) != PAWN && ((ss - 1)->currentMove).type_of() != PROMOTION)
             pawnHistory[pawn_structure_index(pos)][pos.piece_on(prevSq)][prevSq]
               << scaledBonus * 1127 / 32768;
+
+        if ((ss - 2)->currentMove.is_ok() && (ss - 2)->movedPiece != NO_PIECE && !(ss - 2)->isCapture)
+        {
+            assert(ss->ply > 1);
+            Piece movedPiece2Ply = (ss - 2)->movedPiece;
+            Square prevSq2Ply    = (ss - 2)->currentMove.to_sq();
+            update_continuation_histories(ss - 2, movedPiece2Ply, prevSq2Ply, -scaledBonus * 70 / 32768);
+        }
     }
 
     // Bonus for prior capture countermove that caused the fail low
