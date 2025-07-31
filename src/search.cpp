@@ -61,11 +61,6 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
-int a1 = 0, a2 = 0, a3 = 0, a4 = 0, a6 = 0, a7 = 0, a8 = 0;
-int lph[LOW_PLY_HISTORY_SIZE] = {0, 0, 0, 0, 0};
-int cph[6] = {0, 0, 0, 0, 0, 0};
-TUNE(SetRange(-1024,1024), a1, a2, a3, a4, a6, a7, a8, lph, cph);
-
 namespace {
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
@@ -817,10 +812,10 @@ Value Search::Worker::search(
     if (((ss - 1)->currentMove).is_ok() && !(ss - 1)->inCheck && !priorCapture)
     {
         int bonus = std::clamp(-10 * int((ss - 1)->staticEval + ss->staticEval), -1979, 1561) + 630;
-        mainHistory[~us][((ss - 1)->currentMove).from_to()] << (bonus * 935 / 1024) + a1;
+        mainHistory[~us][((ss - 1)->currentMove).from_to()] << (bonus * 935 / 1024) + 29;
         if (type_of(pos.piece_on(prevSq)) != PAWN && ((ss - 1)->currentMove).type_of() != PROMOTION)
             pawnHistory[pawn_structure_index(pos)][pos.piece_on(prevSq)][prevSq]
-              << (bonus * 1428 / 1024) + a2;
+              << (bonus * 1428 / 1024) + 5;
     }
 
     // Set up the improving flag, which is true if current static evaluation is
@@ -1424,11 +1419,11 @@ moves_loop:  // When in check, search starts here
         update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq,
                                       scaledBonus * 397 / 32768);
 
-        mainHistory[~us][((ss - 1)->currentMove).from_to()] << (scaledBonus * 224 / 32768) + a3;
+        mainHistory[~us][((ss - 1)->currentMove).from_to()] << (scaledBonus * 224 / 32768) + 10;
 
         if (type_of(pos.piece_on(prevSq)) != PAWN && ((ss - 1)->currentMove).type_of() != PROMOTION)
             pawnHistory[pawn_structure_index(pos)][pos.piece_on(prevSq)][prevSq]
-              << (scaledBonus * 1127 / 32768) + a4;
+              << (scaledBonus * 1127 / 32768) + 10;
     }
 
     // Bonus for prior capture countermove that caused the fail low
@@ -1835,7 +1830,7 @@ void update_all_stats(const Position& pos,
     {
         // Increase stats for the best move in case it was a capture move
         capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
-        captureHistory[movedPiece][bestMove.to_sq()][capturedPiece] << (bonus * 1235 / 1024) + a7;
+        captureHistory[movedPiece][bestMove.to_sq()][capturedPiece] << (bonus * 1235 / 1024) + 1;
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1848,7 +1843,7 @@ void update_all_stats(const Position& pos,
     {
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
-        captureHistory[movedPiece][move.to_sq()][capturedPiece] << (-malus * 1354 / 1024) + a8;
+        captureHistory[movedPiece][move.to_sq()][capturedPiece] << (-malus * 1354 / 1024) - 30;
     }
 }
 
@@ -1858,6 +1853,8 @@ void update_all_stats(const Position& pos,
 void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
     static constexpr std::array<ConthistBonus, 6> conthist_bonuses = {
       {{1, 1108}, {2, 652}, {3, 273}, {4, 572}, {5, 126}, {6, 449}}};
+
+    static constexpr int cph[6] = {124, 91, 97, 86, 66, -19};
 
     for (const auto [i, weight] : conthist_bonuses)
     {
@@ -1877,6 +1874,7 @@ void update_quiet_histories(
     Color us = pos.side_to_move();
     workerThread.mainHistory[us][move.from_to()] << bonus;  // Untuned to prevent duplicate effort
 
+    static constexpr int lph[LOW_PLY_HISTORY_SIZE] = {-20, -39, -50, 45, -16};
     if (ss->ply < LOW_PLY_HISTORY_SIZE)
         workerThread.lowPlyHistory[ss->ply][move.from_to()] << (bonus * 771 / 1024) + lph[ss->ply];
 
@@ -1885,7 +1883,7 @@ void update_quiet_histories(
 
     int pIndex = pawn_structure_index(pos);
     workerThread.pawnHistory[pIndex][pos.moved_piece(move)][move.to_sq()]
-      << (bonus * (bonus > 0 ? 704 : 439) / 1024) + a6;
+      << (bonus * (bonus > 0 ? 704 : 439) / 1024) + 54;
 }
 
 }
