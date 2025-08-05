@@ -1427,6 +1427,9 @@ moves_loop:  // When in check, search starts here
         if (type_of(pos.piece_on(prevSq)) != PAWN && ((ss - 1)->currentMove).type_of() != PROMOTION)
             pawnHistory[pawn_history_index(pos)][pos.piece_on(prevSq)][prevSq]
               << scaledBonus * 1127 / 32768;
+
+        if ((ss - 1)->ply < LOW_PLY_HISTORY_SIZE)
+            lowPlyHistory[(ss - 1)->ply][(ss - 1)->currentMove.from_to()] << scaledBonus * 450 / 32768;
     }
 
     // Bonus for prior capture countermove that caused the fail low
