@@ -611,7 +611,7 @@ Value Search::Worker::search(
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
-    bool  capture, ttCapture;
+    bool  capture, ttCapture, shouldSwRed;
     int   priorReduction;
     Piece movedPiece;
 
@@ -619,12 +619,14 @@ Value Search::Worker::search(
     SearchedList quietsSearched;
 
     // Step 1. Initialize node
-    ss->inCheck   = pos.checkers();
-    priorCapture  = pos.captured_piece();
-    Color us      = pos.side_to_move();
-    ss->moveCount = 0;
-    bestValue     = -VALUE_INFINITE;
-    maxValue      = VALUE_INFINITE;
+    ss->inCheck     = pos.checkers();
+    priorCapture    = pos.captured_piece();
+    Color us        = pos.side_to_move();
+    ss->moveCount   = 0;
+    bestValue       = -VALUE_INFINITE;
+    maxValue        = VALUE_INFINITE;
+    ss->windowSize  = std::abs(alpha - beta);
+    shouldSwRed     = !PvNode && (ss - 1)->windowSize > 1 && (ss - 1)->windowSize < 10;
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -1180,6 +1182,9 @@ moves_loop:  // When in check, search starts here
         r += 650;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 69;
         r -= std::abs(correctionValue) / 27160;
+
+        if (shouldSwRed)
+            r += 256;
 
         // Increase reduction for cut nodes
         if (cutNode)
