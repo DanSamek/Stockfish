@@ -817,7 +817,8 @@ Value Search::Worker::search(
             pawnHistory[pawn_history_index(pos)][pos.piece_on(prevSq)][prevSq]
               << bonus * 1428 / 1024;
 
-        update_continuation_histories((ss - 1), pos.piece_on(prevSq), prevSq, bonus * 256 / 1024);
+        if ((ss - 1)->ply < LOW_PLY_HISTORY_SIZE)
+            lowPlyHistory[(ss - 1)->ply][(ss - 1)->currentMove.from_to()] << bonus * 512 / 1024;
     }
 
     // Set up the improving flag, which is true if current static evaluation is
