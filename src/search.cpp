@@ -1184,7 +1184,7 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 27160;
 
         if (shouldSwRed)
-            r += 256;
+            r += 512;
 
         // Increase reduction for cut nodes
         if (cutNode)
