@@ -815,6 +815,9 @@ Value Search::Worker::search(
             && ((ss - 1)->currentMove).type_of() != PROMOTION)
             pawnHistory[pawn_history_index(pos)][pos.piece_on(prevSq)][prevSq]
               << bonus * 1428 / 1024;
+
+        if ((ss - 1)->ply < LOW_PLY_HISTORY_SIZE)
+            lowPlyHistory[(ss - 1)->ply][(ss - 1)->currentMove.from_to()] << bonus * 128 / 1024;
     }
 
     // Set up the improving flag, which is true if current static evaluation is
