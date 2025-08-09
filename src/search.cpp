@@ -63,6 +63,21 @@ using namespace Search;
 
 namespace {
 
+int a0 = 931;
+TUNE(a0);
+
+int a1 = 2510, a2 = 963, a3 = 916, a4 = 943, a5 = 1180;
+TUNE(a1, a2, a3, a4, a5);
+
+int a6 = 650, a7 = 69;
+TUNE(a6, a7);
+
+int a8 = 3000, a9 = 1024;
+TUNE(a8, a9);
+
+int a10 = 1350, a11 = 935, a12 = 763, a13 = 51, a14 = 2043;
+TUNE(a10, a11, a12, a13, a14);
+
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 
@@ -1019,7 +1034,7 @@ moves_loop:  // When in check, search starts here
         // Smaller or even negative value is better for short time controls
         // Bigger value is better for long time controls
         if (ss->ttPv)
-            r += 931;
+            r += a0;
 
         // Step 14. Pruning at shallow depth.
         // Depth conditions are important for mate finding.
@@ -1173,32 +1188,31 @@ moves_loop:  // When in check, search starts here
 
         // Decrease reduction for PvNodes (*Scaler)
         if (ss->ttPv)
-            r -= 2510 + PvNode * 963 + (ttData.value > alpha) * 916
-               + (ttData.depth >= depth) * (943 + cutNode * 1180);
+              r -= a1 + PvNode * a2 + (ttData.value > alpha) * a3
+                   + (ttData.depth >= depth) * (a4 + cutNode * a5);
 
         // These reduction adjustments have no proven non-linear scaling
-
-        r += 650;  // Base reduction offset to compensate for other tweaks
-        r -= moveCount * 69;
+        r += a6;  // Base reduction offset to compensate for other tweaks
+        r -= moveCount * a7;
         r -= std::abs(correctionValue) / 27160;
 
         // Increase reduction for cut nodes
         if (cutNode)
-            r += 3000 + 1024 * !ttData.move;
+            r += a8 + a9 * !ttData.move;
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
-            r += 1350;
+            r += a10;
 
         // Increase reduction if next ply has a lot of fail high
         if ((ss + 1)->cutoffCnt > 2)
-            r += 935 + allNode * 763;
+            r += a11 + allNode * a12;
 
-        r += (ss + 1)->quietMoveStreak * 51;
+        r += (ss + 1)->quietMoveStreak * a13;
 
         // For first picked move (ttMove) reduce reduction
         if (move == ttData.move)
-            r -= 2043;
+            r -= a14;
 
         if (capture)
             ss->statScore = 782 * int(PieceValue[pos.captured_piece()]) / 128
