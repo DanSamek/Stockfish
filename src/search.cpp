@@ -818,7 +818,7 @@ Value Search::Worker::search(
               << bonus * 1428 / 1024;
 
         if ((ss - 1)->ply < LOW_PLY_HISTORY_SIZE)
-            lowPlyHistory[(ss - 1)->ply][(ss - 1)->currentMove.from_to()] << bonus;
+            lowPlyHistory[(ss - 1)->ply][(ss - 1)->currentMove.from_to()] << bonus * 128 / 1024;
     }
 
     // Set up the improving flag, which is true if current static evaluation is
