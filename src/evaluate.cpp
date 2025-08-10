@@ -47,15 +47,7 @@ int Eval::simple_eval(const Position& pos) {
 }
 
 bool Eval::use_smallnet(const Position& pos) {
-    if (std::abs(simple_eval(pos)) > 962) return true;
-
-    int nonKingPieces = pos.count<ALL_PIECES>() - 2;
-    assert(nonKingPieces >= 0);
-    
-    if (nonKingPieces == pos.count<PAWN>()) return true;
-    if (pos.has_both_sides<ROOK>(pos) || pos.has_both_sides<QUEEN>(pos)) return false;
-
-    return nonKingPieces <= 3;
+    return std::abs(simple_eval(pos)) > 962 || pos.count<ALL_PIECES>() <= 4;
 }
 
 // Evaluate is the evaluator for the outer world. It returns a static evaluation
