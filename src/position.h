@@ -101,6 +101,8 @@ class Position {
     int count() const;
     template<PieceType Pt>
     Square square(Color c) const;
+    template<PieceType Pt>
+    bool has_both_sides(const Position& pos) const;
 
     // Castling
     CastlingRights castling_rights(Color c) const;
@@ -242,6 +244,11 @@ template<PieceType Pt>
 inline Square Position::square(Color c) const {
     assert(count<Pt>(c) == 1);
     return lsb(pieces(c, Pt));
+}
+
+template<PieceType Pt>
+inline bool Position::has_both_sides(const Position& pos) const {
+    return pos.count<Pt>(WHITE) && pos.count<Pt>(BLACK);
 }
 
 inline Square Position::ep_square() const { return st->epSquare; }

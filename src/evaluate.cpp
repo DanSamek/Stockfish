@@ -46,7 +46,17 @@ int Eval::simple_eval(const Position& pos) {
          + (pos.non_pawn_material(c) - pos.non_pawn_material(~c));
 }
 
-bool Eval::use_smallnet(const Position& pos) { return std::abs(simple_eval(pos)) > 962; }
+bool Eval::use_smallnet(const Position& pos) {
+    if (std::abs(simple_eval(pos)) > 962) return true;
+
+    int nonKingPieces = pos.count<ALL_PIECES>() - 2;
+    assert(nonKingPieces >= 0);
+    
+    if (nonKingPieces == pos.count<PAWN>()) return true;
+    if (pos.has_both_sides<ROOK>(pos) || pos.has_both_sides<QUEEN>(pos)) return false;
+
+    return nonKingPieces <= 3;
+}
 
 // Evaluate is the evaluator for the outer world. It returns a static evaluation
 // of the position from the point of view of the side to move.
