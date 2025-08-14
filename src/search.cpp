@@ -61,6 +61,9 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
+int a1 = -753, a2 = 1042, a3 = 1288, a4 = 1431;
+TUNE(a1, a2, a3, a4);
+
 namespace {
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
@@ -545,7 +548,7 @@ void Search::Worker::undo_null_move(Position& pos) { pos.undo_null_move(); }
 // Reset histories, usually before a new game
 void Search::Worker::clear() {
     mainHistory.fill(64);
-    captureHistory.fill(-753);
+    captureHistory.fill(a1);
     pawnHistory.fill(-1275);
     pawnCorrectionHistory.fill(5);
     minorPieceCorrectionHistory.fill(0);
@@ -609,7 +612,7 @@ Value Search::Worker::search(
     Move  move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
-    bool  givesCheck, improving, priorCapture, opponentWorsening;
+    bool  givesCheck, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
     int   priorReduction;
     Piece movedPiece;
@@ -777,7 +780,7 @@ Value Search::Worker::search(
     {
         // Skip early pruning when in check
         ss->staticEval = eval = (ss - 2)->staticEval;
-        improving             = false;
+        ss->improving         = false;
         goto moves_loop;
     }
     else if (excludedMove)
@@ -821,7 +824,7 @@ Value Search::Worker::search(
     // bigger than the previous static evaluation at our turn (if we were in
     // check at our previous move we go back until we weren't in check) and is
     // false otherwise. The improving flag is used in various pruning heuristics.
-    improving         = ss->staticEval > (ss - 2)->staticEval;
+    ss->improving     = ss->staticEval > (ss - 2)->staticEval;
     opponentWorsening = ss->staticEval > -(ss - 1)->staticEval;
 
     if (priorReduction >= (depth < 10 ? 1 : 3) && !opponentWorsening)
@@ -842,7 +845,7 @@ Value Search::Worker::search(
             Value futilityMult = 90 - 20 * (cutNode && !ss->ttHit);
 
             return futilityMult * d                      //
-                 - improving * futilityMult * 2          //
+                 - ss->improving * futilityMult * 2      //
                  - opponentWorsening * futilityMult / 3  //
                  + (ss - 1)->statScore / 356             //
                  + std::abs(correctionValue) / 171290;
@@ -893,7 +896,7 @@ Value Search::Worker::search(
         }
     }
 
-    improving |= ss->staticEval >= beta;
+    ss->improving |= ss->staticEval >= beta;
 
     // Step 10. Internal iterative reductions
     // At sufficient depth, reduce depth for PV/Cut nodes without a TTMove.
@@ -904,7 +907,7 @@ Value Search::Worker::search(
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
-    probCutBeta = beta + 215 - 60 * improving;
+    probCutBeta = beta + 215 - 60 * ss->improving;
     if (depth >= 3
         && !is_decisive(beta)
         // If value from transposition table is lower than probCutBeta, don't attempt
@@ -913,7 +916,7 @@ Value Search::Worker::search(
     {
         assert(probCutBeta < VALUE_INFINITE && probCutBeta > beta);
 
-        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &captureHistory);
+        MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &captureHistory, ss->improving);
         Depth      dynamicReduction = (ss->staticEval - beta) / 300;
         Depth      probCutDepth     = std::max(depth - 5 - dynamicReduction, 0);
 
@@ -966,7 +969,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
-                  &pawnHistory, ss->ply);
+                  &pawnHistory, ss->ply, ss->improving);
 
     value = bestValue;
 
@@ -1013,7 +1016,7 @@ moves_loop:  // When in check, search starts here
 
         int delta = beta - alpha;
 
-        Depth r = reduction(improving, depth, moveCount, delta);
+        Depth r = reduction(ss->improving, depth, moveCount, delta);
 
         // Increase reduction for ttPv nodes (*Scaler)
         // Smaller or even negative value is better for short time controls
@@ -1026,7 +1029,7 @@ moves_loop:  // When in check, search starts here
         if (!rootNode && pos.non_pawn_material(us) && !is_loss(bestValue))
         {
             // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold
-            if (moveCount >= (3 + depth * depth) / (2 - improving))
+            if (moveCount >= (3 + depth * depth) / (2 - ss->improving))
                 mp.skip_quiet_moves();
 
             // Reduced depth of the next LMR search
@@ -1035,7 +1038,7 @@ moves_loop:  // When in check, search starts here
             if (capture || givesCheck)
             {
                 Piece capturedPiece = pos.piece_on(move.to_sq());
-                int   captHist = captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
+                int   captHist = captureHistory[movedPiece][ss->improving][move.to_sq()][type_of(capturedPiece)];
 
                 // Futility pruning for captures
                 if (!givesCheck && lmrDepth < 7 && !ss->inCheck)
@@ -1202,7 +1205,7 @@ moves_loop:  // When in check, search starts here
 
         if (capture)
             ss->statScore = 782 * int(PieceValue[pos.captured_piece()]) / 128
-                          + captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())];
+                          + captureHistory[movedPiece][ss->improving][move.to_sq()][type_of(pos.captured_piece())];
         else
             ss->statScore = 2 * mainHistory[us][move.from_to()]
                           + (*contHist[0])[movedPiece][move.to_sq()]
@@ -1435,7 +1438,7 @@ moves_loop:  // When in check, search starts here
     {
         Piece capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
-        captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1042;
+        captureHistory[pos.piece_on(prevSq)][ss->improving][prevSq][type_of(capturedPiece)] << a2;
     }
 
     if (PvNode)
@@ -1597,7 +1600,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
-                  contHist, &pawnHistory, ss->ply);
+                  contHist, &pawnHistory, ss->ply, false);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1835,7 +1838,7 @@ void update_all_stats(const Position& pos,
     {
         // Increase stats for the best move in case it was a capture move
         capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
-        captureHistory[movedPiece][bestMove.to_sq()][capturedPiece] << captureBonus * 1288 / 1024;
+        captureHistory[movedPiece][ss->improving][bestMove.to_sq()][capturedPiece] << captureBonus * a3 / 1024;
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1849,7 +1852,7 @@ void update_all_stats(const Position& pos,
     {
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
-        captureHistory[movedPiece][move.to_sq()][capturedPiece] << -captureMalus * 1431 / 1024;
+        captureHistory[movedPiece][ss->improving][move.to_sq()][capturedPiece] << -captureMalus * a4 / 1024;
     }
 }
 
