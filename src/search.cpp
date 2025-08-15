@@ -62,9 +62,9 @@ void syzygy_extend_pv(const OptionsMap&            options,
 using namespace Search;
 
 int lph_fill[LOW_PLY_HISTORY_SIZE] = {89, 89, 89, 89, 89};
-TUNE(lph_fill)
+TUNE(SetRange(-1024,1024), lph_fill)
 int mh_fill[COLOR_NB] = {64, 64};
-TUNE(mh_fill)
+TUNE(SetRange(-1024,1024), mh_fill)
 int ch_fill[PIECE_NB] = { -753, -753, -753, -753,
                           -753, -753, -753, -753,
                           -753, -753, -753, -753,
