@@ -545,7 +545,7 @@ void Search::Worker::undo_null_move(Position& pos) { pos.undo_null_move(); }
 // Reset histories, usually before a new game
 void Search::Worker::clear() {
     mainHistory.fill(64);
-    captureHistory.fill(-755);
+    captureHistory.fill(-767);
     pawnHistory.fill(-1275);
     pawnCorrectionHistory.fill(5);
     minorPieceCorrectionHistory.fill(0);
@@ -1435,7 +1435,7 @@ moves_loop:  // When in check, search starts here
     {
         Piece capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
-        captureHistory[pos.piece_on(prevSq)][ss->improving][prevSq][type_of(capturedPiece)] << 1054;
+        captureHistory[pos.piece_on(prevSq)][ss->improving][prevSq][type_of(capturedPiece)] << 1050;
     }
 
     if (PvNode)
@@ -1835,7 +1835,7 @@ void update_all_stats(const Position& pos,
     {
         // Increase stats for the best move in case it was a capture move
         capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
-        captureHistory[movedPiece][ss->improving][bestMove.to_sq()][capturedPiece] << captureBonus * 1310 / 1024;
+        captureHistory[movedPiece][ss->improving][bestMove.to_sq()][capturedPiece] << captureBonus * 1308 / 1024;
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1849,7 +1849,7 @@ void update_all_stats(const Position& pos,
     {
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
-        captureHistory[movedPiece][ss->improving][move.to_sq()][capturedPiece] << -captureMalus * 1460 / 1024;
+        captureHistory[movedPiece][ss->improving][move.to_sq()][capturedPiece] << -captureMalus * 1436 / 1024;
     }
 }
 
