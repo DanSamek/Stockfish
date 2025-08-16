@@ -61,11 +61,6 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
-int a1 = -753, a2 = 1042, a3 = 1288, a4 = 1431;
-TUNE(a1, a2, a3, a4);
-int a10 = -753, a20 = 1042, a30 = 1288, a40 = 1431;
-TUNE(a10, a20, a30, a40);
-
 namespace {
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
@@ -550,8 +545,8 @@ void Search::Worker::undo_null_move(Position& pos) { pos.undo_null_move(); }
 // Reset histories, usually before a new game
 void Search::Worker::clear() {
     mainHistory.fill(64);
-    captureHistory[true].fill(a1);
-    captureHistory[false].fill(a10);
+    captureHistory[true].fill(-740);
+    captureHistory[false].fill(-712);
     pawnHistory.fill(-1275);
     pawnCorrectionHistory.fill(5);
     minorPieceCorrectionHistory.fill(0);
@@ -1441,7 +1436,7 @@ moves_loop:  // When in check, search starts here
     {
         Piece capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
-        captureHistory[pos.piece_on(prevSq)][ss->improving][prevSq][type_of(capturedPiece)] << (ss->improving ? a2 : a20);
+        captureHistory[pos.piece_on(prevSq)][ss->improving][prevSq][type_of(capturedPiece)] << (ss->improving ? 1012 : 995);
     }
 
     if (PvNode)
@@ -1841,7 +1836,7 @@ void update_all_stats(const Position& pos,
     {
         // Increase stats for the best move in case it was a capture move
         capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
-        captureHistory[movedPiece][ss->improving][bestMove.to_sq()][capturedPiece] << (ss->improving ? captureBonus * a3 / 1024 : captureBonus * a30 / 1024);
+        captureHistory[movedPiece][ss->improving][bestMove.to_sq()][capturedPiece] << (ss->improving ? captureBonus * 1297 / 1024 : captureBonus * 1244 / 1024);
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1855,7 +1850,7 @@ void update_all_stats(const Position& pos,
     {
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
-        captureHistory[movedPiece][ss->improving][move.to_sq()][capturedPiece] << (ss->improving ?  -captureMalus * a4 / 1024 : -captureMalus * a40 / 1024);
+        captureHistory[movedPiece][ss->improving][move.to_sq()][capturedPiece] << (ss->improving ?  -captureMalus * 1347 / 1024 : -captureMalus * 1435 / 1024);
     }
 }
 
