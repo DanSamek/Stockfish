@@ -61,16 +61,6 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
-int lph_fill[LOW_PLY_HISTORY_SIZE] = {89, 89, 89, 89, 89};
-TUNE(SetRange(-1024,1024), lph_fill)
-int mh_fill[COLOR_NB] = {64, 64};
-TUNE(SetRange(-1024,1024), mh_fill)
-int ch_fill[PIECE_NB] = { -753, -753, -753, -753,
-                          -753, -753, -753, -753,
-                          -753, -753, -753, -753,
-                          -753, -753, -753, -753};
-TUNE(SetRange(-1024,1024), ch_fill)
-
 namespace {
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
@@ -296,6 +286,8 @@ void Search::Worker::iterative_deepening() {
 
     int searchAgainCounter = 0;
 
+
+    static constexpr int lph_fill[LOW_PLY_HISTORY_SIZE] = {142, 42, 136, 116, 106};
     for (int i = 0; i < LOW_PLY_HISTORY_SIZE; i++){
         lowPlyHistory[i].fill(lph_fill[i]);
     }
@@ -556,9 +548,15 @@ void Search::Worker::undo_null_move(Position& pos) { pos.undo_null_move(); }
 
 // Reset histories, usually before a new game
 void Search::Worker::clear() {
+    static constexpr int mh_fill[COLOR_NB] = {46, 126};
     for (int i = 0; i < COLOR_NB; i++){
         mainHistory.fill(mh_fill[i]);
     }
+
+    static constexpr int ch_fill[PIECE_NB] = { -751, -778, -732, -737,
+                                               -787, -694, -768, -717,
+                                               -690, -717, -835, -798,
+                                               -738, -694, -710, -812};
     for (int i = 0; i < PIECE_NB; i++) {
         captureHistory.fill(ch_fill[i]);
     }
