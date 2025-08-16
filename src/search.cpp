@@ -557,10 +557,10 @@ void Search::Worker::undo_null_move(Position& pos) { pos.undo_null_move(); }
 // Reset histories, usually before a new game
 void Search::Worker::clear() {
     for (int i = 0; i < COLOR_NB; i++){
-        mainHistory.fill(mh_fill[i]);
+        mainHistory[i].fill(mh_fill[i]);
     }
     for (int i = 0; i < PIECE_NB; i++) {
-        captureHistory.fill(ch_fill[i]);
+        captureHistory[i].fill(ch_fill[i]);
     }
     pawnHistory.fill(-1275);
     pawnCorrectionHistory.fill(5);
