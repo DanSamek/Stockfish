@@ -61,6 +61,16 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
+int lph_fill[LOW_PLY_HISTORY_SIZE] = {0, 0, 0, 0, 0};
+TUNE(SetRange(-1024,1024), lph_fill)
+int mh_fill[COLOR_NB] = {0, 0};
+TUNE(SetRange(-1024,1024), mh_fill)
+int ch_fill[PIECE_NB] = { 0, 0, 0, 0,
+                          0, 0, 0, 0,
+                          0, 0, 0, 0,
+                          0, 0, 0, 0};
+TUNE(SetRange(-1024,1024), ch_fill)
+
 namespace {
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
@@ -286,7 +296,9 @@ void Search::Worker::iterative_deepening() {
 
     int searchAgainCounter = 0;
 
-    lowPlyHistory.fill(89);
+    for (int i = 0; i < LOW_PLY_HISTORY_SIZE; i++){
+         lowPlyHistory[i].fill(lph_fill[i]);
+    }
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
@@ -544,8 +556,12 @@ void Search::Worker::undo_null_move(Position& pos) { pos.undo_null_move(); }
 
 // Reset histories, usually before a new game
 void Search::Worker::clear() {
-    mainHistory.fill(64);
-    captureHistory.fill(-753);
+    for (int i = 0; i < COLOR_NB; i++){
+        mainHistory[i].fill(mh_fill[i]);
+    }
+    for (int i = 0; i < PIECE_NB; i++) {
+        captureHistory[i].fill(ch_fill[i]);
+    }
     pawnHistory.fill(-1275);
     pawnCorrectionHistory.fill(5);
     minorPieceCorrectionHistory.fill(0);
