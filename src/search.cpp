@@ -286,7 +286,10 @@ void Search::Worker::iterative_deepening() {
 
     int searchAgainCounter = 0;
 
-    lowPlyHistory.fill(97);
+    constexpr int lph_fill[LOW_PLY_HISTORY_SIZE] = {39, 102, 101, 77, 99};
+    for (int i = 0; i < LOW_PLY_HISTORY_SIZE; i++){
+        lowPlyHistory[i].fill(lph_fill[i]);
+    }
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
@@ -544,8 +547,22 @@ void Search::Worker::undo_null_move(Position& pos) { pos.undo_null_move(); }
 
 // Reset histories, usually before a new game
 void Search::Worker::clear() {
-    mainHistory.fill(68);
-    captureHistory.fill(-689);
+    constexpr int mh_fill[COLOR_NB] = {11, 105};
+    for (int i = 0; i < COLOR_NB; i++){
+        mainHistory[i].fill(mh_fill[i]);
+    }
+
+    constexpr int ch_fill[PIECE_NB] = {
+        -818, -748, -739, -746,
+        -728, -706, -766, -759,
+        -712, -810, -742, -739,
+        -775, -746, -773, -728
+    };
+
+    for (int i = 0; i < PIECE_NB; i++){
+        captureHistory[i].fill(ch_fill[i]);
+    }
+
     pawnHistory.fill(-1238);
     pawnCorrectionHistory.fill(5);
     minorPieceCorrectionHistory.fill(0);
