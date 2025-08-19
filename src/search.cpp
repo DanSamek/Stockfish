@@ -1368,6 +1368,8 @@ moves_loop:  // When in check, search starts here
                 assert(depth > 0);
                 alpha = value;  // Update alpha! Always alpha < beta
             }
+            else if (extension >= 2)
+                improving = false;
         }
 
         // If the move is worse than some previously searched move,
