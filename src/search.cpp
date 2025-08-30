@@ -895,7 +895,7 @@ Value Search::Worker::search(
             if (v >= beta)
             {
                 ttWriter.write(posKey, value_to_tt(nullValue, ss->ply), ss->ttPv, BOUND_LOWER,
-                               nullMoveDepth, Move::null(), unadjustedStaticEval, tt.generation());
+                                    1, Move::null(), unadjustedStaticEval, tt.generation());
 
                 return nullValue;
             }
