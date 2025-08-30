@@ -864,6 +864,7 @@ Value Search::Worker::search(
 
         // Null move dynamic reduction based on depth
         Depth R = 6 + depth / 3;
+        Depth nullMoveDepth = depth - R;
 
         ss->currentMove                   = Move::null();
         ss->continuationHistory           = &continuationHistory[0][0][NO_PIECE][0];
@@ -871,7 +872,7 @@ Value Search::Worker::search(
 
         do_null_move(pos, st);
 
-        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
+        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, nullMoveDepth, false);
 
         undo_null_move(pos);
 
@@ -885,14 +886,19 @@ Value Search::Worker::search(
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
-            nmpMinPly = ss->ply + 3 * (depth - R) / 4;
+            nmpMinPly = ss->ply + 3 * nullMoveDepth / 4;
 
-            Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
+            Value v = search<NonPV>(pos, ss, beta - 1, beta, nullMoveDepth, false);
 
             nmpMinPly = 0;
 
             if (v >= beta)
+            {
+                ttWriter.write(posKey, value_to_tt(nullValue, ss->ply), ss->ttPv, BOUND_LOWER,
+                               nullMoveDepth, Move::null(), unadjustedStaticEval, tt.generation());
+
                 return nullValue;
+            }
         }
     }
 
