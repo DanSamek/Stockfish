@@ -959,7 +959,12 @@ moves_loop:  // When in check, search starts here
     probCutBeta = beta + 418;
     if ((ttData.bound & BOUND_LOWER) && ttData.depth >= depth - 4 && ttData.value >= probCutBeta
         && !is_decisive(beta) && is_valid(ttData.value) && !is_decisive(ttData.value))
+    {
+        if (prevSq != SQ_NONE && ((ss - 1)->moveCount == 1 + (ss - 1)->ttHit) && !priorCapture)
+            mainHistory[~us][((ss - 1)->currentMove).from_to()] << -std::min(250 * depth, 1250);
+
         return probCutBeta;
+    }
 
     const PieceToHistory* contHist[] = {
       (ss - 1)->continuationHistory, (ss - 2)->continuationHistory, (ss - 3)->continuationHistory,
