@@ -918,7 +918,7 @@ Value Search::Worker::search(
 
         MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &captureHistory);
         Depth      dynamicReduction = (ss->staticEval - beta) / 306;
-        Depth      probCutDepth     = std::max(depth - 5 - dynamicReduction, 0);
+        Depth      probcutBaseDepth = std::max(depth - 5 - dynamicReduction, 0) * 1024;
 
         while ((move = mp.next_move()) != Move::none())
         {
@@ -928,16 +928,23 @@ Value Search::Worker::search(
                 continue;
 
             assert(pos.capture_stage(move));
+            movedPiece = pos.moved_piece(move);
 
             do_move(pos, move, st, ss);
 
             // Perform a preliminary qsearch to verify that the move holds
             value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
 
+            ss->statScore = 512 * int(PieceValue[pos.captured_piece()]) / 128
+                                + captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())];
+
+            Depth probcutSearchDepth = (probcutBaseDepth + ss->statScore / 8192) / 1024;
+
             // If the qsearch held, perform the regular search
-            if (value >= probCutBeta && probCutDepth > 0)
-                value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, probCutDepth,
+            if (value >= probCutBeta && probcutSearchDepth > 0)
+                value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, probcutSearchDepth,
                                        !cutNode);
+
 
             undo_move(pos, move);
 
@@ -945,7 +952,7 @@ Value Search::Worker::search(
             {
                 // Save ProbCut data into transposition table
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
-                               probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
+                               probcutSearchDepth + 1, move, unadjustedStaticEval, tt.generation());
 
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);
