@@ -920,6 +920,7 @@ Value Search::Worker::search(
         Depth      dynamicReduction = (ss->staticEval - beta) / 306;
         Depth      probCutDepth     = std::max(depth - 5 - dynamicReduction, 0);
 
+        int moveCount = 0;
         while ((move = mp.next_move()) != Move::none())
         {
             assert(move.is_ok());
@@ -934,6 +935,7 @@ Value Search::Worker::search(
             // Perform a preliminary qsearch to verify that the move holds
             value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
 
+            ss->moveCount = ++moveCount;
             // If the qsearch held, perform the regular search
             if (value >= probCutBeta && probCutDepth > 0)
                 value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, probCutDepth,
