@@ -779,6 +779,7 @@ Value Search::Worker::search(
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
     const auto correctionValue      = correction_value(*this, pos, ss);
+
     if (ss->inCheck)
     {
         // Skip early pruning when in check
@@ -832,7 +833,8 @@ Value Search::Worker::search(
 
     if (priorReduction >= 3 && !opponentWorsening)
         depth++;
-    if (priorReduction >= 2 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 173)
+    if (priorReduction >= 2 && depth >= 2
+        && ss->staticEval + (ss - 1)->staticEval > 173 + (std::abs(correctionValue) / 1048576))
         depth--;
 
     // Step 7. Razoring
