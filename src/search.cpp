@@ -834,7 +834,7 @@ Value Search::Worker::search(
     if (priorReduction >= 3 && !opponentWorsening)
         depth++;
     if (priorReduction >= 2 && depth >= 2
-        && ss->staticEval + (ss - 1)->staticEval > 173 + (std::abs(correctionValue) / 1048576))
+        && ss->staticEval + (ss - 1)->staticEval > 173 + (std::abs(correctionValue) / 2097152))
         depth--;
 
     // Step 7. Razoring
