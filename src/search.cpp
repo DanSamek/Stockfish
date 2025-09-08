@@ -80,12 +80,11 @@ TUNE_ARR(p11, 1056);
 TUNE_ARR(p12, 1415);
 TUNE_ARR(p13, 1051);
 TUNE_ARR(p14, 814);
-TUNE_ARR(p15, 50);
 TUNE_ARR(p16, 2018);
 TUNE_ARR(p17, 794);
 TUNE_ARR(p18, 1118);
 
-TUNE(p1, p2, p3, p4, p5, p6, p7, p8,p10, p11, p12, p13, p14, p15, p16, p17, p18);
+TUNE(p1, p2, p3, p4, p5, p6, p7, p8,p10, p11, p12, p13, p14, p16, p17, p18);
 TUNE(SetRange(1, 128000), p9);
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
@@ -1223,7 +1222,7 @@ moves_loop:  // When in check, search starts here
         if ((ss + 1)->cutoffCnt > 2)
             r += p13[capture] + allNode * p14[capture];
 
-        r += (ss + 1)->quietMoveStreak * p15[capture];
+        r += (ss + 1)->quietMoveStreak * 50;
 
         // For first picked move (ttMove) reduce reduction
         if (move == ttData.move)
