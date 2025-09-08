@@ -63,6 +63,31 @@ using namespace Search;
 
 namespace {
 
+#define TUNE_ARR(name, value) \
+    int name[2] = {(value), (value)}
+
+TUNE_ARR(p1, 946);
+TUNE_ARR(p2, 2618);
+TUNE_ARR(p3, 991);
+TUNE_ARR(p4, 903);
+TUNE_ARR(p5, 978);
+TUNE_ARR(p6, 1051);
+TUNE_ARR(p7, 543);
+TUNE_ARR(p8, 66);
+TUNE_ARR(p9, 30450);
+TUNE_ARR(p10, 3094);
+TUNE_ARR(p11, 1056);
+TUNE_ARR(p12, 1415);
+TUNE_ARR(p13, 1051);
+TUNE_ARR(p14, 814);
+TUNE_ARR(p15, 50);
+TUNE_ARR(p16, 2018);
+TUNE_ARR(p17, 794);
+TUNE_ARR(p18, 1118);
+
+TUNE(p1, p2, p3, p4, p5, p6, p7, p8,p10, p11, p12, p13, p14, p15, p16, p17, p18);
+TUNE(SetRange(1, 128000), p9);
+
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 
@@ -1035,7 +1060,7 @@ moves_loop:  // When in check, search starts here
         // Smaller or even negative value is better for short time controls
         // Bigger value is better for long time controls
         if (ss->ttPv)
-            r += 946;
+            r += p1[capture];
 
         // Step 14. Pruning at shallow depth.
         // Depth conditions are important for mate finding.
@@ -1177,32 +1202,32 @@ moves_loop:  // When in check, search starts here
 
         // Decrease reduction for PvNodes (*Scaler)
         if (ss->ttPv)
-            r -= 2618 + PvNode * 991 + (ttData.value > alpha) * 903
-               + (ttData.depth >= depth) * (978 + cutNode * 1051);
+            r -= p2[capture] + PvNode * p3[capture] + (ttData.value > alpha) * p4[capture]
+               + (ttData.depth >= depth) * (p5[capture] + cutNode * p6[capture]);
 
         // These reduction adjustments have no proven non-linear scaling
 
-        r += 543;  // Base reduction offset to compensate for other tweaks
-        r -= moveCount * 66;
-        r -= std::abs(correctionValue) / 30450;
+        r += p7[capture];  // Base reduction offset to compensate for other tweaks
+        r -= moveCount * p8[capture];
+        r -= std::abs(correctionValue) / p9[capture];
 
         // Increase reduction for cut nodes
         if (cutNode)
-            r += 3094 + 1056 * !ttData.move;
+            r += p10[capture] + p11[capture] * !ttData.move;
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
-            r += 1415;
+            r += p12[capture];
 
         // Increase reduction if next ply has a lot of fail high
         if ((ss + 1)->cutoffCnt > 2)
-            r += 1051 + allNode * 814;
+            r += p13[capture] + allNode * p14[capture];
 
-        r += (ss + 1)->quietMoveStreak * 50;
+        r += (ss + 1)->quietMoveStreak * p15[capture];
 
         // For first picked move (ttMove) reduce reduction
         if (move == ttData.move)
-            r -= 2018;
+            r -= p16[capture];
 
         if (capture)
             ss->statScore = 803 * int(PieceValue[pos.captured_piece()]) / 128
@@ -1213,7 +1238,7 @@ moves_loop:  // When in check, search starts here
                           + (*contHist[1])[movedPiece][move.to_sq()];
 
         // Decrease/increase reduction for moves with a good/bad history
-        r -= ss->statScore * 794 / 8192;
+        r -= ss->statScore * p17[capture] / 8192;
 
         // Step 17. Late moves reduction / extension (LMR)
         if (depth >= 2 && moveCount > 1)
@@ -1254,7 +1279,7 @@ moves_loop:  // When in check, search starts here
         {
             // Increase reduction if ttMove is not present
             if (!ttData.move)
-                r += 1118;
+                r += p18[capture];
 
             // Note that if expected reduction is high, we reduce search depth here
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
