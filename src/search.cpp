@@ -63,29 +63,23 @@ using namespace Search;
 
 namespace {
 
-#define TUNE_ARR(name, value) \
-    int name[2] = {(value), (value)}
-
-TUNE_ARR(p1, 946);
-TUNE_ARR(p2, 2618);
-TUNE_ARR(p3, 991);
-TUNE_ARR(p4, 903);
-TUNE_ARR(p5, 978);
-TUNE_ARR(p6, 1051);
-TUNE_ARR(p7, 543);
-TUNE_ARR(p8, 66);
-TUNE_ARR(p9, 30450);
-TUNE_ARR(p10, 3094);
-TUNE_ARR(p11, 1056);
-TUNE_ARR(p12, 1415);
-TUNE_ARR(p13, 1051);
-TUNE_ARR(p14, 814);
-TUNE_ARR(p16, 2018);
-TUNE_ARR(p17, 794);
-TUNE_ARR(p18, 1118);
-
-TUNE(p1, p2, p3, p4, p5, p6, p7, p8,p10, p11, p12, p13, p14, p16, p17, p18);
-TUNE(SetRange(1, 128000), p9);
+constexpr int p1[2] = {909, 949};
+constexpr int p2[2] = {2546, 2626};
+constexpr int p3[2] = {992, 1040};
+constexpr int p4[2] = {931, 887};
+constexpr int p5[2] = {957, 955};
+constexpr int p6[2] = {1038, 1055};
+constexpr int p7[2] = {575, 541};
+constexpr int p8[2] = {66, 66};
+constexpr int p10[2] = {2923, 2946};
+constexpr int p11[2] = {1043, 1059};
+constexpr int p12[2] = {1344, 1501};
+constexpr int p13[2] = {1163, 1027};
+constexpr int p14[2] = {759, 822};
+constexpr int p16[2] = {2137, 2029};
+constexpr int p17[2] = {787, 818};
+constexpr int p18[2] = {1132, 1140};
+constexpr int p9[2] = {30096, 28228};
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
