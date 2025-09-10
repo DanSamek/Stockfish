@@ -63,23 +63,23 @@ using namespace Search;
 
 namespace {
 
-constexpr int p1[2] = {908, 964};
-constexpr int p2[2] = {2511, 2633};
-constexpr int p3[2] = {965, 1032};
-constexpr int p4[2] = {914, 864};
-constexpr int p5[2] = {951, 965};
-constexpr int p6[2] = {1063, 1068};
-constexpr int p7[2] = {582, 548};
-constexpr int p8[2] = {65, 65};
-constexpr int p10[2] = {2868, 2927};
-constexpr int p11[2] = {1045, 1068};
-constexpr int p12[2] = {1334, 1515};
-constexpr int p13[2] = {1162, 1028};
-constexpr int p14[2] = {781, 841};
-constexpr int p16[2] = {2195, 2010};
-constexpr int p17[2] = {760, 839};
-constexpr int p18[2] = {1126, 1125};
-constexpr int p9[2] = {30023, 29268};
+constexpr int p1[2] = {900, 951};
+constexpr int p2[2] = {2434, 2618};
+constexpr int p3[2] = {991, 1043};
+constexpr int p4[2] = {913, 869};
+constexpr int p5[2] = {943, 971};
+constexpr int p6[2] = {1043, 1069};
+constexpr int p7[2] = {585, 545};
+constexpr int p8[2] = {66, 66};
+constexpr int p10[2] = {2802, 2911};
+constexpr int p11[2] = {1031, 1062};
+constexpr int p12[2] = {1291, 1496};
+constexpr int p13[2] = {1170, 1025};
+constexpr int p14[2] = {758, 842};
+constexpr int p16[2] = {2256, 2013};
+constexpr int p17[2] = {754, 854};
+constexpr int p18[2] = {1123, 1103};
+constexpr int p9[2] = {31372, 27940};
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
