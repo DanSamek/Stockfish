@@ -864,7 +864,7 @@ Value Search::Worker::search(
                  - 1324 * opponentWorsening * futilityMult / 4096  //
                  + (ss - 1)->statScore / 331                       //
                  + std::abs(correctionValue) / 158105
-                 + 100 * !(cutNode || improving);
+                 + 350 * !(cutNode || improving);
         };
 
         if (!ss->ttPv && depth < 14 && eval - futility_margin(depth) >= beta && eval >= beta
