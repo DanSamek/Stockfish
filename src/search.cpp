@@ -290,6 +290,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
+    lowPlyTTMoveHistory.fill(0);
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !threads.stop
@@ -1134,7 +1135,8 @@ moves_loop:  // When in check, search starts here
                 int doubleMargin = -4 + 198 * PvNode - 212 * !ttCapture - corrValAdj
                                  - 921 * ttMoveHistory / 127649 - (ss->ply > rootDepth) * 45;
                 int tripleMargin = 76 + 308 * PvNode - 250 * !ttCapture + 92 * ss->ttPv - corrValAdj
-                                 - (ss->ply * 2 > rootDepth * 3) * 52;
+                                 - (ss->ply * 2 > rootDepth * 3) * 52
+                                 - 512 * (ss->ply < LOW_PLY_HISTORY_SIZE ? lowPlyTTMoveHistory[ss->ply] : 0) / 131072;
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
@@ -1403,7 +1405,13 @@ moves_loop:  // When in check, search starts here
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
                          ttData.move);
         if (!PvNode)
-            ttMoveHistory << (bestMove == ttData.move ? 809 : -865);
+        {
+            const int bonus = (bestMove == ttData.move ? 809 : -865);
+            ttMoveHistory << bonus;
+
+            if (ss->ply < LOW_PLY_HISTORY_SIZE)
+                lowPlyTTMoveHistory[ss->ply] << bonus;
+        }
     }
 
     // Bonus for prior quiet countermove that caused the fail low

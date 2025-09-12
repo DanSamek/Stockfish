@@ -293,6 +293,7 @@ class Worker {
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
     TTMoveHistory ttMoveHistory;
+    LowPlyTTMoveHistory lowPlyTTMoveHistory;
 
    private:
     void iterative_deepening();
