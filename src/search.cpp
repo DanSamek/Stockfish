@@ -1124,7 +1124,7 @@ moves_loop:  // When in check, search starts here
                                  - 921 * ttMoveHistory / 127649 - (ss->ply > rootDepth) * 45;
                 int tripleMargin = 76 + 308 * PvNode - 250 * !ttCapture + 92 * ss->ttPv - corrValAdj
                                  - (ss->ply * 2 > rootDepth * 3) * 52
-                                 - 1024 * (ss->ply < LOW_PLY_HISTORY_SIZE ? lowPlyTTMoveHistory[ss->ply] : 0) / 131072;
+                                 - 256 * (ss->ply < LOW_PLY_HISTORY_SIZE ? lowPlyTTMoveHistory[ss->ply] : 0) / 131072;
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
