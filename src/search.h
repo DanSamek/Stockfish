@@ -293,6 +293,7 @@ class Worker {
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
     TTMoveHistory ttMoveHistory;
+    TextTTMoveHistory textTTMoveHistory;
 
    private:
     void iterative_deepening();

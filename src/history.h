@@ -164,6 +164,7 @@ template<CorrHistType T>
 using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
+using TextTTMoveHistory = Stats<std::int16_t, 8192, COLOR_NB>;
 
 }  // namespace Stockfish
 
