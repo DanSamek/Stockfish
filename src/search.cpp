@@ -433,6 +433,26 @@ void Search::Worker::iterative_deepening() {
         if (!mainThread)
             continue;
 
+        if (completedDepth >= 10 && threads.size() > 1)
+        {
+            auto bestThread = std::max_element(threads.begin(),
+                                               threads.end(),
+                                               [](const std::unique_ptr<Thread>& a, const std::unique_ptr<Thread>& b)
+                                               {
+                                                   return a->worker->completedDepth < b->worker->completedDepth;
+                                               })->get();
+
+            for (const auto& thread : threads) {
+                if (bestThread->worker->completedDepth <= thread->worker->completedDepth)
+                    continue;
+
+                std::memcpy(&thread->worker->pawnCorrectionHistory,
+                            &bestThread->worker->pawnCorrectionHistory,
+                            sizeof(CorrectionHistory<Pawn>));
+            }
+        }
+
+
         // Have we found a "mate in x"?
         if (limits.mate && rootMoves[0].score == rootMoves[0].uciScore
             && ((rootMoves[0].score >= VALUE_MATE_IN_MAX_PLY
