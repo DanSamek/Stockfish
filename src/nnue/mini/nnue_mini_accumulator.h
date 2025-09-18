@@ -13,12 +13,12 @@ namespace Stockfish::Eval::NNUE {
 
     template<int N>
     class MiniAccumulatorStackBase {
-        std::array<MiniAccumulator<N>, MAX_PLY + 1> stack;
+        alignas(CacheLineSize) std::array<MiniAccumulator<N>, MAX_PLY + 1> stack;
         int stackIndex = 0;
 
     public:
         void pop();
-        void push(DirtyPiece dp, const NetworkMini& networkMini);
+        void push(const DirtyPiece& dp, const NetworkMini& networkMini);
         const MiniAccumulator<N>& current() const;
         void set_position(const Position& position, const NetworkMini& networkMini);
     private:

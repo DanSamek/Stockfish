@@ -1,9 +1,7 @@
 #include "nnue_mini.h"
 
 namespace Stockfish::Eval::NNUE{
-
     template class NetworkM<64>;
-
 
     template<int N>
     NetworkM<N>::NetworkM() {

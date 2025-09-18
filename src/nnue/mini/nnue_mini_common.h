@@ -1,6 +1,8 @@
 #ifndef NNUE_MINI_COMMON_H_INCLUDED
 #define NNUE_MINI_COMMON_H_INCLUDED
 
+#include "../nnue_common.h"
+
 #include <array>
 #include <cstdint>
 

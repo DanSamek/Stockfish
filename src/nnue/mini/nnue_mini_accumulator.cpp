@@ -14,7 +14,7 @@ namespace Stockfish::Eval::NNUE {
     }
 
     template<int N>
-    void MiniAccumulatorStackBase<N>::push(Stockfish::DirtyPiece dp, const NetworkMini &networkMini) {
+    void MiniAccumulatorStackBase<N>::push(const DirtyPiece& dp, const NetworkMini &networkMini) {
         stack[stackIndex + 1] = stack[stackIndex];
         stackIndex++;
 
@@ -51,7 +51,11 @@ namespace Stockfish::Eval::NNUE {
         stack[stackIndex] = networkMini.inputLayerBias;
 
         for (int sq = 0; sq < 64; sq++) {
-            Piece pc  = position.piece_on(Square(sq));
+
+            Piece pc = position.piece_on(Square(sq));
+            if (pc == NO_PIECE)
+                continue;
+
             int pieceIndex = index(pc, Square(sq));
             add(networkMini.inputLayerWeights[pieceIndex]);
         }
@@ -59,7 +63,7 @@ namespace Stockfish::Eval::NNUE {
 
     template<int N>
     int MiniAccumulatorStackBase<N>::index(Piece pc, Square sq) {
-        return (pc - 1) * 64 + sq;
+        return (pc - 1 - (pc >= 8) * 2) * 64 + ((int)sq ^ 56);
     }
 
 }
