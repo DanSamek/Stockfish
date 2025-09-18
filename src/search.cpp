@@ -835,8 +835,8 @@ Value Search::Worker::search(
     if (priorReduction >= 2 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 173)
         depth--;
 
-    if (cutNode && depth >= 2 && ttHit && ttData.bound == BOUND_UPPER && is_valid(ttData.value)
-        && ttData.depth - 2 >= depth && ttData.value + 220 * depth <= beta)
+    if (cutNode && depth >= 2 && ttHit && ttData.bound == BOUND_UPPER
+        && is_valid(ttData.value) && ttData.depth > depth && ttData.value + 500 <= beta)
         depth--;
 
     // Step 7. Razoring
