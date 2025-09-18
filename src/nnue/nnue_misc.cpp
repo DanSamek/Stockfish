@@ -36,11 +36,35 @@
 #include "network.h"
 #include "nnue_accumulator.h"
 
+// Macro to embed the default efficiently updatable neural network (NNUE) file
+// data in the engine binary (using incbin.h, by Dale Weiler).
+// This macro invocation will declare the following three variables
+//     const unsigned char        gEmbeddedNNUEData[];  // a pointer to the embedded data
+//     const unsigned char *const gEmbeddedNNUEEnd;     // a marker to the end
+//     const unsigned int         gEmbeddedNNUESize;    // the size of the embedded file
+// Note that this does not work in Microsoft Visual Studio.
+#if !defined(_MSC_VER) && !defined(NNUE_EMBEDDING_OFF)
+INCBIN(EmbeddedNNUEBig,   EvalFileDefaultNameBig);
+INCBIN(EmbeddedNNUESmall, EvalFileDefaultNameSmall);
+INCBIN(EmbeddedNNUEMini,  EvalFileDefaultNameMini);
+#else
+const unsigned char        gEmbeddedNNUEBigData[1]   = {0x0};
+const unsigned char* const gEmbeddedNNUEBigEnd       = &gEmbeddedNNUEBigData[1];
+const unsigned int         gEmbeddedNNUEBigSize      = 1;
+
+const unsigned char        gEmbeddedNNUESmallData[1] = {0x0};
+const unsigned char* const gEmbeddedNNUESmallEnd     = &gEmbeddedNNUESmallData[1];
+const unsigned int         gEmbeddedNNUESmallSize    = 1;
+
+const unsigned char        gEmbeddedNNUEMiniData[1]  = {0x0};
+const unsigned char* const gEmbeddedNNUEMiniEnd      = &gEmbeddedNNUEMiniData[1];
+const unsigned int         gEmbeddedNNUEMiniSize     = 1;
+#endif
+
+
 namespace Stockfish::Eval::NNUE {
 
-
 constexpr std::string_view PieceToChar(" PNBRQK  pnbrqk");
-
 
 namespace {
 // Converts a Value into (centi)pawns and writes it in a buffer.
@@ -189,5 +213,13 @@ trace(Position& pos, const Eval::NNUE::Networks& networks, Eval::NNUE::Accumulat
     return ss.str();
 }
 
+EmbeddedNNUE get_embedded(EmbeddedNNUEType type) {
+    if (type == EmbeddedNNUEType::BIG)
+        return EmbeddedNNUE(gEmbeddedNNUEBigData, gEmbeddedNNUEBigEnd, gEmbeddedNNUEBigSize);
+    else if (type == EmbeddedNNUEType::SMALL)
+        return EmbeddedNNUE(gEmbeddedNNUESmallData, gEmbeddedNNUESmallEnd, gEmbeddedNNUESmallSize);
+    else
+        return EmbeddedNNUE(gEmbeddedNNUEMiniData, gEmbeddedNNUEMiniEnd, gEmbeddedNNUEMiniSize);
+}
 
 }  // namespace Stockfish::Eval::NNUE

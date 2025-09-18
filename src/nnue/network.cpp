@@ -27,60 +27,11 @@
 #include <vector>
 
 #define INCBIN_SILENCE_BITCODE_WARNING
-#include "../incbin/incbin.h"
 
-#include "../evaluate.h"
-#include "../memory.h"
-#include "../misc.h"
-#include "../position.h"
 #include "../types.h"
 #include "nnue_architecture.h"
 #include "nnue_common.h"
 #include "nnue_misc.h"
-
-// Macro to embed the default efficiently updatable neural network (NNUE) file
-// data in the engine binary (using incbin.h, by Dale Weiler).
-// This macro invocation will declare the following three variables
-//     const unsigned char        gEmbeddedNNUEData[];  // a pointer to the embedded data
-//     const unsigned char *const gEmbeddedNNUEEnd;     // a marker to the end
-//     const unsigned int         gEmbeddedNNUESize;    // the size of the embedded file
-// Note that this does not work in Microsoft Visual Studio.
-#if !defined(_MSC_VER) && !defined(NNUE_EMBEDDING_OFF)
-INCBIN(EmbeddedNNUEBig, EvalFileDefaultNameBig);
-INCBIN(EmbeddedNNUESmall, EvalFileDefaultNameSmall);
-#else
-const unsigned char        gEmbeddedNNUEBigData[1]   = {0x0};
-const unsigned char* const gEmbeddedNNUEBigEnd       = &gEmbeddedNNUEBigData[1];
-const unsigned int         gEmbeddedNNUEBigSize      = 1;
-const unsigned char        gEmbeddedNNUESmallData[1] = {0x0};
-const unsigned char* const gEmbeddedNNUESmallEnd     = &gEmbeddedNNUESmallData[1];
-const unsigned int         gEmbeddedNNUESmallSize    = 1;
-#endif
-
-namespace {
-
-struct EmbeddedNNUE {
-    EmbeddedNNUE(const unsigned char* embeddedData,
-                 const unsigned char* embeddedEnd,
-                 const unsigned int   embeddedSize) :
-        data(embeddedData),
-        end(embeddedEnd),
-        size(embeddedSize) {}
-    const unsigned char* data;
-    const unsigned char* end;
-    const unsigned int   size;
-};
-
-using namespace Stockfish::Eval::NNUE;
-
-EmbeddedNNUE get_embedded(EmbeddedNNUEType type) {
-    if (type == EmbeddedNNUEType::BIG)
-        return EmbeddedNNUE(gEmbeddedNNUEBigData, gEmbeddedNNUEBigEnd, gEmbeddedNNUEBigSize);
-    else
-        return EmbeddedNNUE(gEmbeddedNNUESmallData, gEmbeddedNNUESmallEnd, gEmbeddedNNUESmallSize);
-}
-
-}
 
 
 namespace Stockfish::Eval::NNUE {
@@ -314,14 +265,6 @@ void Network<Arch, Transformer>::load_user_net(const std::string& dir,
 
 template<typename Arch, typename Transformer>
 void Network<Arch, Transformer>::load_internal() {
-    // C++ way to prepare a buffer for a memory stream
-    class MemoryBuffer: public std::basic_streambuf<char> {
-       public:
-        MemoryBuffer(char* p, size_t n) {
-            setg(p, p, p + n);
-            setp(p, p + n);
-        }
-    };
 
     const auto embedded = get_embedded(embeddedType);
 

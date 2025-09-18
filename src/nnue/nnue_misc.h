@@ -19,11 +19,16 @@
 #ifndef NNUE_MISC_H_INCLUDED
 #define NNUE_MISC_H_INCLUDED
 
+#define INCBIN_SILENCE_BITCODE_WARNING
+#include "../incbin/incbin.h"
+
 #include <cstddef>
 #include <string>
 
 #include "../types.h"
 #include "nnue_architecture.h"
+#include "../memory.h"
+#include "../evaluate.h"
 
 namespace Stockfish {
 
@@ -54,6 +59,36 @@ struct Networks;
 struct AccumulatorCaches;
 
 std::string trace(Position& pos, const Networks& networks, AccumulatorCaches& caches);
+
+// C++ way to prepare a buffer for a memory stream
+class MemoryBuffer: public std::basic_streambuf<char> {
+public:
+    MemoryBuffer(char* p, size_t n) {
+        setg(p, p, p + n);
+        setp(p, p + n);
+    }
+};
+
+
+enum class EmbeddedNNUEType {
+    BIG,
+    SMALL,
+    MINI
+};
+
+struct EmbeddedNNUE {
+    EmbeddedNNUE(const unsigned char* embeddedData,
+                 const unsigned char* embeddedEnd,
+                 const unsigned int   embeddedSize) :
+            data(embeddedData),
+            end(embeddedEnd),
+            size(embeddedSize) {}
+    const unsigned char* data;
+    const unsigned char* end;
+    const unsigned int   size;
+};
+
+EmbeddedNNUE get_embedded(EmbeddedNNUEType type);
 
 }  // namespace Stockfish::Eval::NNUE
 }  // namespace Stockfish

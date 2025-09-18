@@ -1,0 +1,37 @@
+#ifndef NNUE_MINI_H_INCLUDED
+#define NNUE_MINI_H_INCLUDED
+
+#include "../../types.h"
+#include "../nnue_misc.h"
+#include "./nnue_mini_common.h"
+
+using namespace Stockfish::Eval::NNUE;
+
+namespace Stockfish::Eval::NNUE {
+
+    template<int N>
+    class NetworkM {
+        static inline constexpr int INPUT_LAYER_SIZE = 768;
+        static inline constexpr int SCALE = 400;
+        static inline constexpr int QA    = 255;
+        static inline constexpr int QB    = 64;
+
+    public:
+        std::array<MiniAccumulator<N>, INPUT_LAYER_SIZE> inputLayerWeights;
+        MiniAccumulator<N> inputLayerBias;
+
+        MiniAccumulator<N> outputLayerWeights;
+        std::int16_t outputLayerBias;
+
+        NetworkM();
+        Value evaluate(const MiniAccumulator<N> &accumulator) const;
+
+    private:
+        void load();
+
+        inline int crelu(int value) const {
+            return std::clamp(value, 0, QA);
+        }
+    };
+}
+#endif

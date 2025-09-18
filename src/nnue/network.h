@@ -35,17 +35,13 @@
 #include "nnue_common.h"
 #include "nnue_feature_transformer.h"
 #include "nnue_misc.h"
+#include "./mini/nnue_mini.h"
 
 namespace Stockfish {
 class Position;
 }
 
 namespace Stockfish::Eval::NNUE {
-
-enum class EmbeddedNNUEType {
-    BIG,
-    SMALL,
-};
 
 using NetworkOutput = std::tuple<Value, Value>;
 
@@ -120,15 +116,17 @@ using BigNetworkArchitecture = NetworkArchitecture<TransformedFeatureDimensionsB
 
 using NetworkBig   = Network<BigNetworkArchitecture, BigFeatureTransformer>;
 using NetworkSmall = Network<SmallNetworkArchitecture, SmallFeatureTransformer>;
-
+using NetworkMini  = NetworkM<L1Mini>;
 
 struct Networks {
-    Networks(NetworkBig&& nB, NetworkSmall&& nS) :
+    Networks(NetworkBig&& nB, NetworkSmall&& nS, NetworkMini&& nM) :
         big(std::move(nB)),
-        small(std::move(nS)) {}
+        small(std::move(nS)),
+        mini(std::move(nM)) {}
 
     NetworkBig   big;
     NetworkSmall small;
+    NetworkMini  mini;
 };
 
 

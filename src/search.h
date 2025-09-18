@@ -41,6 +41,7 @@
 #include "syzygy/tbprobe.h"
 #include "timeman.h"
 #include "types.h"
+#include "nnue/mini/nnue_mini_accumulator.h"
 
 namespace Stockfish {
 
@@ -356,8 +357,9 @@ class Worker {
     const LazyNumaReplicated<Eval::NNUE::Networks>& networks;
 
     // Used by NNUE
-    Eval::NNUE::AccumulatorStack  accumulatorStack;
-    Eval::NNUE::AccumulatorCaches refreshTable;
+    Eval::NNUE::AccumulatorStack     accumulatorStack;
+    Eval::NNUE::AccumulatorCaches    refreshTable;
+    Eval::NNUE::MiniAccumulatorStack miniAccumulatorStack;
 
     friend class Stockfish::ThreadPool;
     friend class SearchManager;
