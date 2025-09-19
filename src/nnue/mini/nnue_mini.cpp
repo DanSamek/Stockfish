@@ -24,12 +24,6 @@ namespace Stockfish::Eval::NNUE{
         return result;
     }
 
-    inline int16_t read_number(std::istream& stream){
-        int16_t value;
-        stream.read(reinterpret_cast<char*>(&value), sizeof(value));
-        return value;
-    }
-
     template<int N>
     void NetworkM<N>::load() {
         EmbeddedNNUE embedded = get_embedded(EmbeddedNNUEType::MINI);
@@ -39,17 +33,17 @@ namespace Stockfish::Eval::NNUE{
         std::istream stream(&buffer);
         for(int i = 0; i < INPUT_LAYER_SIZE; i++)
             for(int x = 0; x < N; x++)
-                inputLayerWeights[i][x] = read_number(stream);
+                inputLayerWeights[i][x] = read_little_endian<int16_t>(stream);
 
         assert(!stream.eof());
         for(int i = 0; i < N; i++)
-            inputLayerBias[i] = read_number(stream);
+            inputLayerBias[i] = read_little_endian<int16_t>(stream);
 
         assert(!stream.eof());
         for(int i = 0; i < N; i++)
-            outputLayerWeights[i] = read_number(stream);
+            outputLayerWeights[i] = read_little_endian<int16_t>(stream);
 
         assert(!stream.eof());
-        outputLayerBias = read_number(stream);
+        outputLayerBias = read_little_endian<int16_t>(stream);
     }
 }
