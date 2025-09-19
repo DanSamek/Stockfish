@@ -141,6 +141,13 @@ Engine::Engine(std::optional<std::string> path) :
           return std::nullopt;
       }));
 
+    options.add(
+        "EvalFileMini",Option(EvalFileDefaultNameMini, [this](const Option& o) {
+            load_mini_network(o);
+            return std::nullopt;
+        })
+    );
+
     load_networks();
     resize_threads();
 }
@@ -276,6 +283,13 @@ void Engine::load_big_network(const std::string& file) {
 void Engine::load_small_network(const std::string& file) {
     networks.modify_and_replicate(
       [this, &file](NN::Networks& networks_) { networks_.small.load(binaryDirectory, file); });
+    threads.clear();
+    threads.ensure_network_replicated();
+}
+
+void Engine::load_mini_network(const std::string& file) {
+    networks.modify_and_replicate(
+            [this, &file](NN::Networks& networks_) { networks_.mini.load(binaryDirectory, file); });
     threads.clear();
     threads.ensure_network_replicated();
 }

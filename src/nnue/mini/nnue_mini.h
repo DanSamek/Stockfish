@@ -25,9 +25,11 @@ namespace Stockfish::Eval::NNUE {
 
         NetworkM();
         Value evaluate(const MiniAccumulator<N> &accumulator) const;
+        void load(const std::string& rootDirectory, std::string evalFilePath);
 
     private:
-        void load();
+        void load(std::istream& stream);
+        void load_internal();
 
         inline int screlu(int value) const {
             int result = std::clamp(value, 0, QA);

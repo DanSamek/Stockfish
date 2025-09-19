@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include "nnue_mini.h"
 
 namespace Stockfish::Eval::NNUE{
@@ -5,7 +7,7 @@ namespace Stockfish::Eval::NNUE{
 
     template<int N>
     NetworkM<N>::NetworkM() {
-        load();
+        load_internal();
     }
 
     template<int N>
@@ -25,12 +27,17 @@ namespace Stockfish::Eval::NNUE{
     }
 
     template<int N>
-    void NetworkM<N>::load() {
+    void NetworkM<N>::load_internal() {
         EmbeddedNNUE embedded = get_embedded(EmbeddedNNUEType::MINI);
         MemoryBuffer buffer(const_cast<char*>(reinterpret_cast<const char*>(embedded.data)),
                             size_t(embedded.size));
 
         std::istream stream(&buffer);
+        load(stream);
+    }
+
+    template<int N>
+    void NetworkM<N>::load(std::istream& stream) {
         for(int i = 0; i < INPUT_LAYER_SIZE; i++)
             for(int x = 0; x < N; x++)
                 inputLayerWeights[i][x] = read_little_endian<int16_t>(stream);
@@ -45,5 +52,22 @@ namespace Stockfish::Eval::NNUE{
 
         assert(!stream.eof());
         outputLayerBias = read_little_endian<int16_t>(stream);
+    }
+
+    template<int N>
+    void NetworkM<N>::load(const std::string &rootDirectory, std::string evalFilePath) {
+        std::vector<std::string> dirs = {"", rootDirectory};
+
+        if (evalFilePath.empty())
+            evalFilePath = EvalFileDefaultNameMini;
+
+        for (const std::string& dir : dirs)
+        {
+            std::ifstream stream(dir + evalFilePath, std::ios::binary);
+            if (!stream)
+                continue;
+
+            load(stream);
+        }
     }
 }
