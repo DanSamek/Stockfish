@@ -17,11 +17,11 @@ namespace Stockfish::Eval::NNUE {
         static inline constexpr int QB    = 64;
 
     public:
-        alignas(CacheLineSize) std::array<MiniAccumulator<N>, INPUT_LAYER_SIZE> inputLayerWeights;
-        alignas(CacheLineSize) MiniAccumulator<N> inputLayerBias;
+        std::array<MiniAccumulator<N>, INPUT_LAYER_SIZE> inputLayerWeights;
+        MiniAccumulator<N> inputLayerBias;
 
-        alignas(CacheLineSize) MiniAccumulator<N> outputLayerWeights;
-        alignas(CacheLineSize) std::int16_t outputLayerBias;
+        MiniAccumulator<N> outputLayerWeights;
+        std::int16_t outputLayerBias;
 
         NetworkM();
         Value evaluate(const MiniAccumulator<N> &accumulator) const;
