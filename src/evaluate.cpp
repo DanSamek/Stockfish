@@ -57,7 +57,7 @@ Value Eval::evaluate(const Eval::NNUE::Networks&             networks,
                      Eval::NNUE::AccumulatorCaches&          caches,
                      int                                     optimism) {
     assert(!pos.checkers());
-    bool smallNet = std::abs(networks.mini.evaluate(miniAccumulators.current())) > 777;
+    bool smallNet = std::abs(networks.mini.evaluate(miniAccumulators.current())) > 555;
 
     auto [psqt, positional] = smallNet ? networks.small.evaluate(pos, accumulators, &caches.small)
                                        : networks.big.evaluate(pos, accumulators, &caches.big);
