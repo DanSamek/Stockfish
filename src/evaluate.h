@@ -22,6 +22,7 @@
 #include <string>
 
 #include "types.h"
+#include "nnue/nnue_architecture.h"
 
 namespace Stockfish {
 
@@ -43,7 +44,7 @@ struct AccumulatorCaches;
 class AccumulatorStack;
 
 template<int N> class MiniAccumulatorStackBase;
-using MiniAccumulatorStack = MiniAccumulatorStackBase<64>;
+using MiniAccumulatorStack = MiniAccumulatorStackBase<L1Mini>;
 }
 
 std::string trace(Position& pos, const Eval::NNUE::Networks& networks);

@@ -29,8 +29,9 @@ namespace Stockfish::Eval::NNUE {
     private:
         void load();
 
-        inline int crelu(int value) const {
-            return std::clamp(value, 0, QA);
+        inline int screlu(int value) const {
+            int result = std::clamp(value, 0, QA);
+            return result * result;
         }
     };
 }

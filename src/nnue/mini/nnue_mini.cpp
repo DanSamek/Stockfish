@@ -1,7 +1,7 @@
 #include "nnue_mini.h"
 
 namespace Stockfish::Eval::NNUE{
-    template class NetworkM<64>;
+    template class NetworkM<L1Mini>;
 
     template<int N>
     NetworkM<N>::NetworkM() {
@@ -10,10 +10,14 @@ namespace Stockfish::Eval::NNUE{
 
     template<int N>
     Value NetworkM<N>::evaluate(const MiniAccumulator<N>& accumulator) const {
-        Value result = outputLayerBias;
+        Value result = 0;
 
         for (int i = 0; i < N; i++)
-            result += crelu(accumulator[i]) * (int)outputLayerWeights[i];
+            result += screlu(accumulator[i]) * (int)outputLayerWeights[i];
+
+        result /= QA;
+
+        result += outputLayerBias;
 
         result *= SCALE;
         result /= QA * QB;

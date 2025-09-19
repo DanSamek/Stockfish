@@ -27,6 +27,6 @@ namespace Stockfish::Eval::NNUE {
         void sub(const MiniAccumulator<N>& weights);
     };
 
-    using MiniAccumulatorStack = MiniAccumulatorStackBase<64>;
+    using MiniAccumulatorStack = MiniAccumulatorStackBase<L1Mini>;
 }
 #endif

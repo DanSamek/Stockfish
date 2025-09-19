@@ -1,7 +1,7 @@
 #include "nnue_mini_accumulator.h"
 using namespace Stockfish::Eval::NNUE;
 namespace Stockfish::Eval::NNUE {
-    template class MiniAccumulatorStackBase<64>;
+    template class MiniAccumulatorStackBase<L1Mini>;
 
     template<int N>
     const MiniAccumulator<N>& MiniAccumulatorStackBase<N>::current() const {

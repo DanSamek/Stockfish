@@ -57,10 +57,7 @@ Value Eval::evaluate(const Eval::NNUE::Networks&             networks,
                      Eval::NNUE::AccumulatorCaches&          caches,
                      int                                     optimism) {
     assert(!pos.checkers());
-
-    bool smallNet = std::abs(simple_eval(pos)) > 962;
-    if (smallNet) // TODO test on some positions -- if its lgtm.
-        smallNet = std::abs(networks.mini.evaluate(miniAccumulators.current())) > 450;
+    bool smallNet = std::abs(networks.mini.evaluate(miniAccumulators.current())) > 777;
 
     auto [psqt, positional] = smallNet ? networks.small.evaluate(pos, accumulators, &caches.small)
                                        : networks.big.evaluate(pos, accumulators, &caches.big);
@@ -102,6 +99,8 @@ std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
 
     Eval::NNUE::AccumulatorStack accumulators;
     Eval::NNUE::MiniAccumulatorStack miniAccumulators;
+    miniAccumulators.set_position(pos, networks.mini);
+
     auto                         caches = std::make_unique<Eval::NNUE::AccumulatorCaches>(networks);
 
     std::stringstream ss;
@@ -120,6 +119,8 @@ std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
     ss << "Final evaluation       " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)";
     ss << " [with scaled NNUE, ...]";
     ss << "\n";
+
+    ss << "Mini NNUE evaluation   " << networks.mini.evaluate(miniAccumulators.current());
 
     return ss.str();
 }
