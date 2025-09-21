@@ -64,7 +64,7 @@ using namespace Search;
 namespace {
 
 int a1 = 0;
-int a2 = 1;
+int a2 = 104;
 int a3 = 0;
 int a4 = 0;
 int a5 = 0;
@@ -81,8 +81,8 @@ int a15 = 0;
 int a16 = 0;
 
 TUNE(SetRange(-1024, 1024), a1);
-TUNE(SetRange(1, 2048), a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16);
-
+TUNE(SetRange(1, 2048), a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16);
+TUNE(SetRange(80, 1024), a2);
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
