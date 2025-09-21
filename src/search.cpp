@@ -63,6 +63,27 @@ using namespace Search;
 
 namespace {
 
+int a1 = 0;
+int a2 = 1;
+int a3 = 0;
+int a4 = 0;
+int a5 = 0;
+int a6 = 0;
+int a7 = 0;
+int a8 = 0;
+int a9 = 0;
+int a10 = 0;
+int a11 = 0;
+int a12 = 0;
+int a13 = 0;
+int a14 = 0;
+int a15 = 0;
+int a16 = 0;
+
+TUNE(SetRange(-1024, 1024), a1);
+TUNE(SetRange(1, 2048), a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16);
+
+
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 
@@ -1397,25 +1418,25 @@ moves_loop:  // When in check, search starts here
     // Bonus for prior quiet countermove that caused the fail low
     else if (!priorCapture && prevSq != SQ_NONE)
     {
-        int bonusScale = -228;
-        bonusScale -= (ss - 1)->statScore / 104;
-        bonusScale += std::min(63 * depth, 508);
-        bonusScale += 184 * ((ss - 1)->moveCount > 8);
-        bonusScale += 143 * (!ss->inCheck && bestValue <= ss->staticEval - 92);
-        bonusScale += 149 * (!(ss - 1)->inCheck && bestValue <= -(ss - 1)->staticEval - 70);
+        int bonusScale = a1;
+        bonusScale -= (ss - 1)->statScore / a2;
+        bonusScale += std::min(a3 * depth, a4);
+        bonusScale += a5 * ((ss - 1)->moveCount > 8);
+        bonusScale += a6 * (!ss->inCheck && bestValue <= ss->staticEval - a7);
+        bonusScale += a8 * (!(ss - 1)->inCheck && bestValue <= -(ss - 1)->staticEval - a9);
 
         bonusScale = std::max(bonusScale, 0);
 
-        const int scaledBonus = std::min(144 * depth - 92, 1365) * bonusScale;
+        const int scaledBonus = std::min(a10 * depth - a11, a12) * bonusScale;
 
         update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq,
-                                      scaledBonus * 400 / 32768);
+                                      scaledBonus * a13 / 32768);
 
-        mainHistory[~us][((ss - 1)->currentMove).from_to()] << scaledBonus * 220 / 32768;
+        mainHistory[~us][((ss - 1)->currentMove).from_to()] << scaledBonus * a14 / 32768;
 
         if (type_of(pos.piece_on(prevSq)) != PAWN && ((ss - 1)->currentMove).type_of() != PROMOTION)
             pawnHistory[pawn_history_index(pos)][pos.piece_on(prevSq)][prevSq]
-              << scaledBonus * 1164 / 32768;
+              << scaledBonus * a15 / 32768;
     }
 
     // Bonus for prior capture countermove that caused the fail low
@@ -1423,7 +1444,7 @@ moves_loop:  // When in check, search starts here
     {
         Piece capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
-        captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 964;
+        captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << a16;
     }
 
     if (PvNode)
