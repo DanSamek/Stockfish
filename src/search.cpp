@@ -617,6 +617,7 @@ Value Search::Worker::search(
     bool  capture, ttCapture;
     int   priorReduction;
     Piece movedPiece;
+    bool cutoffCntIncremented = false;
 
     SearchedList capturesSearched;
     SearchedList quietsSearched;
@@ -1346,7 +1347,9 @@ moves_loop:  // When in check, search starts here
                 if (value >= beta)
                 {
                     // (*Scaler) Especially if they make cutoffCnt increment more often.
-                    ss->cutoffCnt += (extension < 2) || PvNode;
+                    cutoffCntIncremented = (extension < 2) || PvNode;
+                    ss->cutoffCnt += cutoffCntIncremented;
+                    cutoffCntIncremented &= ss->cutoffCnt == 1;
                     assert(value >= beta);  // Fail high
                     break;
                 }
@@ -1390,7 +1393,7 @@ moves_loop:  // When in check, search starts here
     else if (bestMove)
     {
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
-                         ttData.move, ss->cutoffCnt == 1 && bestValue >= beta);
+                         ttData.move, cutoffCntIncremented);
         if (!PvNode)
             ttMoveHistory << (bestMove == ttData.move ? 809 : -865);
     }
