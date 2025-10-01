@@ -133,6 +133,7 @@ enum CorrHistType {
     NonPawn,       // By non-pawn material positions and color
     PieceTo,       // By [piece][to] move
     Continuation,  // Combined history of move pairs
+    King,          // By king squares and color
 };
 
 namespace Detail {
@@ -156,6 +157,12 @@ template<>
 struct CorrHistTypedef<NonPawn> {
     using type =
       Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, CORRECTION_HISTORY_SIZE, COLOR_NB, COLOR_NB>;
+};
+
+template<>
+struct CorrHistTypedef<King> {
+    using type =
+        Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, SQUARE_NB, SQUARE_NB, COLOR_NB>;
 };
 
 }
