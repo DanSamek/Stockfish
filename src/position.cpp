@@ -836,6 +836,7 @@ DirtyPiece Position::do_move(Move                      m,
             st->materialKey ^= Zobrist::psq[promotion][8 + pieceCount[promotion] - 1]
                              ^ Zobrist::psq[pc][8 + pieceCount[pc]];
 
+            st->nonPawnKey[us] ^= Zobrist::psq[promotion][to];
             if (promotionType <= BISHOP)
                 st->minorPieceKey ^= Zobrist::psq[promotion][to];
 
