@@ -75,6 +75,26 @@ using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 // (*Scaler) All tuned parameters at time controls shorter than
 // optimized for require verifications at longer time controls
 
+
+int a1 = 7156;
+int a2 = 7156;
+int a3 = 57248;
+TUNE(a1, a2, a3);
+
+int a4 = 0;
+int a5 = 0;
+int a6 = 0;
+TUNE(SetRange(0, 14312), a4, a5, a6);
+
+int a7 = 137;
+int a8 = 64;
+TUNE(a7, a8);
+
+int a9 = 0;
+int a10 = 0;
+int a11 = 0;
+TUNE(SetRange(0, 128), a9, a10, a11);
+
 int correction_value(const Worker& w, const Position& pos, const Stack* const ss) {
     const Color us    = pos.side_to_move();
     const auto  m     = (ss - 1)->currentMove;
@@ -83,11 +103,14 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
     const auto  wnpcv = w.nonPawnCorrectionHistory[non_pawn_index<WHITE>(pos)][WHITE][us];
     const auto  bnpcv = w.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us];
     const auto  cntcv =
-      m.is_ok() ? (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
-                    + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
-                 : 8;
+      m.is_ok() ?     a1 * (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
+                    + a4 * (*(ss - 3)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
+                    + a2 * (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
+                    + a5 * (*(ss - 5)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
+                    + a6 * (*(ss - 6)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
+                 : a3;
 
-    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv;
+    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + cntcv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -116,8 +139,11 @@ void update_correction_history(const Position& pos,
     {
         const Square to = m.to_sq();
         const Piece  pc = pos.piece_on(m.to_sq());
-        (*(ss - 2)->continuationCorrectionHistory)[pc][to] << bonus * 137 / 128;
-        (*(ss - 4)->continuationCorrectionHistory)[pc][to] << bonus * 64 / 128;
+        (*(ss - 2)->continuationCorrectionHistory)[pc][to] << bonus * a7  / 128;
+        (*(ss - 3)->continuationCorrectionHistory)[pc][to] << bonus * a9  / 128;
+        (*(ss - 4)->continuationCorrectionHistory)[pc][to] << bonus * a8  / 128;
+        (*(ss - 5)->continuationCorrectionHistory)[pc][to] << bonus * a10 / 128;
+        (*(ss - 6)->continuationCorrectionHistory)[pc][to] << bonus * a11 / 128;
     }
 }
 
