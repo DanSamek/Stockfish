@@ -61,6 +61,10 @@ inline int non_pawn_index(const Position& pos) {
     return pos.non_pawn_key(c) & (CORRECTION_HISTORY_SIZE - 1);
 }
 
+inline int zobrist_index(const Position& pos) {
+    return pos.key() & (CORRECTION_HISTORY_SIZE - 1);
+}
+
 // StatsEntry is the container of various numerical statistics. We use a class
 // instead of a naked value to directly call history update operator<<() on
 // the entry. The first template parameter T is the base type of the array,
@@ -133,6 +137,7 @@ enum CorrHistType {
     NonPawn,       // By non-pawn material positions and color
     PieceTo,       // By [piece][to] move
     Continuation,  // Combined history of move pairs
+    _Zobrist,      // By zobrist key and color
 };
 
 namespace Detail {
@@ -156,6 +161,12 @@ template<>
 struct CorrHistTypedef<NonPawn> {
     using type =
       Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, CORRECTION_HISTORY_SIZE, COLOR_NB, COLOR_NB>;
+};
+
+template<>
+struct CorrHistTypedef<_Zobrist> {
+    using type =
+            Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, CORRECTION_HISTORY_SIZE, COLOR_NB>;
 };
 
 }

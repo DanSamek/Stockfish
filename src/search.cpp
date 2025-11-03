@@ -86,8 +86,9 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
       m.is_ok() ? (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                  : 8;
+    const auto zcv    = w.zobristCorrectionHistory[zobrist_index(pos)][us];
 
-    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv;
+    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 6000 * zcv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -111,6 +112,7 @@ void update_correction_history(const Position& pos,
       << bonus * nonPawnWeight / 128;
     workerThread.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]
       << bonus * nonPawnWeight / 128;
+    workerThread.zobristCorrectionHistory[zobrist_index(pos)][us] << bonus;
 
     if (m.is_ok())
     {
@@ -557,6 +559,7 @@ void Search::Worker::clear() {
     pawnCorrectionHistory.fill(5);
     minorPieceCorrectionHistory.fill(0);
     nonPawnCorrectionHistory.fill(0);
+    zobristCorrectionHistory.fill(0);
 
     ttMoveHistory = 0;
 
