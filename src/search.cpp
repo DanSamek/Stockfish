@@ -75,16 +75,16 @@ using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 // (*Scaler) All tuned parameters at time controls shorter than
 // optimized for require verifications at longer time controls
 
-constexpr int a1 = 6945;
-constexpr int a2 = 7417;
-constexpr int a3 = 59927;
-constexpr int a4 = 7020;
-constexpr int a5 = 7234;
-constexpr int a6 = 6850;
-constexpr int a7 = 134;
-constexpr int a8 = 62;
-constexpr int a9 = 64;
-constexpr int a10 = 63;
+constexpr int a1 = 7008;
+constexpr int a2 = 7184;
+constexpr int a3 = 58683;
+constexpr int a4 = 7184;
+constexpr int a5 = 6936;
+constexpr int a6 = 6786;
+constexpr int a7 = 133;
+constexpr int a8 = 63;
+constexpr int a9 = 65;
+constexpr int a10 = 62;
 constexpr int a11 = 62;
 
 int correction_value(const Worker& w, const Position& pos, const Stack* const ss) {
