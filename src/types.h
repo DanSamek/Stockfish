@@ -113,8 +113,9 @@ constexpr bool Is64Bit = false;
 using Key      = uint64_t;
 using Bitboard = uint64_t;
 
-constexpr int MAX_MOVES = 256;
-constexpr int MAX_PLY   = 246;
+constexpr int MAX_MOVES     = 256;
+constexpr int MAX_PLY       = 246;
+constexpr int SEGMENT_COUNT = 4;
 
 enum Color : int8_t {
     WHITE,

@@ -341,6 +341,8 @@ void Position::set_state() const {
     st->pawnKey                                   = Zobrist::noPawns;
     st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
     st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
+    for (Key& key : st->segmentKey)
+        key = 0;
 
     set_check_info();
 
@@ -349,6 +351,8 @@ void Position::set_state() const {
         Square s  = pop_lsb(b);
         Piece  pc = piece_on(s);
         st->key ^= Zobrist::psq[pc][s];
+
+        apply_on_segment(s, pc);
 
         if (type_of(pc) == PAWN)
             st->pawnKey ^= Zobrist::psq[pc][s];
@@ -716,6 +720,7 @@ DirtyPiece Position::do_move(Move                      m,
     Square to       = m.to_sq();
     Piece  pc       = piece_on(from);
     Piece  captured = m.type_of() == EN_PASSANT ? make_piece(them, PAWN) : piece_on(to);
+    Piece  promotion= NO_PIECE;
 
     bool checkEP = false;
 
@@ -739,6 +744,10 @@ DirtyPiece Position::do_move(Move                      m,
 
         k ^= Zobrist::psq[captured][rfrom] ^ Zobrist::psq[captured][rto];
         st->nonPawnKey[us] ^= Zobrist::psq[captured][rfrom] ^ Zobrist::psq[captured][rto];
+
+        apply_on_segment(rfrom, captured);
+        apply_on_segment(rto, captured);
+
         captured = NO_PIECE;
     }
     else if (captured)
@@ -779,6 +788,7 @@ DirtyPiece Position::do_move(Move                      m,
 
         k ^= Zobrist::psq[captured][capsq];
         st->materialKey ^= Zobrist::psq[captured][8 + pieceCount[captured]];
+        apply_on_segment(capsq, captured);
 
         // Reset rule 50 counter
         st->rule50 = 0;
@@ -817,7 +827,7 @@ DirtyPiece Position::do_move(Move                      m,
 
         else if (m.type_of() == PROMOTION)
         {
-            Piece     promotion     = make_piece(us, m.promotion_type());
+            promotion = make_piece(us, m.promotion_type());
             PieceType promotionType = type_of(promotion);
 
             assert(relative_rank(us, to) == RANK_8);
@@ -846,6 +856,9 @@ DirtyPiece Position::do_move(Move                      m,
         // Update pawn hash key
         st->pawnKey ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
 
+        apply_on_segment(from, pc);
+        apply_on_segment(to, m.type_of() == PROMOTION ? promotion : pc);
+
         // Reset rule 50 draw counter
         st->rule50 = 0;
     }
@@ -856,6 +869,9 @@ DirtyPiece Position::do_move(Move                      m,
 
         if (type_of(pc) <= BISHOP)
             st->minorPieceKey ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
+
+        apply_on_segment(from, pc);
+        apply_on_segment(to, pc);
     }
 
     // If en passant is impossible, then k will not change and we can prefetch earlier
@@ -1365,6 +1381,10 @@ bool Position::pos_is_ok() const {
         }
 
     return true;
+}
+
+inline void Position::apply_on_segment(Stockfish::Square sq, Stockfish::Piece pc) const {
+    st->segmentKey[segment_index(sq)] ^= Zobrist::psq[pc][sq];
 }
 
 }  // namespace Stockfish

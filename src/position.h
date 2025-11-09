@@ -43,6 +43,7 @@ struct StateInfo {
     Key    pawnKey;
     Key    minorPieceKey;
     Key    nonPawnKey[COLOR_NB];
+    Key    segmentKey[SEGMENT_COUNT];
     Value  nonPawnMaterial[COLOR_NB];
     int    castlingRights;
     int    rule50;
@@ -147,6 +148,7 @@ class Position {
     Key pawn_key() const;
     Key minor_piece_key() const;
     Key non_pawn_key(Color c) const;
+    Key segment_key(Square sq) const;
 
     // Other properties of the position
     Color side_to_move() const;
@@ -185,6 +187,8 @@ class Position {
                      Square&           rto,
                      DirtyPiece* const dp = nullptr);
     Key  adjust_key50(Key k) const;
+    void apply_on_segment(Square sq, Piece pc) const;
+    int  segment_index(Square sq) const;
 
     // Data members
     Piece      board[SQUARE_NB];
@@ -314,6 +318,16 @@ inline bool Position::is_chess960() const { return chess960; }
 inline bool Position::capture(Move m) const {
     assert(m.is_ok());
     return (!empty(m.to_sq()) && m.type_of() != CASTLING) || m.type_of() == EN_PASSANT;
+}
+
+inline int Position::segment_index(Stockfish::Square sq) const {
+    const int segment_index = (sq / 32) * 2 + (sq % 8) / 4;
+    assert(segment_index >= 0 && segment_index < SEGMENT_COUNT);
+    return segment_index;
+}
+
+inline Key Position::segment_key(Stockfish::Square sq) const {
+    return st->segmentKey[segment_index(sq)];
 }
 
 // Returns true if a move is generated from the capture stage, having also
