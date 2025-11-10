@@ -91,7 +91,7 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
     const auto  scv   =
             w.segmentCorrectionHistory[segment_index(pos, ks)][pos.segment_index(ks)][us];
 
-    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 8000 * scv;
+    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 7500 * scv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
