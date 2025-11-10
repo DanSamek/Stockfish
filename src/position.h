@@ -172,6 +172,7 @@ class Position {
     void remove_piece(Square s);
 
     int  segment_index(Square sq) const;
+    int  segment_piece_count(Square sq) const;
    private:
     // Initialization helpers (used while setting up a position)
     void set_castling_right(Color c, Square rfrom);
@@ -195,6 +196,7 @@ class Position {
     Bitboard   byTypeBB[PIECE_TYPE_NB];
     Bitboard   byColorBB[COLOR_NB];
     int        pieceCount[PIECE_NB];
+    int        segmentPieceCount[SEGMENT_COUNT];
     int        castlingRightsMask[SQUARE_NB];
     Square     castlingRookSquare[CASTLING_RIGHT_NB];
     Bitboard   castlingPath[CASTLING_RIGHT_NB];
@@ -338,6 +340,10 @@ inline Key Position::segment_key(Stockfish::Square sq) const {
     return st->segmentKey[segment_index(sq)];
 }
 
+inline int Position::segment_piece_count(Stockfish::Square sq) const {
+    return segmentPieceCount[segment_index(sq)];
+}
+
 // Returns true if a move is generated from the capture stage, having also
 // queen promotions covered, i.e. consistency with the capture stage move
 // generation is needed to avoid the generation of duplicate moves.
@@ -353,6 +359,7 @@ inline void Position::put_piece(Piece pc, Square s) {
     board[s] = pc;
     byTypeBB[ALL_PIECES] |= byTypeBB[type_of(pc)] |= s;
     byColorBB[color_of(pc)] |= s;
+    segmentPieceCount[segment_index(s)]++;
     pieceCount[pc]++;
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]++;
 }
@@ -365,6 +372,7 @@ inline void Position::remove_piece(Square s) {
     byColorBB[color_of(pc)] ^= s;
     board[s] = NO_PIECE;
     pieceCount[pc]--;
+    segmentPieceCount[segment_index(s)]--;
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]--;
 }
 
