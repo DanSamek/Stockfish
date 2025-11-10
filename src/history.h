@@ -167,7 +167,7 @@ struct CorrHistTypedef<NonPawn> {
 template<>
 struct CorrHistTypedef<Segment> {
     using type =
-            Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, CORRECTION_HISTORY_SIZE, SEGMENT_COUNT, COLOR_NB>;
+            Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, CORRECTION_HISTORY_SIZE, COLOR_NB>;
 };
 
 }

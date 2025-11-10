@@ -89,7 +89,7 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
 
     const Square ks   = pos.square<KING>(us);
     const auto  scv   = pos.segment_piece_count(ks) >= 5
-            ? w.segmentCorrectionHistory[segment_index(pos, ks)][pos.segment_index(ks)][us]
+            ? w.segmentCorrectionHistory[segment_index(pos, ks)][us]
             : 0;
 
     return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 5000 * scv;
@@ -120,7 +120,7 @@ void update_correction_history(const Position& pos,
     const Square ks   = pos.square<KING>(us);
     if (pos.segment_piece_count(ks) >= 5)
     {
-        workerThread.segmentCorrectionHistory[segment_index(pos, ks)][pos.segment_index(ks)][us] << bonus;
+        workerThread.segmentCorrectionHistory[segment_index(pos, ks)][us] << bonus;
     }
 
     if (m.is_ok())
