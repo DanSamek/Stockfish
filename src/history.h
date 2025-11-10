@@ -61,8 +61,8 @@ inline int non_pawn_index(const Position& pos) {
     return pos.non_pawn_key(c) & (CORRECTION_HISTORY_SIZE - 1);
 }
 
-inline int segment_index(const Position& pos) {
-    return pos.segment_key(pos.square<KING>(pos.side_to_move())) & (CORRECTION_HISTORY_SIZE - 1);
+inline int segment_index(const Position& pos, const Square kingSquare) {
+    return pos.segment_key(kingSquare) & (CORRECTION_HISTORY_SIZE - 1);
 }
 
 
@@ -167,7 +167,7 @@ struct CorrHistTypedef<NonPawn> {
 template<>
 struct CorrHistTypedef<Segment> {
     using type =
-            Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, CORRECTION_HISTORY_SIZE, COLOR_NB>;
+            Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, CORRECTION_HISTORY_SIZE, SEGMENT_COUNT, COLOR_NB>;
 };
 
 }

@@ -171,6 +171,7 @@ class Position {
     void put_piece(Piece pc, Square s);
     void remove_piece(Square s);
 
+    int  segment_index(Square sq) const;
    private:
     // Initialization helpers (used while setting up a position)
     void set_castling_right(Color c, Square rfrom);
@@ -188,7 +189,6 @@ class Position {
                      DirtyPiece* const dp = nullptr);
     Key  adjust_key50(Key k) const;
     void apply_on_segment(Square sq, Piece pc) const;
-    int  segment_index(Square sq) const;
 
     // Data members
     Piece      board[SQUARE_NB];
@@ -320,10 +320,18 @@ inline bool Position::capture(Move m) const {
     return (!empty(m.to_sq()) && m.type_of() != CASTLING) || m.type_of() == EN_PASSANT;
 }
 
+static constexpr int segment_indexes[64] = {0,0,0,0,1,1,1,1,
+                                            0,0,0,0,1,1,1,1,
+                                            0,0,0,0,1,1,1,1,
+                                            0,0,0,0,1,1,1,1,
+                                            2,2,2,2,3,3,3,3,
+                                            2,2,2,2,3,3,3,3,
+                                            2,2,2,2,3,3,3,3,
+                                            2,2,2,2,3,3,3,3};
+
 inline int Position::segment_index(Stockfish::Square sq) const {
-    const int segment_index = (sq / 32) * 2 + (sq % 8) / 4;
-    assert(segment_index >= 0 && segment_index < SEGMENT_COUNT);
-    return segment_index;
+    assert(sq >= 0 && sq < 64);
+    return segment_indexes[sq];
 }
 
 inline Key Position::segment_key(Stockfish::Square sq) const {

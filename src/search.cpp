@@ -87,8 +87,11 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                  : 8;
 
-    const auto  scv   = w.segmentCorrectionHistory[segment_index(pos)][us];
-    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 6666 * scv;
+    const Square ks   = pos.square<KING>(us);
+    const auto  scv   =
+            w.segmentCorrectionHistory[segment_index(pos, ks)][pos.segment_index(ks)][us];
+
+    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 8000 * scv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -113,7 +116,8 @@ void update_correction_history(const Position& pos,
     workerThread.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]
       << bonus * nonPawnWeight / 128;
 
-    workerThread.segmentCorrectionHistory[segment_index(pos)][us] << bonus;
+    const Square ks   = pos.square<KING>(us);
+    workerThread.segmentCorrectionHistory[segment_index(pos, ks)][pos.segment_index(ks)][us] << bonus;
 
     if (m.is_ok())
     {
