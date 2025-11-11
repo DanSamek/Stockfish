@@ -60,6 +60,18 @@ void syzygy_extend_pv(const OptionsMap&            options,
                       Value&                       v);
 
 using namespace Search;
+int x1 = 9536;
+int x2 = 8494;
+int x3 = 10132;
+int x4 = 7156;
+int x5 = 5000;
+TUNE(x1, x2, x3, x4, x5);
+
+int x6 = 128;
+TUNE(x6);
+
+int x7 = 5;
+TUNE(SetRange(1, 16), x7);
 
 namespace {
 
@@ -77,6 +89,8 @@ using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 
 int correction_value(const Worker& w, const Position& pos, const Stack* const ss) {
     const Color us    = pos.side_to_move();
+    const Square ks   = pos.square<KING>(us);
+
     const auto  m     = (ss - 1)->currentMove;
     const auto  pcv   = w.pawnCorrectionHistory[pawn_correction_history_index(pos)][us];
     const auto  micv  = w.minorPieceCorrectionHistory[minor_piece_index(pos)][us];
@@ -87,12 +101,11 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                  : 8;
 
-    const Square ks   = pos.square<KING>(us);
-    const auto  scv   = pos.segment_piece_count(ks) >= 5
+    const auto  scv   = pos.segment_piece_count(ks) >= x7
             ? w.segmentCorrectionHistory[segment_index(pos, ks)][us]
             : 0;
 
-    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 5000 * scv;
+    return x1 * pcv + x2 * micv + x3 * (wnpcv + bnpcv) + x4 * cntcv + x5 * scv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -105,8 +118,9 @@ void update_correction_history(const Position& pos,
                                Stack* const    ss,
                                Search::Worker& workerThread,
                                const int       bonus) {
-    const Move  m  = (ss - 1)->currentMove;
-    const Color us = pos.side_to_move();
+    const Move  m   = (ss - 1)->currentMove;
+    const Color us  = pos.side_to_move();
+    const Square ks = pos.square<KING>(us);
 
     constexpr int nonPawnWeight = 165;
 
@@ -117,11 +131,8 @@ void update_correction_history(const Position& pos,
     workerThread.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]
       << bonus * nonPawnWeight / 128;
 
-    const Square ks   = pos.square<KING>(us);
-    if (pos.segment_piece_count(ks) >= 5)
-    {
-        workerThread.segmentCorrectionHistory[segment_index(pos, ks)][us] << bonus;
-    }
+    workerThread.segmentCorrectionHistory[segment_index(pos, ks)][us]
+      << (bonus * x6 / 128) * (pos.segment_piece_count(ks) >= x7);
 
     if (m.is_ok())
     {
