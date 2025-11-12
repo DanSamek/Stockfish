@@ -62,14 +62,6 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
-constexpr int x1 = 9712;
-constexpr int x2 = 8679;
-constexpr int x3 = 10122;
-constexpr int x4 = 7335;
-constexpr int x5 = 5092;
-constexpr int x6 = 119;
-constexpr int x7 = 5;
-
 namespace {
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
@@ -98,11 +90,9 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                  : 8;
 
-    const auto  scv   = pos.segment_piece_count(ks) >= x7
-            ? w.segmentCorrectionHistory[segment_index(pos, ks)][us]
-            : 0;
+    const auto  scv   = w.segmentCorrectionHistory[segment_index(pos, ks)][us];
 
-    return x1 * pcv + x2 * micv + x3 * (wnpcv + bnpcv) + x4 * cntcv + x5 * scv;
+    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 6000 * scv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -129,7 +119,7 @@ void update_correction_history(const Position& pos,
       << bonus * nonPawnWeight / 128;
 
     workerThread.segmentCorrectionHistory[segment_index(pos, ks)][us]
-      << (bonus * x6 / 128) * (pos.segment_piece_count(ks) >= x7);
+      << bonus * 148 / 128;
 
     if (m.is_ok())
     {
