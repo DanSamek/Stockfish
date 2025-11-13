@@ -89,10 +89,8 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
       m.is_ok() ? (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                  : 8;
-    
-    const auto  scv   = pos.segment_piece_count(ks) >= 3
-            ? w.segmentCorrectionHistory[segment_index(pos, ks)][us]
-            : 0;
+
+    const auto  scv   =  w.segmentCorrectionHistory[segment_index(pos, ks)][us];
 
     return 8582 * pcv + 7644 * micv + 9118 * (wnpcv + bnpcv) + 6440 * cntcv + 6000 * scv;
 }
@@ -121,7 +119,7 @@ void update_correction_history(const Position& pos,
       << bonus * nonPawnWeight / 128;
 
     workerThread.segmentCorrectionHistory[segment_index(pos, ks)][us]
-      << bonus * (pos.segment_piece_count(ks) >= 3);
+      << bonus;
 
     if (m.is_ok())
     {
