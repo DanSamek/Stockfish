@@ -62,12 +62,12 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
-constexpr int v1 = 9382;
-constexpr int v2 = 8307;
-constexpr int v3 = 10259;
-constexpr int v4 = 7917;
-constexpr int v5 = 5855;
-constexpr int v6 = 128;
+constexpr int v1 = 9173;
+constexpr int v2 = 8096;
+constexpr int v3 = 10191;
+constexpr int v4 = 8045;
+constexpr int v5 = 5802;
+constexpr int v6 = 131;
 
 namespace {
 
