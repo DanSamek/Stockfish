@@ -88,7 +88,9 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                  : 8;
 
-    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv;
+    const auto  acv   = w.attacksCorrectionHistory[attacks_key(pos)][us];
+
+    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 6666 * acv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -112,6 +114,8 @@ void update_correction_history(const Position& pos,
       << bonus * nonPawnWeight / 128;
     workerThread.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]
       << bonus * nonPawnWeight / 128;
+
+    workerThread.attacksCorrectionHistory[attacks_key(pos)][us] << bonus;
 
     if (m.is_ok())
     {

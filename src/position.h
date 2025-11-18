@@ -45,6 +45,7 @@ struct StateInfo {
     Key    pawnKey;
     Key    minorPieceKey;
     Key    nonPawnKey[COLOR_NB];
+    Key    attacks;
     Value  nonPawnMaterial[COLOR_NB];
     int    castlingRights;
     int    rule50;
@@ -154,6 +155,7 @@ class Position {
     Key pawn_key() const;
     Key minor_piece_key() const;
     Key non_pawn_key(Color c) const;
+    Key attacks_key() const;
 
     // Other properties of the position
     Color side_to_move() const;
@@ -178,6 +180,7 @@ class Position {
     void remove_piece(Square s, DirtyThreats* const dts = nullptr);
     void swap_piece(Square s, Piece pc, DirtyThreats* const dts = nullptr);
 
+    Bitboard attacks(Color s) const;
    private:
     // Initialization helpers (used while setting up a position)
     void set_castling_right(Color c, Square rfrom);
@@ -293,6 +296,15 @@ inline Bitboard Position::attacks_by(Color c) const {
     }
 }
 
+inline Bitboard Position::attacks(Color c) const {
+    Bitboard ourAttacks = attacks_by<PAWN>(c) | attacks_by<KNIGHT>(c)
+                               | attacks_by<BISHOP>(c) | attacks_by<ROOK>(c)
+                               | attacks_by<QUEEN>(c) | attacks_by<KING>(c);
+
+    return ourAttacks & pieces(~c);
+}
+
+
 inline Bitboard Position::checkers() const { return st->checkersBB; }
 
 inline Bitboard Position::blockers_for_king(Color c) const { return st->blockersForKing[c]; }
@@ -314,6 +326,8 @@ inline Key Position::material_key() const { return st->materialKey; }
 inline Key Position::minor_piece_key() const { return st->minorPieceKey; }
 
 inline Key Position::non_pawn_key(Color c) const { return st->nonPawnKey[c]; }
+
+inline Key Position::attacks_key() const { return st->attacks; }
 
 inline Value Position::non_pawn_material(Color c) const { return st->nonPawnMaterial[c]; }
 

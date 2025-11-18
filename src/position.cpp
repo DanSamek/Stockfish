@@ -342,6 +342,7 @@ void Position::set_state() const {
     st->pawnKey                                   = Zobrist::noPawns;
     st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
     st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
+    st->attacks = attacks(sideToMove);
 
     set_check_info();
 
@@ -970,6 +971,8 @@ void Position::do_move(Move                      m,
     dts.ksq = square<KING>(us);
 
     assert(pos_is_ok());
+
+    st->attacks = attacks(sideToMove);
 
     assert(dp.pc != NO_PIECE);
     assert(!(bool(captured) || m.type_of() == CASTLING) ^ (dp.remove_sq != SQ_NONE));

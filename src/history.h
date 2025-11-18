@@ -57,6 +57,17 @@ inline uint16_t non_pawn_index(const Position& pos) {
     return pos.non_pawn_key(c);
 }
 
+static inline Bitboard splitmix64(Bitboard bb) {
+    bb += 0x9e3779b97f4a7c15;
+    bb = (bb ^ (bb >> 30)) * 0xbf58476d1ce4e5b9;
+    bb = (bb ^ (bb >> 27)) * 0x94d049bb133111eb;
+    return bb ^ (bb >> 31);
+}
+
+inline uint16_t attacks_key(const Position& pos) {
+    return splitmix64(pos.attacks_key());
+}
+
 // StatsEntry is the container of various numerical statistics. We use a class
 // instead of a naked value to directly call history update operator<<() on
 // the entry. The first template parameter T is the base type of the array,
@@ -128,6 +139,7 @@ enum CorrHistType {
     NonPawn,       // By non-pawn material positions and color
     PieceTo,       // By [piece][to] move
     Continuation,  // Combined history of move pairs
+    Attacks,       // By attacks
 };
 
 namespace Detail {
@@ -151,6 +163,12 @@ template<>
 struct CorrHistTypedef<NonPawn> {
     using type =
       Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, UINT_16_HISTORY_SIZE, COLOR_NB, COLOR_NB>;
+};
+
+template<>
+struct CorrHistTypedef<Attacks> {
+    using type =
+            Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, UINT_16_HISTORY_SIZE, COLOR_NB>;
 };
 
 }
