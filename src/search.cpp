@@ -90,7 +90,7 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
     const auto  wpcv  = w.pseudoCorrectionHistory[pseudo_index<WHITE>(pos)][WHITE][us];
     const auto  bpcv  = w.pseudoCorrectionHistory[pseudo_index<BLACK>(pos)][BLACK][us];
 
-    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 6000 * (wpcv + bpcv);
+    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 5000 * (wpcv + bpcv);
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
