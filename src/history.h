@@ -57,11 +57,11 @@ inline uint16_t non_pawn_index(const Position& pos) {
     return pos.non_pawn_key(c);
 }
 
-static inline Key splitmix64(Key bb) {
-    bb += 0x9e3779b97f4a7c15;
-    bb = (bb ^ (bb >> 30)) * 0xbf58476d1ce4e5b9;
-    bb = (bb ^ (bb >> 27)) * 0x94d049bb133111eb;
-    return bb ^ (bb >> 31);
+static inline Key splitmix64(Key key) {
+    key += 0x9e3779b97f4a7c15;
+    key = (key ^ (key >> 30)) * 0xbf58476d1ce4e5b9;
+    key = (key ^ (key >> 27)) * 0x94d049bb133111eb;
+    return key ^ (key >> 31);
 }
 
 inline uint16_t attacks_key(const Position& pos) {
