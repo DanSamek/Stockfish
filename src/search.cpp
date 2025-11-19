@@ -89,8 +89,7 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
                  : 8;
 
     const auto  acv   = w.attacksCorrectionHistory[attacks_key(pos)][us];
-
-    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 6666 * acv;
+    return 9536 * pcv + 8494 * micv + 10132 * (wnpcv + bnpcv) + 7156 * cntcv + 5000 * acv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -98,6 +97,7 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
 Value to_corrected_static_eval(const Value v, const int cv) {
     return std::clamp(v + cv / 131072, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 }
+
 
 void update_correction_history(const Position& pos,
                                Stack* const    ss,
