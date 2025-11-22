@@ -91,7 +91,6 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
                  : 8;
 
     const auto  scv   = w.segmentCorrectionHistory[segment_index(pos, ks)][us];
-
     return 10347 * pcv + 8821 * micv + 11168 * (wnpcv + bnpcv) + 7841 * cntcv + 6000 * scv;
 }
 
