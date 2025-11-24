@@ -1185,7 +1185,7 @@ moves_loop:  // When in check, search starts here
 
         // Increase reduction for cut nodes
         if (cutNode)
-            r += 3372 + 997 * !ttData.move;
+            r += 3372 + 997 * !ttData.move + 512 * ((ttData.bound & BOUND_LOWER) && ttData.depth - 2 > depth);
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
@@ -1250,9 +1250,6 @@ moves_loop:  // When in check, search starts here
             // Increase reduction if ttMove is not present
             if (!ttData.move)
                 r += 1140;
-
-            if (cutNode && (ttData.bound & BOUND_LOWER) && ttData.depth - 2 > depth)
-                r += 1024;
 
             // Note that if expected reduction is high, we reduce search depth here
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
