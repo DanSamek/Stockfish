@@ -118,6 +118,23 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     stage = PROBCUT_TT + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm));
 }
 
+int p1 = 2048;
+int p2 = 2048;
+
+int p3 = 1024;
+int p4 = 1024;
+int p5 = 1024;
+int p6 = 1024;
+int p7 = 1024;
+
+int p8 = 16777216;
+int p9 = -19456;
+int p10 = 20480;
+
+int p11 = 8192;
+
+TUNE(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11)
+
 // Assigns a numerical value to each move in a list, used for sorting.
 // Captures are ordered by Most Valuable Victim (MVV), preferring captures
 // with a good history. Quiets moves are ordered using the history tables.
@@ -158,25 +175,27 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
         else if constexpr (Type == QUIETS)
         {
             // histories
-            m.value = 2 * (*mainHistory)[us][m.raw()];
-            m.value += 2 * (*pawnHistory)[pawn_history_index(pos)][pc][to];
-            m.value += (*continuationHistory[0])[pc][to];
-            m.value += (*continuationHistory[1])[pc][to];
-            m.value += (*continuationHistory[2])[pc][to];
-            m.value += (*continuationHistory[3])[pc][to];
-            m.value += (*continuationHistory[5])[pc][to];
+            // (30000 * 2048 * 5) +  (4096 * 30000) + (4096 * 8192) + 33554432 + (40960 * 3000) +  (8192 * 7183) < INT_MAX
+            m.value =  p1 * (*mainHistory)[us][m.raw()];
+            m.value += p2 * (*pawnHistory)[pawn_history_index(pos)][pc][to];
+            m.value += p3 * (*continuationHistory[0])[pc][to];
+            m.value += p4 * (*continuationHistory[1])[pc][to];
+            m.value += p5 * (*continuationHistory[2])[pc][to];
+            m.value += p6 * (*continuationHistory[3])[pc][to];
+            m.value += p7 * (*continuationHistory[5])[pc][to];
 
             // bonus for checks
-            m.value += (bool(pos.check_squares(pt) & to) && pos.see_ge(m, -75)) * 16384;
+            m.value += (bool(pos.check_squares(pt) & to) && pos.see_ge(m, -75)) * p8;
 
             // penalty for moving to a square threatened by a lesser piece
             // or bonus for escaping an attack by a lesser piece.
-            int v = threatByLesser[pt] & to ? -19 : 20 * bool(threatByLesser[pt] & from);
+            int v = threatByLesser[pt] & to ? p9 : p10 * bool(threatByLesser[pt] & from);
             m.value += PieceValue[pt] * v;
 
-
             if (ply < LOW_PLY_HISTORY_SIZE)
-                m.value += 8 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
+                m.value += p11 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
+
+            m.value /= 1024;
         }
 
         else  // Type == EVASIONS
