@@ -118,22 +118,18 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     stage = PROBCUT_TT + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm));
 }
 
-int p1 = 2048;
-int p2 = 2048;
+constexpr int p1 = 1937;
+constexpr int p2 = 2044;
+constexpr int p3 = 1034;
+constexpr int p4 = 983;
+constexpr int p5 = 979;
+constexpr int p6 = 1047;
+constexpr int p7 = 1023;
+constexpr int p8 = 16834791;
+constexpr int p9 = -19365;
+constexpr int p10 = 20166;
+constexpr int p11 = 8543;
 
-int p3 = 1024;
-int p4 = 1024;
-int p5 = 1024;
-int p6 = 1024;
-int p7 = 1024;
-
-int p8 = 16777216;
-int p9 = -19456;
-int p10 = 20480;
-
-int p11 = 8192;
-
-TUNE(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11)
 
 // Assigns a numerical value to each move in a list, used for sorting.
 // Captures are ordered by Most Valuable Victim (MVV), preferring captures
