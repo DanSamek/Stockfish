@@ -118,17 +118,17 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     stage = PROBCUT_TT + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm));
 }
 
-constexpr int p1 = 1893;
-constexpr int p2 = 1997;
-constexpr int p3 = 1029;
-constexpr int p4 = 944;
+constexpr int p1 = 1887;
+constexpr int p2 = 1958;
+constexpr int p3 = 1030;
+constexpr int p4 = 946;
 constexpr int p5 = 970;
-constexpr int p6 = 1062;
-constexpr int p7 = 1023;
-constexpr int p8 = 16558677;
-constexpr int p9 = -19993;
-constexpr int p10 = 20862;
-constexpr int p11 = 8604;
+constexpr int p6 = 1066;
+constexpr int p7 = 1027;
+constexpr int p8 = 16618324;
+constexpr int p9 = -19953;
+constexpr int p10 = 20936;
+constexpr int p11 = 8580;
 
 
 // Assigns a numerical value to each move in a list, used for sorting.
