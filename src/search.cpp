@@ -1081,8 +1081,7 @@ moves_loop:  // When in check, search starts here
             {
                 int history = (*contHist[0])[movedPiece][move.to_sq()]
                             + (*contHist[1])[movedPiece][move.to_sq()]
-                            + pawnHistory[pawn_history_index(pos)][movedPiece][move.to_sq()]
-                            + minorHistory[minor_history_index(pos)][movedPiece][move.to_sq()];
+                            + pawnHistory[pawn_history_index(pos)][movedPiece][move.to_sq()];
 
                 // Continuation history based pruning
                 if (history < -4083 * depth)
@@ -1893,7 +1892,7 @@ void update_quiet_histories(
       << bonus * (bonus > 0 ? 905 : 505) / 1024;
 
     workerThread.minorHistory[minor_history_index(pos)][pos.moved_piece(move)][move.to_sq()]
-      << 850 * bonus / 1024;
+      << 512 * bonus / 1024;
 }
 
 }

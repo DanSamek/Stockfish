@@ -34,7 +34,7 @@
 namespace Stockfish {
 
 constexpr int PAWN_HISTORY_SIZE        = 8192;  // has to be a power of 2
-constexpr int MINOR_HISTORY_SIZE       = 1024;  // has to be a power of 2
+constexpr int MINOR_HISTORY_SIZE       = 2048;  // has to be a power of 2
 constexpr int UINT_16_HISTORY_SIZE     = std::numeric_limits<uint16_t>::max() + 1;
 constexpr int CORRECTION_HISTORY_LIMIT = 1024;
 constexpr int LOW_PLY_HISTORY_SIZE     = 5;
@@ -127,7 +127,7 @@ using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 using PawnHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
 
 // MinorHistory is addressed by the positions of minor pieces (Knight, Bishop) and a move's [piece][to]
-using MinorHistory = Stats<std::int16_t, 8192, MINOR_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
+using MinorHistory = Stats<std::int16_t, 6144, MINOR_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
 
 
 // Correction histories record differences between the static evaluation of
