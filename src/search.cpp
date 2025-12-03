@@ -1892,7 +1892,7 @@ void update_quiet_histories(
       << bonus * (bonus > 0 ? 905 : 505) / 1024;
 
     workerThread.minorHistory[minor_history_index(pos)][pos.moved_piece(move)][move.to_sq()]
-      << 512 * bonus / 1024;
+      << 850 * bonus / 1024;
 }
 
 }
