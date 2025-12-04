@@ -577,7 +577,7 @@ void Search::Worker::clear() {
     mainHistory.fill(68);
     captureHistory.fill(-689);
     pawnHistory.fill(-1238);
-    pawnCorrectionHistory.fill(5);
+    pawnCorrectionHistory.fill(-600);
     minorPieceCorrectionHistory.fill(0);
     nonPawnCorrectionHistory.fill(0);
 
