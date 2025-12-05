@@ -861,7 +861,7 @@ Value Search::Worker::search(
             && ((ss - 1)->currentMove).type_of() != PROMOTION)
             pawnHistory[pawn_history_index(pos)][pos.piece_on(prevSq)][prevSq] << evalDiff * 13;
 
-        update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, evalDiff);
+        update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, 2 * evalDiff);
     }
 
 
