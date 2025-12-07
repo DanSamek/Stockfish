@@ -862,7 +862,7 @@ Value Search::Worker::search(
             pawnHistory[pawn_history_index(pos)][pos.piece_on(prevSq)][prevSq] << evalDiff * 13;
 
         if ((ss - 1)->ply < LOW_PLY_HISTORY_SIZE)
-            lowPlyHistory[(ss - 1)->ply][((ss - 1)->currentMove).raw()] << evalDiff * 4;
+            lowPlyHistory[(ss - 1)->ply][((ss - 1)->currentMove).raw()] << evalDiff * 2;
     }
 
 
