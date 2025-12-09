@@ -1087,6 +1087,7 @@ moves_loop:  // When in check, search starts here
                     continue;
 
                 history += 69 * mainHistory[us][move.raw()] / 32;
+                history += (ss->ply < LOW_PLY_HISTORY_SIZE) ? lowPlyHistory[ss->ply][move.raw()] : 0;
 
                 // (*Scaler): Generally, lower divisors scales well
                 lmrDepth += history / 3208;
