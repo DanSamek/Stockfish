@@ -583,6 +583,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    cutNodeHistory = 0;
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(8);
@@ -1195,7 +1197,7 @@ moves_loop:  // When in check, search starts here
 
         // Increase reduction for cut nodes
         if (cutNode)
-            r += 3372 + 997 * !ttData.move;
+            r += 3372 + 997 * !ttData.move - cutNodeHistory / 8;
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
@@ -1444,6 +1446,9 @@ moves_loop:  // When in check, search starts here
         assert(capturedPiece != NO_PIECE);
         captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1012;
     }
+
+    if (cutNode)
+        cutNodeHistory << (value >= beta ? 600 : -500);
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);

@@ -293,6 +293,8 @@ class Worker {
 
     TTMoveHistory ttMoveHistory;
 
+    CutNodeHistory cutNodeHistory;
+
    private:
     void iterative_deepening();
 
