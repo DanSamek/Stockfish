@@ -1855,9 +1855,9 @@ void update_all_stats(const Position& pos,
 
     if (cutNode)
     {
-        cutNodeHistory[bestMove.raw()] << (cutoff ? 500 : -400);
+        cutNodeHistory[bestMove.raw()] << (cutoff ? 700 : -800);
         for (Move move : quietsSearched)
-            cutNodeHistory[move.raw()] << -400;
+            cutNodeHistory[move.raw()] << -800;
     }
 
     // Decrease stats for all non-best capture moves
@@ -1868,7 +1868,7 @@ void update_all_stats(const Position& pos,
         captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1448 / 1024;
 
         if (cutNode)
-            cutNodeHistory[move.raw()] << -400;
+            cutNodeHistory[move.raw()] << -800;
     }
 }
 
