@@ -139,7 +139,9 @@ void update_all_stats(const Position& pos,
                       SearchedList&   capturesSearched,
                       Depth           depth,
                       Move            TTMove,
-                      int             moveCount);
+                      int             moveCount,
+                      bool            cutNode,
+                      bool            cutoff);
 
 bool isShuffling(Move move, Stack* const ss, const Position& pos) {
     if (type_of(pos.moved_piece(move)) == PAWN || pos.capture_stage(move)
@@ -583,7 +585,7 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
-    cutNodeHistory = 0;
+    cutNodeHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -1197,7 +1199,7 @@ moves_loop:  // When in check, search starts here
 
         // Increase reduction for cut nodes
         if (cutNode)
-            r += 3372 + 997 * !ttData.move - cutNodeHistory / 8;
+            r += 3372 + 997 * !ttData.move - cutNodeHistory[move.raw()] / 8;
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
@@ -1410,7 +1412,7 @@ moves_loop:  // When in check, search starts here
     else if (bestMove)
     {
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
-                         ttData.move, moveCount);
+                         ttData.move, moveCount, cutNode, bestValue >= beta);
         if (!PvNode)
             ttMoveHistory << (bestMove == ttData.move ? 809 : -865);
     }
@@ -1446,9 +1448,6 @@ moves_loop:  // When in check, search starts here
         assert(capturedPiece != NO_PIECE);
         captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1012;
     }
-
-    if (cutNode)
-        cutNodeHistory << (value >= beta ? 600 : -500);
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
@@ -1822,9 +1821,12 @@ void update_all_stats(const Position& pos,
                       SearchedList&   capturesSearched,
                       Depth           depth,
                       Move            ttMove,
-                      int             moveCount) {
+                      int             moveCount,
+                      bool            cutNode,
+                      bool            cutoff) {
 
     CapturePieceToHistory& captureHistory = workerThread.captureHistory;
+    CutNodeHistory&        cutNodeHistory = workerThread.cutNodeHistory;
     Piece                  movedPiece     = pos.moved_piece(bestMove);
     PieceType              capturedPiece;
 
@@ -1851,12 +1853,22 @@ void update_all_stats(const Position& pos,
     if (prevSq != SQ_NONE && ((ss - 1)->moveCount == 1 + (ss - 1)->ttHit) && !pos.captured_piece())
         update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, -malus * 602 / 1024);
 
+    if (cutNode)
+    {
+        cutNodeHistory[bestMove.raw()] << (cutoff ? 500 : -400);
+        for (Move move : quietsSearched)
+            cutNodeHistory[move.raw()] << -400;
+    }
+
     // Decrease stats for all non-best capture moves
     for (Move move : capturesSearched)
     {
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
         captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1448 / 1024;
+
+        if (cutNode)
+            cutNodeHistory[move.raw()] << -400;
     }
 }
 
