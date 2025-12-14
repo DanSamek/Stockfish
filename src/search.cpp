@@ -1199,7 +1199,7 @@ moves_loop:  // When in check, search starts here
 
         // Increase reduction for cut nodes
         if (cutNode)
-            r += 3372 + 997 * !ttData.move - cutNodeHistory[move.raw()] / 16;
+            r += 3372 + 997 * !ttData.move - cutNodeHistory[us][move.raw()] / 16;
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
@@ -1825,6 +1825,7 @@ void update_all_stats(const Position& pos,
                       bool            cutNode,
                       bool            cutoff) {
 
+    Color                  us             = pos.side_to_move();
     CapturePieceToHistory& captureHistory = workerThread.captureHistory;
     CutNodeHistory&        cutNodeHistory = workerThread.cutNodeHistory;
     Piece                  movedPiece     = pos.moved_piece(bestMove);
@@ -1855,9 +1856,9 @@ void update_all_stats(const Position& pos,
 
     if (cutNode)
     {
-        cutNodeHistory[bestMove.raw()] << (cutoff ? 500 : -400);
+        cutNodeHistory[us][bestMove.raw()] << (cutoff ? 500 : -400);
         for (Move move : quietsSearched)
-            cutNodeHistory[move.raw()] << -400;
+            cutNodeHistory[us][move.raw()] << -400;
     }
 
     // Decrease stats for all non-best capture moves
@@ -1868,7 +1869,7 @@ void update_all_stats(const Position& pos,
         captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1448 / 1024;
 
         if (cutNode)
-            cutNodeHistory[move.raw()] << -400;
+            cutNodeHistory[us][move.raw()] << -400;
     }
 }
 
