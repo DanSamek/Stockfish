@@ -138,6 +138,13 @@ class ValueList {
         assert(size_ < MaxSize);
         values_[size_++] = value;
     }
+
+    template <typename... Args>
+    void emplace_back(Args&&... args) {
+        assert(size_ < MaxSize);
+        values_[size_++] = T(std::forward<Args>(args)...);
+    }
+
     const T* begin() const { return values_; }
     const T* end() const { return values_ + size_; }
     const T& operator[](int index) const { return values_[index]; }

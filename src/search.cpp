@@ -65,7 +65,7 @@ using namespace Search;
 namespace {
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
-using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
+using SearchedList                  = ValueList<std::pair<Move, int>, SEARCHEDLIST_CAPACITY>;
 
 // (*Scalers):
 // The values with Scaler asterisks have proven non-linear scaling.
@@ -139,7 +139,8 @@ void update_all_stats(const Position& pos,
                       SearchedList&   capturesSearched,
                       Depth           depth,
                       Move            TTMove,
-                      int             moveCount);
+                      int             moveCount,
+                      int             bestValue);
 
 bool isShuffling(Move move, Stack* const ss, const Position& pos) {
     if (type_of(pos.moved_piece(move)) == PAWN || pos.capture_stage(move)
@@ -1383,9 +1384,9 @@ moves_loop:  // When in check, search starts here
         if (move != bestMove && moveCount <= SEARCHEDLIST_CAPACITY)
         {
             if (capture)
-                capturesSearched.push_back(move);
+                capturesSearched.emplace_back(move, value);
             else
-                quietsSearched.push_back(move);
+                quietsSearched.emplace_back(move, value);
         }
     }
 
@@ -1408,7 +1409,7 @@ moves_loop:  // When in check, search starts here
     else if (bestMove)
     {
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
-                         ttData.move, moveCount);
+                         ttData.move, moveCount, bestValue);
         if (!PvNode)
             ttMoveHistory << (bestMove == ttData.move ? 809 : -865);
     }
@@ -1806,7 +1807,6 @@ void update_pv(Move* pv, Move move, const Move* childPv) {
     *pv = Move::none();
 }
 
-
 // Updates stats at the end of search() when a bestMove is found
 void update_all_stats(const Position& pos,
                       Stack*          ss,
@@ -1817,7 +1817,8 @@ void update_all_stats(const Position& pos,
                       SearchedList&   capturesSearched,
                       Depth           depth,
                       Move            ttMove,
-                      int             moveCount) {
+                      int             moveCount,
+                      int             bestValue) {
 
     CapturePieceToHistory& captureHistory = workerThread.captureHistory;
     Piece                  movedPiece     = pos.moved_piece(bestMove);
@@ -1831,8 +1832,12 @@ void update_all_stats(const Position& pos,
         update_quiet_histories(pos, ss, workerThread, bestMove, bonus * 910 / 1024);
 
         // Decrease stats for all non-best quiet moves
-        for (Move move : quietsSearched)
-            update_quiet_histories(pos, ss, workerThread, move, -malus * 1085 / 1024);
+        for (const auto& [move, eval] : quietsSearched)
+        {
+            const int evalDiff  = std::abs(bestValue - eval);
+            const int moveMalus = -malus * (1085 + (std::min(evalDiff, 500) / 20)) / 1024;
+            update_quiet_histories(pos, ss, workerThread, move, moveMalus);
+        }
     }
     else
     {
@@ -1847,11 +1852,14 @@ void update_all_stats(const Position& pos,
         update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, -malus * 602 / 1024);
 
     // Decrease stats for all non-best capture moves
-    for (Move move : capturesSearched)
+    for (const auto& [move, eval] : capturesSearched)
     {
-        movedPiece    = pos.moved_piece(move);
-        capturedPiece = type_of(pos.piece_on(move.to_sq()));
-        captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1448 / 1024;
+        const int evalDiff  = std::abs(bestValue - eval);
+        const int moveMalus = -malus * (1448 + (std::min(evalDiff, 500) / 20)) / 1024;
+
+        movedPiece          = pos.moved_piece(move);
+        capturedPiece       = type_of(pos.piece_on(move.to_sq()));
+        captureHistory[movedPiece][move.to_sq()][capturedPiece] << moveMalus;
     }
 }
 
