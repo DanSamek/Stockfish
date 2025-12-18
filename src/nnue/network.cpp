@@ -45,14 +45,10 @@
 // Note that this does not work in Microsoft Visual Studio.
 #if !defined(_MSC_VER) && !defined(NNUE_EMBEDDING_OFF)
 INCBIN(EmbeddedNNUEBig, EvalFileDefaultNameBig);
-INCBIN(EmbeddedNNUESmall, EvalFileDefaultNameSmall);
 #else
 const unsigned char        gEmbeddedNNUEBigData[1]   = {0x0};
 const unsigned char* const gEmbeddedNNUEBigEnd       = &gEmbeddedNNUEBigData[1];
 const unsigned int         gEmbeddedNNUEBigSize      = 1;
-const unsigned char        gEmbeddedNNUESmallData[1] = {0x0};
-const unsigned char* const gEmbeddedNNUESmallEnd     = &gEmbeddedNNUESmallData[1];
-const unsigned int         gEmbeddedNNUESmallSize    = 1;
 #endif
 
 namespace {
@@ -71,11 +67,8 @@ struct EmbeddedNNUE {
 
 using namespace Stockfish::Eval::NNUE;
 
-EmbeddedNNUE get_embedded(EmbeddedNNUEType type) {
-    if (type == EmbeddedNNUEType::BIG)
-        return EmbeddedNNUE(gEmbeddedNNUEBigData, gEmbeddedNNUEBigEnd, gEmbeddedNNUEBigSize);
-    else
-        return EmbeddedNNUE(gEmbeddedNNUESmallData, gEmbeddedNNUESmallEnd, gEmbeddedNNUESmallSize);
+EmbeddedNNUE get_embedded() {
+    return EmbeddedNNUE(gEmbeddedNNUEBigData, gEmbeddedNNUEBigEnd, gEmbeddedNNUEBigSize);
 }
 
 }
@@ -284,7 +277,7 @@ void Network<Arch, Transformer>::load_internal() {
         }
     };
 
-    const auto embedded = get_embedded(embeddedType);
+    const auto embedded = get_embedded();
 
     MemoryBuffer buffer(const_cast<char*>(reinterpret_cast<const char*>(embedded.data)),
                         size_t(embedded.size));
@@ -336,7 +329,6 @@ std::size_t Network<Arch, Transformer>::get_content_hash() const {
     for (auto&& layerstack : network)
         hash_combine(h, layerstack);
     hash_combine(h, evalFile);
-    hash_combine(h, static_cast<int>(embeddedType));
     return h;
 }
 
@@ -409,8 +401,5 @@ bool Network<Arch, Transformer>::write_parameters(std::ostream&      stream,
 
 template class Network<NetworkArchitecture<TransformedFeatureDimensionsBig, L2Big, L3Big>,
                        FeatureTransformer<TransformedFeatureDimensionsBig>>;
-
-template class Network<NetworkArchitecture<TransformedFeatureDimensionsSmall, L2Small, L3Small>,
-                       FeatureTransformer<TransformedFeatureDimensionsSmall>>;
 
 }  // namespace Stockfish::Eval::NNUE
