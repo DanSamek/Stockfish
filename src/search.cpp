@@ -1834,8 +1834,8 @@ void update_all_stats(const Position& pos,
         // Decrease stats for all non-best quiet moves
         for (const auto& [move, eval] : quietsSearched)
         {
-            const int evalDiff  = std::abs(bestValue - eval);
-            const int moveMalus = -malus * (1085 + (std::min(evalDiff, 500) / 20)) / 1024;
+            const int evalDiff  = is_decisive(bestValue) ? 0 : std::abs(bestValue - eval);
+            const int moveMalus = -malus * (1085 + (std::min(evalDiff, 500) / 40)) / 1024;
             update_quiet_histories(pos, ss, workerThread, move, moveMalus);
         }
     }
@@ -1854,8 +1854,8 @@ void update_all_stats(const Position& pos,
     // Decrease stats for all non-best capture moves
     for (const auto& [move, eval] : capturesSearched)
     {
-        const int evalDiff  = std::abs(bestValue - eval);
-        const int moveMalus = -malus * (1448 + (std::min(evalDiff, 500) / 20)) / 1024;
+        const int evalDiff  = is_decisive(bestValue) ? 0 : std::abs(bestValue - eval);
+        const int moveMalus = -malus * (1448 + (std::min(evalDiff, 500) / 40)) / 1024;
 
         movedPiece          = pos.moved_piece(move);
         capturedPiece       = type_of(pos.piece_on(move.to_sq()));
