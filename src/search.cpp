@@ -1192,6 +1192,7 @@ moves_loop:  // When in check, search starts here
         r += 714;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 73;
         r -= std::abs(correctionValue) / 30370;
+        r += std::min(((ss + 1)->cutoffCnt / 2) * 991, 2973);
 
         // Increase reduction for cut nodes
         if (cutNode)
@@ -1202,8 +1203,8 @@ moves_loop:  // When in check, search starts here
             r += 1119;
 
         // Increase reduction if next ply has a lot of fail high
-        if ((ss + 1)->cutoffCnt > 2)
-            r += 991 + allNode * 923;
+        if ((ss + 1)->cutoffCnt > 2 && allNode)
+            r += 923;
 
         // For first picked move (ttMove) reduce reduction
         if (move == ttData.move)
