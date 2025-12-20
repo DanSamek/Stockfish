@@ -791,7 +791,10 @@ Value Search::Worker::search(
                     return ttData.value;
             }
             else
+            {
+                ss->cutoffCnt += ss->ttPv && ttData.value >= beta;
                 return ttData.value;
+            }
         }
     }
 
