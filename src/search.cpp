@@ -1142,8 +1142,15 @@ moves_loop:  // When in check, search starts here
                 int tripleMargin = 73 + 302 * PvNode - 248 * !ttCapture + 90 * ss->ttPv - corrValAdj
                                  - (ss->ply * 2 > rootDepth * 3) * 50;
 
-                extension =
-                  1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
+                int quadExtension = 0;
+                if (!ttCapture)
+                {
+                    int quadMargin = 200 + 400 * PvNode + 200 * ss->ttPv - corrValAdj;
+                    quadExtension = value < singularBeta - quadMargin;
+                }
+
+                extension = 1 + (value < singularBeta - doubleMargin)
+                            + (value < singularBeta - tripleMargin) + quadExtension;
 
                 depth++;
             }
