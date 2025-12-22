@@ -1137,7 +1137,8 @@ moves_loop:  // When in check, search starts here
                 int quadExtension = 0;
                 if (!ttCapture)
                 {
-                    int quadMargin = 200 + 400 * PvNode + 200 * ss->ttPv - corrValAdj;
+                    int quadMargin = 220 + 450 * PvNode + 180 * ss->ttPv - corrValAdj
+                                   - 1000 * ttMoveHistory / 131072;
                     quadExtension = value < singularBeta - quadMargin;
                 }
 
