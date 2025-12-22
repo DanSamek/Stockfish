@@ -154,6 +154,7 @@ class Position {
     Key pawn_key() const;
     Key minor_piece_key() const;
     Key non_pawn_key(Color c) const;
+    Bitboard threats() const;
 
     // Other properties of the position
     Color side_to_move() const;
@@ -235,6 +236,8 @@ inline bool Position::empty(Square s) const { return piece_on(s) == NO_PIECE; }
 inline Piece Position::moved_piece(Move m) const { return piece_on(m.from_sq()); }
 
 inline Bitboard Position::pieces() const { return byTypeBB[ALL_PIECES]; }
+
+inline Bitboard Position::threats() const { return scratch_dts.threatenedSqs; }
 
 template<typename... PieceTypes>
 inline Bitboard Position::pieces(PieceTypes... pts) const {

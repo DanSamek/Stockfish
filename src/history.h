@@ -34,6 +34,7 @@
 namespace Stockfish {
 
 constexpr int PAWN_HISTORY_SIZE        = 8192;  // has to be a power of 2
+constexpr int THREATS_HISTORY_SIZE     = 2048;  // has to be a power of 2
 constexpr int UINT_16_HISTORY_SIZE     = std::numeric_limits<uint16_t>::max() + 1;
 constexpr int CORRECTION_HISTORY_LIMIT = 1024;
 constexpr int LOW_PLY_HISTORY_SIZE     = 5;
@@ -41,11 +42,18 @@ constexpr int LOW_PLY_HISTORY_SIZE     = 5;
 static_assert((PAWN_HISTORY_SIZE & (PAWN_HISTORY_SIZE - 1)) == 0,
               "PAWN_HISTORY_SIZE has to be a power of 2");
 
+static_assert((THREATS_HISTORY_SIZE & (THREATS_HISTORY_SIZE - 1)) == 0,
+              "THREATS_HISTORY_SIZE has to be a power of 2");
+
 static_assert((UINT_16_HISTORY_SIZE & (UINT_16_HISTORY_SIZE - 1)) == 0,
               "CORRECTION_HISTORY_SIZE has to be a power of 2");
 
 inline int pawn_history_index(const Position& pos) {
     return pos.pawn_key() & (PAWN_HISTORY_SIZE - 1);
+}
+
+inline int threats_history_index(const Position& pos) {
+    return pos.threats() & (THREATS_HISTORY_SIZE - 1);
 }
 
 inline uint16_t pawn_correction_history_index(const Position& pos) {
@@ -119,6 +127,9 @@ using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 
 // PawnHistory is addressed by the pawn structure and a move's [piece][to]
 using PawnHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
+
+// ThreatsHistory is addressed by the threats and a move's [piece][to].
+using ThreatsHistory = Stats<std::int16_t, 8192, THREATS_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
 
 // Correction histories record differences between the static evaluation of
 // positions and their search score. It is used to improve the static evaluation
