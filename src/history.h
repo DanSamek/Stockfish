@@ -35,7 +35,7 @@
 
 namespace Stockfish {
 
-constexpr int PAWN_HISTORY_SIZE        = 8192;  // has to be a power of 2
+constexpr int PAWN_HISTORY_SIZE        = 2048;  // has to be a power of 2
 constexpr int UINT_16_HISTORY_SIZE     = std::numeric_limits<uint16_t>::max() + 1;
 constexpr int CORRHIST_BASE_SIZE       = UINT_16_HISTORY_SIZE;
 constexpr int CORRECTION_HISTORY_LIMIT = 1024;
@@ -148,8 +148,8 @@ using PieceToHistory = Stats<std::int16_t, 30000, PIECE_NB, SQUARE_NB>;
 // PieceToHistory instead of ButterflyBoards.
 using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 
-// PawnHistory is addressed by the pawn structure and a move's [piece][to]
-using PawnHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
+// PawnHistory is addressed by the pawn structure and a move's from, to squares.
+using PawnHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_SIZE, int(SQUARE_NB) * int(SQUARE_NB)>;
 
 // Correction histories record differences between the static evaluation of
 // positions and their search score. It is used to improve the static evaluation

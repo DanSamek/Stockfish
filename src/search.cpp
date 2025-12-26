@@ -861,7 +861,7 @@ Value Search::Worker::search(
         mainHistory[~us][((ss - 1)->currentMove).raw()] << evalDiff * 9;
         if (!ttHit && type_of(pos.piece_on(prevSq)) != PAWN
             && ((ss - 1)->currentMove).type_of() != PROMOTION)
-            pawnHistory[pawn_history_index(pos)][pos.piece_on(prevSq)][prevSq] << evalDiff * 13;
+            pawnHistory[pawn_history_index(pos)][(ss - 1)->currentMove.from_to()] << evalDiff * 13;
     }
 
 
@@ -1081,7 +1081,7 @@ moves_loop:  // When in check, search starts here
             {
                 int history = (*contHist[0])[movedPiece][move.to_sq()]
                             + (*contHist[1])[movedPiece][move.to_sq()]
-                            + pawnHistory[pawn_history_index(pos)][movedPiece][move.to_sq()];
+                            + pawnHistory[pawn_history_index(pos)][move.from_to()];
 
                 // Continuation history based pruning
                 if (history < -4083 * depth)
@@ -1434,7 +1434,7 @@ moves_loop:  // When in check, search starts here
         mainHistory[~us][((ss - 1)->currentMove).raw()] << scaledBonus * 243 / 32768;
 
         if (type_of(pos.piece_on(prevSq)) != PAWN && ((ss - 1)->currentMove).type_of() != PROMOTION)
-            pawnHistory[pawn_history_index(pos)][pos.piece_on(prevSq)][prevSq]
+            pawnHistory[pawn_history_index(pos)][(ss - 1)->currentMove.from_to()]
               << scaledBonus * 1160 / 32768;
     }
 
@@ -1895,8 +1895,7 @@ void update_quiet_histories(
 
     update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(), bonus * 896 / 1024);
 
-    int pIndex = pawn_history_index(pos);
-    workerThread.pawnHistory[pIndex][pos.moved_piece(move)][move.to_sq()]
+    workerThread.pawnHistory[pawn_history_index(pos)][move.from_to()]
       << bonus * (bonus > 0 ? 905 : 505) / 1024;
 }
 
