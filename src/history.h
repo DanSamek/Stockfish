@@ -55,8 +55,8 @@ inline int pawn_history_index(const Position& pos) {
     return pos.pawn_key() & (PAWN_HISTORY_SIZE - 1);
 }
 
-inline int non_pawn_history_index(const Position& pos, Color us) {
-    return pos.non_pawn_key(~us) & (NON_PAWN_HISTORY_SIZE - 1);
+inline int non_pawn_history_index(const Position& pos) {
+    return (pos.non_pawn_key(WHITE) ^ pos.non_pawn_key(BLACK)) & (NON_PAWN_HISTORY_SIZE - 1);
 }
 
 // StatsEntry is the container of various numerical statistics. We use a class
@@ -159,8 +159,8 @@ using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 // PawnHistory is addressed by the pawn structure and a move's [piece][to]
 using PawnHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
 
-// NonPawnHistory is addressed by the non-pawn structure and a move's from and to squares.
-using NonPawnHistory = Stats<std::int16_t, 8192, NON_PAWN_HISTORY_SIZE, SQUARE_NB, SQUARE_NB>;
+// NonPawnHistory is addressed by the non-pawn structure, color and a move's from and to squares.
+using NonPawnHistory = Stats<std::int16_t, 8192, NON_PAWN_HISTORY_SIZE, COLOR_NB, SQUARE_NB, SQUARE_NB>;
 
 // Correction histories record differences between the static evaluation of
 // positions and their search score. It is used to improve the static evaluation
