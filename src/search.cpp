@@ -1046,7 +1046,6 @@ moves_loop:  // When in check, search starts here
         if (ss->ttPv)
             r += 946;
 
-        // Step 14. Pruning at shallow depths.
         // Depth conditions are important for mate finding.
         if (!rootNode && pos.non_pawn_material(us) && !is_loss(bestValue))
         {
@@ -1083,8 +1082,7 @@ moves_loop:  // When in check, search starts here
             {
                 int history = (*contHist[0])[movedPiece][move.to_sq()]
                             + (*contHist[1])[movedPiece][move.to_sq()]
-                            + pawnHistory[pawn_history_index(pos)][movedPiece][move.to_sq()]
-                            + minorHistory[minor_history_index(pos)][move.from_to()];
+                            + pawnHistory[pawn_history_index(pos)][movedPiece][move.to_sq()];
 
                 // Continuation history based pruning
                 if (history < -4083 * depth)
@@ -1901,7 +1899,8 @@ void update_quiet_histories(
     workerThread.pawnHistory[pawn_history_index(pos)][pos.moved_piece(move)][move.to_sq()]
       << bonus * (bonus > 0 ? 905 : 505) / 1024;
 
-    workerThread.minorHistory[minor_history_index(pos)][move.from_to()] << bonus;
+    workerThread.minorHistory[minor_history_index(pos)][pos.moved_piece(move)][move.to_sq()]
+      << bonus;
 }
 
 }
