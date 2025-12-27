@@ -293,6 +293,7 @@ class Worker {
     CapturePieceToHistory           captureHistory;
     ContinuationHistory             continuationHistory[2][2];
     PawnHistory                     pawnHistory;
+    MinorHistory                    minorHistory;
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
     TTMoveHistory    ttMoveHistory;

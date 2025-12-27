@@ -36,6 +36,7 @@
 namespace Stockfish {
 
 constexpr int PAWN_HISTORY_SIZE        = 8192;  // has to be a power of 2
+constexpr int MINOR_HISTORY_SIZE       = 1024;  // has to be a power of 2
 constexpr int UINT_16_HISTORY_SIZE     = std::numeric_limits<uint16_t>::max() + 1;
 constexpr int CORRHIST_BASE_SIZE       = UINT_16_HISTORY_SIZE;
 constexpr int CORRECTION_HISTORY_LIMIT = 1024;
@@ -44,11 +45,18 @@ constexpr int LOW_PLY_HISTORY_SIZE     = 5;
 static_assert((PAWN_HISTORY_SIZE & (PAWN_HISTORY_SIZE - 1)) == 0,
               "PAWN_HISTORY_SIZE has to be a power of 2");
 
+static_assert((MINOR_HISTORY_SIZE & (MINOR_HISTORY_SIZE - 1)) == 0,
+              "MINOR_HISTORY_SIZE has to be a power of 2");
+
 static_assert((CORRHIST_BASE_SIZE & (CORRHIST_BASE_SIZE - 1)) == 0,
               "CORRHIST_BASE_SIZE has to be a power of 2");
 
 inline int pawn_history_index(const Position& pos) {
     return pos.pawn_key() & (PAWN_HISTORY_SIZE - 1);
+}
+
+inline int minor_history_index(const Position& pos) {
+    return pos.minor_piece_key() & (MINOR_HISTORY_SIZE - 1);
 }
 
 // StatsEntry is the container of various numerical statistics. We use a class
@@ -150,6 +158,9 @@ using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 
 // PawnHistory is addressed by the pawn structure and a move's [piece][to]
 using PawnHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
+
+// MinorHistory is addressed by the minor pieces and a move's from, to square.
+using MinorHistory = Stats<std::int16_t, 8192, MINOR_HISTORY_SIZE, int(SQUARE_NB) * int(SQUARE_NB)>;
 
 // Correction histories record differences between the static evaluation of
 // positions and their search score. It is used to improve the static evaluation

@@ -589,6 +589,8 @@ void Search::Worker::clear() {
 
     sharedHistory.correctionHistory.clear_range(start, end);
 
+    minorHistory.fill(0);
+
     ttMoveHistory = 0;
 
     for (auto& to : continuationCorrectionHistory)
@@ -992,7 +994,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
-                  &pawnHistory, ss->ply);
+                  &pawnHistory, &minorHistory, ss->ply);
 
     value = bestValue;
 
@@ -1081,7 +1083,8 @@ moves_loop:  // When in check, search starts here
             {
                 int history = (*contHist[0])[movedPiece][move.to_sq()]
                             + (*contHist[1])[movedPiece][move.to_sq()]
-                            + pawnHistory[pawn_history_index(pos)][movedPiece][move.to_sq()];
+                            + pawnHistory[pawn_history_index(pos)][movedPiece][move.to_sq()]
+                            + minorHistory[minor_history_index(pos)][move.from_to()];
 
                 // Continuation history based pruning
                 if (history < -4083 * depth)
@@ -1606,7 +1609,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
-                  contHist, &pawnHistory, ss->ply);
+                  contHist, &pawnHistory, &minorHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1895,9 +1898,10 @@ void update_quiet_histories(
 
     update_continuation_histories(ss, pos.moved_piece(move), move.to_sq(), bonus * 896 / 1024);
 
-    int pIndex = pawn_history_index(pos);
-    workerThread.pawnHistory[pIndex][pos.moved_piece(move)][move.to_sq()]
+    workerThread.pawnHistory[pawn_history_index(pos)][pos.moved_piece(move)][move.to_sq()]
       << bonus * (bonus > 0 ? 905 : 505) / 1024;
+
+    workerThread.minorHistory[minor_history_index(pos)][move.from_to()] << bonus;
 }
 
 }
