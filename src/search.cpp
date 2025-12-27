@@ -1377,6 +1377,9 @@ moves_loop:  // When in check, search starts here
                 assert(depth > 0);
                 alpha = value;  // Update alpha! Always alpha < beta
             }
+            else if (ttData.bound == BOUND_LOWER && extension > 0
+                     && !is_decisive(value) && value + 20 * depth <= beta)
+                depth--;
         }
 
         // If the move is worse than some previously searched move,
