@@ -1379,7 +1379,7 @@ moves_loop:  // When in check, search starts here
                 alpha = value;  // Update alpha! Always alpha < beta
             }
             else if (ttData.bound == BOUND_LOWER && extension > 0
-                     && !is_decisive(value) && value + 10 * depth <= beta)
+                     && !is_decisive(value) && value + 40 * depth <= beta)
                 depth--;
         }
 
