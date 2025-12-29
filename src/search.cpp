@@ -880,7 +880,12 @@ Value Search::Worker::search(
 
         if (!ss->ttPv && depth < 14 && eval - futility_margin(depth) >= beta && eval >= beta
             && (!ttData.move || ttCapture) && !is_loss(beta) && !is_win(eval))
-            return (2 * beta + eval) / 3;
+            {
+                if ((ss - 1)->moveCount < 5 && prevSq != SQ_NONE && !priorCapture)
+                    update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, -1000);
+
+                return (2 * beta + eval) / 3;
+            }
     }
 
     // Step 9. Null move search with verification search
