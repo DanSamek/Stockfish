@@ -968,6 +968,9 @@ Value Search::Worker::search(
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
 
+                if ((ss - 1)->moveCount < 5 && prevSq != SQ_NONE && !priorCapture)
+                    update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, -1000);
+
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);
             }
