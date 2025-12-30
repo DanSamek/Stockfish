@@ -139,12 +139,12 @@ void update_move_correction_history(Search::Worker& workerThread,
                                     int value) {
 
     const bool pv  = searchType == PV_S;
-    int windowSize = pv ? std::min(std::abs(alpha - beta) / 16, 128) : 1;
-    int bonus      = (windowSize * depth) / (pv ? 16 : 8);
+    int windowSize = pv ? std::clamp(std::abs(alpha - beta) / 8, 1, 256) : 1;
+    int bonus      = (windowSize * depth) / (pv ? 8 : 4);
 
     if (value < alpha) bonus *= -1;
 
-    bonus = std::clamp(bonus, -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
+    bonus = std::clamp(bonus, -MOVE_CORRECTION_HISTORY_LIMIT / 4, MOVE_CORRECTION_HISTORY_LIMIT / 4);
     workerThread.moveCorrectionHistory[capture][movedPiece][move.from_to()] << bonus;
 }
 
@@ -1016,7 +1016,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
-                  &sharedHistory, ss->ply);
+                  &sharedHistory, &moveCorrectionHistory, ss->ply);
 
     value = bestValue;
 
@@ -1219,7 +1219,6 @@ moves_loop:  // When in check, search starts here
         r += 714;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 73;
         r -= std::abs(correctionValue) / 30370;
-        r -= moveCorrectionHistory[capture][movedPiece][move.from_to()];
 
         // Increase reduction for cut nodes
         if (cutNode)
@@ -1648,7 +1647,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
-                  contHist, &sharedHistory, ss->ply);
+                  contHist, &sharedHistory, &moveCorrectionHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.

@@ -88,6 +88,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const SharedHistories*       sh,
+                       const MoveCorrectionHistory* mch,
                        int                          pl) :
     pos(p),
     mainHistory(mh),
@@ -95,6 +96,7 @@ MovePicker::MovePicker(const Position&              p,
     captureHistory(cph),
     continuationHistory(ch),
     sharedHistory(sh),
+    moveCorrectionHistory(mch),
     ttMove(ttm),
     depth(d),
     ply(pl) {
@@ -150,6 +152,7 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
         const Piece     pc            = pos.moved_piece(m);
         const PieceType pt            = type_of(pc);
         const Piece     capturedPiece = pos.piece_on(to);
+        const bool      capture       = pos.capture_stage(m);
 
         if constexpr (Type == CAPTURES)
             m.value = (*captureHistory)[pc][to][type_of(capturedPiece)]
@@ -181,10 +184,15 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
 
         else  // Type == EVASIONS
         {
-            if (pos.capture_stage(m))
+            if (capture)
                 m.value = PieceValue[capturedPiece] + (1 << 28);
             else
                 m.value = (*mainHistory)[us][m.raw()] + (*continuationHistory[0])[pc][to];
+        }
+
+        if (moveCorrectionHistory)
+        {
+            m.value += (*moveCorrectionHistory)[capture][pc][m.from_to()];
         }
     }
     return it;

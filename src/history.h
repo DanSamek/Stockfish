@@ -35,11 +35,12 @@
 
 namespace Stockfish {
 
-constexpr int PAWN_HISTORY_BASE_SIZE   = 8192;  // has to be a power of 2
-constexpr int UINT_16_HISTORY_SIZE     = std::numeric_limits<uint16_t>::max() + 1;
-constexpr int CORRHIST_BASE_SIZE       = UINT_16_HISTORY_SIZE;
-constexpr int CORRECTION_HISTORY_LIMIT = 1024;
-constexpr int LOW_PLY_HISTORY_SIZE     = 5;
+constexpr int PAWN_HISTORY_BASE_SIZE        = 8192;  // has to be a power of 2
+constexpr int UINT_16_HISTORY_SIZE          = std::numeric_limits<uint16_t>::max() + 1;
+constexpr int CORRHIST_BASE_SIZE            = UINT_16_HISTORY_SIZE;
+constexpr int CORRECTION_HISTORY_LIMIT      = 1024;
+constexpr int MOVE_CORRECTION_HISTORY_LIMIT = 8192;
+constexpr int LOW_PLY_HISTORY_SIZE          = 5;
 
 static_assert((PAWN_HISTORY_BASE_SIZE & (PAWN_HISTORY_BASE_SIZE - 1)) == 0,
               "PAWN_HISTORY_BASE_SIZE has to be a power of 2");
@@ -215,7 +216,7 @@ using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
 
-using MoveCorrectionHistory = Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, 2, PIECE_NB, int(SQUARE_NB) * int(SQUARE_NB)>;
+using MoveCorrectionHistory = Stats<std::int16_t, MOVE_CORRECTION_HISTORY_LIMIT, 2, PIECE_NB, int(SQUARE_NB) * int(SQUARE_NB)>;
 
 // Set of histories shared between groups of threads. To avoid excessive
 // cross-node data transfer, histories are shared only between threads
