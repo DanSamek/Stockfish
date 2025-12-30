@@ -64,11 +64,8 @@ using namespace Search;
 
 enum SearchType
 {
-    NONE_S = 0,
-    LMR_S = 1,
-    LMR_FDS_S = 2,
-    LMR_SKIP_S = 3,
-    PV_S = 4
+    NPV_S,
+    PV_S
 };
 
 namespace {
@@ -140,15 +137,14 @@ void update_move_correction_history(Search::Worker& workerThread,
                                     int alpha,
                                     int beta,
                                     int value) {
-    constexpr int SEARCH_TYPE_BONUS[5] = {0, 128, 256, 512, 900};
 
-    int windowSize = std::min(std::abs(alpha - beta), 1024);
-    int bonus      = (windowSize * depth * SEARCH_TYPE_BONUS[searchType]) / 1024;
+    const bool pv  = searchType == PV_S;
+    int windowSize = pv ? std::min(std::abs(alpha - beta) / 16, 128) : 1;
+    int bonus      = (windowSize * depth) / (pv ? 16 : 8);
 
-    if (value > beta) bonus *= 2;
-    else if (value < alpha) bonus *= -1;
+    if (value < alpha) bonus *= -1;
 
-    bonus = std::clamp(bonus, -2048, 2048);
+    bonus = std::clamp(bonus, -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
     workerThread.moveCorrectionHistory[capture][movedPiece][move.from_to()] << bonus;
 }
 
@@ -674,7 +670,7 @@ Value Search::Worker::search(
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
     SearchType searchType;
-    int   priorReduction;
+    int   priorReduction, searchedDepth;
     Piece movedPiece;
 
     SearchedList capturesSearched;
@@ -1055,11 +1051,12 @@ moves_loop:  // When in check, search starts here
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
-        extension       = 0;
-        capture         = pos.capture_stage(move);
-        movedPiece      = pos.moved_piece(move);
-        givesCheck      = pos.gives_check(move);
-        searchType      = SearchType::NONE_S;
+        extension     = 0;
+        capture       = pos.capture_stage(move);
+        movedPiece    = pos.moved_piece(move);
+        givesCheck    = pos.gives_check(move);
+        searchType    = SearchType::NPV_S;
+        searchedDepth = 0;
 
         // Calculate new depth for this move
         newDepth = depth - 1;
@@ -1222,7 +1219,7 @@ moves_loop:  // When in check, search starts here
         r += 714;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 73;
         r -= std::abs(correctionValue) / 30370;
-        r -= moveCorrectionHistory[capture][movedPiece][move.from_to()] / 8;
+        r -= moveCorrectionHistory[capture][movedPiece][move.from_to()];
 
         // Increase reduction for cut nodes
         if (cutNode)
@@ -1266,7 +1263,7 @@ moves_loop:  // When in check, search starts here
             // std::clamp has been replaced by a more robust implementation.
             Depth d = std::max(1, std::min(newDepth - r / 1024, newDepth + 2)) + PvNode;
 
-            searchType    = SearchType::LMR_S;
+            searchedDepth = d;
             ss->reduction = newDepth - d;
             value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
             ss->reduction = 0;
@@ -1284,8 +1281,8 @@ moves_loop:  // When in check, search starts here
 
                 if (newDepth > d)
                 {
-                    searchType = SearchType::LMR_FDS_S;
-                    value      = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
+                    searchedDepth = newDepth;
+                    value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
                 }
 
                 // Post LMR continuation history updates
@@ -1300,11 +1297,9 @@ moves_loop:  // When in check, search starts here
             if (!ttData.move)
                 r += 1140;
 
-            searchType = SearchType::LMR_SKIP_S;
-
             // Note that if expected reduction is high, we reduce search depth here
-            value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
-                                   newDepth - (r > 3957) - (r > 5654 && newDepth > 2), !cutNode);
+            searchedDepth = newDepth - (r > 3957) - (r > 5654 && newDepth > 2);
+            value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, searchedDepth, !cutNode);
         }
 
         // For PV nodes only, do a full PV search on the first move or after a fail high,
@@ -1321,8 +1316,9 @@ moves_loop:  // When in check, search starts here
                     || ttData.depth > 1))
                 newDepth = std::max(newDepth, 1);
 
-            searchType = SearchType::PV_S;
-            value      = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
+            searchType    = SearchType::PV_S;
+            searchedDepth = newDepth;
+            value         = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
 
         // Step 19. Undo move
@@ -1397,7 +1393,7 @@ moves_loop:  // When in check, search starts here
         {
             bestValue = value;
             if (!ss->inCheck && !is_decisive(alpha) && !is_decisive(beta))
-                update_move_correction_history(*this, searchType, newDepth, move, capture,
+                update_move_correction_history(*this, searchType, searchedDepth, move, capture,
                                                movedPiece, alpha, beta, value);
 
             if (value + inc > alpha)
