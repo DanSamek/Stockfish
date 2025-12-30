@@ -1392,9 +1392,6 @@ moves_loop:  // When in check, search starts here
         if (value + inc > bestValue)
         {
             bestValue = value;
-            if (!ss->inCheck && !is_decisive(alpha) && !is_decisive(beta))
-                update_move_correction_history(*this, searchType, searchedDepth, move, capture,
-                                               movedPiece, alpha, beta, value);
 
             if (value + inc > alpha)
             {
@@ -1419,6 +1416,10 @@ moves_loop:  // When in check, search starts here
                 alpha = value;  // Update alpha! Always alpha < beta
             }
         }
+
+        if (!ss->inCheck && !is_decisive(alpha) && !is_decisive(beta))
+            update_move_correction_history(*this, searchType, searchedDepth, move, capture,
+                                           movedPiece, alpha, beta, value);
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
