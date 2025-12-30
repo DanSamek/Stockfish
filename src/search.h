@@ -297,6 +297,8 @@ class Worker {
     TTMoveHistory    ttMoveHistory;
     SharedHistories& sharedHistory;
 
+    MoveCorrectionHistory moveCorrectionHistory;
+
    private:
     void iterative_deepening();
 
