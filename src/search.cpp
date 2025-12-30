@@ -1389,6 +1389,10 @@ moves_loop:  // When in check, search starts here
         int inc = (value == bestValue && ss->ply + 2 >= rootDepth && (int(nodes) & 14) == 0
                    && !is_win(std::abs(value) + 1));
 
+        if (!ss->inCheck && !is_decisive(alpha) && !is_decisive(beta))
+            update_move_correction_history(*this, searchType, searchedDepth, move, capture,
+                                           movedPiece, alpha, beta, value);
+
         if (value + inc > bestValue)
         {
             bestValue = value;
@@ -1416,10 +1420,6 @@ moves_loop:  // When in check, search starts here
                 alpha = value;  // Update alpha! Always alpha < beta
             }
         }
-
-        if (!ss->inCheck && !is_decisive(alpha) && !is_decisive(beta))
-            update_move_correction_history(*this, searchType, searchedDepth, move, capture,
-                                           movedPiece, alpha, beta, value);
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
