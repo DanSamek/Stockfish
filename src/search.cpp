@@ -137,13 +137,20 @@ void update_move_correction_history(Search::Worker& workerThread,
                                     int alpha,
                                     int beta,
                                     int value) {
+    const bool pv    = searchType == PV_S;
+    int windowSize   = pv ? std::clamp(std::abs(alpha - beta) / 8, 1, 256) : 1;
+    int bonus        = (windowSize * depth) / (pv ? 8 : 4);
 
-    const bool pv  = searchType == PV_S;
-    int windowSize = pv ? std::clamp(std::abs(alpha - beta) / 8, 1, 256) : 1;
-    int bonus      = (windowSize * depth) / (pv ? 8 : 4);
-
-    if (value <= alpha) bonus *= -1;
-    else if (value > alpha && value <= beta) bonus /= 2;
+    if (value <= alpha)
+    {
+        int evalDistance = std::clamp(std::abs(alpha - value) / 2, 1, 256);
+        bonus *= (-1 * evalDistance) / 64;
+    }
+    else if (value > alpha && value <= beta)
+    {
+        int evalDistance = std::clamp(std::abs(beta - value) / 2, 1, 255);
+        bonus = (bonus * (256 - evalDistance)) / 256;
+    }
 
     bonus = std::clamp(bonus, -MOVE_CORRECTION_HISTORY_LIMIT / 4, MOVE_CORRECTION_HISTORY_LIMIT / 4);
     workerThread.moveCorrectionHistory[capture][movedPiece][move.from_to()] << bonus;
