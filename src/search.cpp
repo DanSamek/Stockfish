@@ -987,7 +987,7 @@ moves_loop:  // When in check, search starts here
       (ss - 4)->continuationHistory, (ss - 5)->continuationHistory, (ss - 6)->continuationHistory};
 
     const CorrectionHistory<PieceTo>* contCorrHist[] = {
-            (ss - 1)->continuationCorrectionHistory, (ss - 3)->continuationCorrectionHistory
+        (ss - 1)->continuationCorrectionHistory, (ss - 2)->continuationCorrectionHistory
     };
 
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
@@ -1603,9 +1603,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     }
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory};
-    const CorrectionHistory<PieceTo>* contCorrHist[] = {
-            (ss - 1)->continuationCorrectionHistory, (ss - 3)->continuationCorrectionHistory
-    };
 
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
 
@@ -1613,7 +1610,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
-                  contHist, &sharedHistory, contCorrHist, ss->ply);
+                  contHist, &sharedHistory, {}, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
