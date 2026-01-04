@@ -1259,7 +1259,7 @@ moves_loop:  // When in check, search starts here
                 // Post LMR continuation history updates
                 update_continuation_histories(ss, movedPiece, move.to_sq(), 1365);
 
-                mainHistory[us][move.raw()] << 400;
+                mainHistory[us][move.raw()] << 600;
             }
         }
 
