@@ -295,7 +295,6 @@ class Worker {
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
     TTMoveHistory ttMoveHistory;
-    ThreatsHistory threatsHistory;
     SharedHistories& sharedHistory;
 
    private:

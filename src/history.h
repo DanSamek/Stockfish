@@ -35,7 +35,7 @@
 
 namespace Stockfish {
 
-constexpr int THREATS_HISTORY_SIZE     = 2048;  // has to be a power of 2
+constexpr int THREATS_HISTORY_SIZE     = 512;   // has to be a power of 2
 constexpr int PAWN_HISTORY_BASE_SIZE   = 8192;  // has to be a power of 2
 constexpr int UINT_16_HISTORY_SIZE     = std::numeric_limits<uint16_t>::max() + 1;
 constexpr int CORRHIST_BASE_SIZE       = UINT_16_HISTORY_SIZE;
@@ -51,8 +51,17 @@ static_assert((THREATS_HISTORY_SIZE & (THREATS_HISTORY_SIZE - 1)) == 0,
 static_assert((CORRHIST_BASE_SIZE & (CORRHIST_BASE_SIZE - 1)) == 0,
               "CORRHIST_BASE_SIZE has to be a power of 2");
 
+static uint64_t murmur_hash(uint64_t x) {
+    x ^= x >> 33;
+    x *= 0xff51afd7ed558ccdULL;
+    x ^= x >> 33;
+    x *= 0xc4ceb9fe1a85ec53ULL;
+    x ^= x >> 33;
+    return x;
+}
+
 inline int threats_history_index(const Position& pos) {
-    return pos.threats() & (THREATS_HISTORY_SIZE - 1);
+    return murmur_hash(pos.threats()) & (THREATS_HISTORY_SIZE - 1);
 }
 
 // StatsEntry is the container of various numerical statistics. We use a class
@@ -146,8 +155,8 @@ using ButterflyHistory = Stats<std::int16_t, 7183, COLOR_NB, UINT_16_HISTORY_SIZ
 // to improve move ordering near the root
 using LowPlyHistory = Stats<std::int16_t, 7183, LOW_PLY_HISTORY_SIZE, UINT_16_HISTORY_SIZE>;
 
-// CapturePieceToHistory is addressed by a move's [piece][to][captured piece type]
-using CapturePieceToHistory = Stats<std::int16_t, 10692, PIECE_NB, SQUARE_NB, PIECE_TYPE_NB>;
+// CapturePieceToHistory is addressed by threats and a move's [piece][to][captured piece type]
+using CapturePieceToHistory = Stats<std::int16_t, 10692, THREATS_HISTORY_SIZE, PIECE_NB, SQUARE_NB, PIECE_TYPE_NB>;
 
 // PieceToHistory is like ButterflyHistory but is addressed by a move's [piece][to]
 using PieceToHistory = Stats<std::int16_t, 30000, PIECE_NB, SQUARE_NB>;
@@ -160,9 +169,6 @@ using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 // PawnHistory is addressed by the pawn structure and a move's [piece][to]
 using PawnHistory =
   DynStats<AtomicStats<std::int16_t, 8192, PIECE_NB, SQUARE_NB>, PAWN_HISTORY_BASE_SIZE>;
-
-// ThreatsHistory is addressed by the threats and a move's [piece][to].
-using ThreatsHistory = Stats<std::int16_t, 8192, THREATS_HISTORY_SIZE, PIECE_NB, SQUARE_NB>;
 
 // Correction histories record differences between the static evaluation of
 // positions and their search score. It is used to improve the static evaluation
