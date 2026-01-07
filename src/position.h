@@ -42,15 +42,16 @@ struct SharedHistories;
 struct StateInfo {
 
     // Copied when making a move
-    Key    materialKey;
-    Key    pawnKey;
-    Key    minorPieceKey;
-    Key    nonPawnKey[COLOR_NB];
-    Value  nonPawnMaterial[COLOR_NB];
-    int    castlingRights;
-    int    rule50;
-    int    pliesFromNull;
-    Square epSquare;
+    Key      materialKey;
+    Key      pawnKey;
+    Key      minorPieceKey;
+    Key      nonPawnKey[COLOR_NB];
+    Bitboard threatsKey;
+    Value    nonPawnMaterial[COLOR_NB];
+    int      castlingRights;
+    int      rule50;
+    int      pliesFromNull;
+    Square   epSquare;
 
     // Not copied when making a move (will be recomputed anyhow)
     Key        key;
@@ -155,7 +156,7 @@ class Position {
     Key pawn_key() const;
     Key minor_piece_key() const;
     Key non_pawn_key(Color c) const;
-    Bitboard threats() const;
+    Bitboard threats_key() const;
 
     // Other properties of the position
     Color side_to_move() const;
@@ -204,6 +205,8 @@ class Position {
                      DirtyPiece* const   dp  = nullptr);
     Key  adjust_key50(Key k) const;
 
+    void compute_threats_key(Color us) const;
+
     // Data members
     std::array<Piece, SQUARE_NB>        board;
     std::array<Bitboard, PIECE_TYPE_NB> byTypeBB;
@@ -238,7 +241,7 @@ inline Piece Position::moved_piece(Move m) const { return piece_on(m.from_sq());
 
 inline Bitboard Position::pieces() const { return byTypeBB[ALL_PIECES]; }
 
-inline Bitboard Position::threats() const { return scratch_dts.threatenedSqs; }
+inline Bitboard Position::threats_key() const { return st->threatsKey; }
 
 template<typename... PieceTypes>
 inline Bitboard Position::pieces(PieceTypes... pts) const {
@@ -411,6 +414,27 @@ inline void Position::do_move(Move m, StateInfo& newSt, const TranspositionTable
 }
 
 inline StateInfo* Position::state() const { return st; }
+
+inline static uint64_t murmur_hash(uint64_t x) {
+    x ^= x >> 33;
+    x *= 0xff51afd7ed558ccdULL;
+    x ^= x >> 33;
+    x *= 0xc4ceb9fe1a85ec53ULL;
+    x ^= x >> 33;
+    return x;
+}
+
+inline void Position::compute_threats_key(Color us) const {
+    Bitboard opp_bitboard = pieces(~us);
+    Bitboard us_bitboard  = pieces(us) ^ pieces(us, KING);
+    Bitboard attacks      = 0ull;
+    while (opp_bitboard){
+        Square at = pop_lsb(opp_bitboard);
+        Piece  pc = piece_on(at);
+        attacks |= attacks_bb(pc, at);
+    }
+    st->threatsKey = murmur_hash(us_bitboard & attacks);
+}
 
 }  // namespace Stockfish
 

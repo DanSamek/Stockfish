@@ -51,17 +51,9 @@ static_assert((THREATS_HISTORY_SIZE & (THREATS_HISTORY_SIZE - 1)) == 0,
 static_assert((CORRHIST_BASE_SIZE & (CORRHIST_BASE_SIZE - 1)) == 0,
               "CORRHIST_BASE_SIZE has to be a power of 2");
 
-static uint64_t murmur_hash(uint64_t x) {
-    x ^= x >> 33;
-    x *= 0xff51afd7ed558ccdULL;
-    x ^= x >> 33;
-    x *= 0xc4ceb9fe1a85ec53ULL;
-    x ^= x >> 33;
-    return x;
-}
 
 inline int threats_history_index(const Position& pos) {
-    return murmur_hash(pos.threats()) & (THREATS_HISTORY_SIZE - 1);
+    return pos.threats_key() & (THREATS_HISTORY_SIZE - 1);
 }
 
 // StatsEntry is the container of various numerical statistics. We use a class

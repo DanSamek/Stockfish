@@ -377,6 +377,8 @@ void Position::set_state() const {
 
     st->key ^= Zobrist::castling[st->castlingRights];
     st->materialKey = compute_material_key();
+
+    compute_threats_key(sideToMove);
 }
 
 Key Position::compute_material_key() const {
@@ -981,6 +983,8 @@ void Position::do_move(Move                      m,
 
     dts.ksq = square<KING>(us);
 
+    compute_threats_key(sideToMove);
+
     assert(pos_is_ok());
 
     assert(dp.pc != NO_PIECE);
@@ -1270,6 +1274,8 @@ void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt) {
     set_check_info();
 
     st->repetition = 0;
+
+    compute_threats_key(sideToMove);
 
     assert(pos_is_ok());
 }
