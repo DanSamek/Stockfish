@@ -35,7 +35,7 @@
 
 namespace Stockfish {
 
-constexpr int THREATS_HISTORY_SIZE     = 512;   // has to be a power of 2
+constexpr int THREATS_HISTORY_SIZE     = 256;   // has to be a power of 2
 constexpr int PAWN_HISTORY_BASE_SIZE   = 8192;  // has to be a power of 2
 constexpr int UINT_16_HISTORY_SIZE     = std::numeric_limits<uint16_t>::max() + 1;
 constexpr int CORRHIST_BASE_SIZE       = UINT_16_HISTORY_SIZE;
