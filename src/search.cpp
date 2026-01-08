@@ -92,7 +92,7 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
 
     const int   tcv    = w.threatsCorrectionHistory[threats_index(pos)][us];
 
-    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 9000 * tcv;
+    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 6000 * tcv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
