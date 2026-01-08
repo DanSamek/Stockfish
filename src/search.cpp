@@ -85,12 +85,14 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
     const int   micv   = shared.minor_piece_correction_entry(pos).at(us).minor;
     const int   wnpcv  = shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite;
     const int   bnpcv  = shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack;
-    const int   cntcv =
+    const int   cntcv  =
       m.is_ok() ? (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                   : 8;
 
-    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv;
+    const int   tcv    = w.threatsCorrectionHistory[threats_index(pos)][us];
+
+    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 9000 * tcv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -113,6 +115,7 @@ void update_correction_history(const Position& pos,
     shared.minor_piece_correction_entry(pos).at(us).minor << bonus * 156 / 128;
     shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite << bonus * nonPawnWeight / 128;
     shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack << bonus * nonPawnWeight / 128;
+    workerThread.threatsCorrectionHistory[threats_index(pos)][us] << bonus;
 
     if (m.is_ok())
     {
@@ -1060,7 +1063,7 @@ moves_loop:  // When in check, search starts here
             if (capture || givesCheck)
             {
                 Piece capturedPiece = pos.piece_on(move.to_sq());
-                int   captHist = captureHistory[threats_history_index(pos)][movedPiece][move.to_sq()][type_of(capturedPiece)];
+                int   captHist = captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
 
                 // Futility pruning for captures
                 if (!givesCheck && lmrDepth < 7)
@@ -1215,7 +1218,7 @@ moves_loop:  // When in check, search starts here
 
         if (capture)
             ss->statScore = 868 * int(PieceValue[pos.captured_piece()]) / 128
-                          + captureHistory[threats_history_index(pos)][movedPiece][move.to_sq()][type_of(pos.captured_piece())];
+                          + captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())];
         else
             ss->statScore = 2 * mainHistory[us][move.raw()]
                           + (*contHist[0])[movedPiece][move.to_sq()]
@@ -1450,7 +1453,7 @@ moves_loop:  // When in check, search starts here
     {
         Piece capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
-        captureHistory[threats_history_index(pos)][pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1012;
+        captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1012;
     }
 
     if (PvNode)
@@ -1855,7 +1858,7 @@ void update_all_stats(const Position& pos,
     {
         // Increase stats for the best move in case it was a capture move
         capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
-        captureHistory[threats_history_index(pos)][movedPiece][bestMove.to_sq()][capturedPiece] << bonus * 1395 / 1024;
+        captureHistory[movedPiece][bestMove.to_sq()][capturedPiece] << bonus * 1395 / 1024;
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1868,7 +1871,7 @@ void update_all_stats(const Position& pos,
     {
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
-        captureHistory[threats_history_index(pos)][movedPiece][move.to_sq()][capturedPiece] << -malus * 1448 / 1024;
+        captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1448 / 1024;
     }
 }
 

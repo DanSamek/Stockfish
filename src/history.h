@@ -35,7 +35,6 @@
 
 namespace Stockfish {
 
-constexpr int THREATS_HISTORY_SIZE     = 128;   // has to be a power of 2
 constexpr int PAWN_HISTORY_BASE_SIZE   = 8192;  // has to be a power of 2
 constexpr int UINT_16_HISTORY_SIZE     = std::numeric_limits<uint16_t>::max() + 1;
 constexpr int CORRHIST_BASE_SIZE       = UINT_16_HISTORY_SIZE;
@@ -45,15 +44,11 @@ constexpr int LOW_PLY_HISTORY_SIZE     = 5;
 static_assert((PAWN_HISTORY_BASE_SIZE & (PAWN_HISTORY_BASE_SIZE - 1)) == 0,
               "PAWN_HISTORY_BASE_SIZE has to be a power of 2");
 
-static_assert((THREATS_HISTORY_SIZE & (THREATS_HISTORY_SIZE - 1)) == 0,
-              "PAWN_HISTORY_BASE_SIZE has to be a power of 2");
-
 static_assert((CORRHIST_BASE_SIZE & (CORRHIST_BASE_SIZE - 1)) == 0,
               "CORRHIST_BASE_SIZE has to be a power of 2");
 
-
-inline int threats_history_index(const Position& pos) {
-    return pos.threats_key() & (THREATS_HISTORY_SIZE - 1);
+inline int threats_index(const Position& pos) {
+    return pos.threats_key() & (CORRHIST_BASE_SIZE - 1);
 }
 
 // StatsEntry is the container of various numerical statistics. We use a class
@@ -147,8 +142,8 @@ using ButterflyHistory = Stats<std::int16_t, 7183, COLOR_NB, UINT_16_HISTORY_SIZ
 // to improve move ordering near the root
 using LowPlyHistory = Stats<std::int16_t, 7183, LOW_PLY_HISTORY_SIZE, UINT_16_HISTORY_SIZE>;
 
-// CapturePieceToHistory is addressed by threats and a move's [piece][to][captured piece type]
-using CapturePieceToHistory = Stats<std::int16_t, 10692, THREATS_HISTORY_SIZE, PIECE_NB, SQUARE_NB, PIECE_TYPE_NB>;
+// CapturePieceToHistory is addressed by a move's [piece][to][captured piece type]
+using CapturePieceToHistory = Stats<std::int16_t, 10692, PIECE_NB, SQUARE_NB, PIECE_TYPE_NB>;
 
 // PieceToHistory is like ButterflyHistory but is addressed by a move's [piece][to]
 using PieceToHistory = Stats<std::int16_t, 30000, PIECE_NB, SQUARE_NB>;
@@ -172,6 +167,7 @@ enum CorrHistType {
     NonPawn,       // By non-pawn material positions and color
     PieceTo,       // By [piece][to] move
     Continuation,  // Combined history of move pairs
+    Threats,       // By threats
 };
 
 template<typename T, int D>
@@ -211,6 +207,11 @@ template<>
 struct CorrHistTypedef<NonPawn> {
     using type = DynStats<Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, COLOR_NB, COLOR_NB>,
                           CORRHIST_BASE_SIZE>;
+};
+
+template<>
+struct CorrHistTypedef<Threats> {
+    using type = Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, CORRHIST_BASE_SIZE, COLOR_NB>;
 };
 
 }
