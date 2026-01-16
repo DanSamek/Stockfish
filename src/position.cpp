@@ -968,7 +968,7 @@ void Position::do_move(Move                      m,
     // occurrence of the same position, negative in the 3-fold case, or zero
     // if the position was not repeated.
     st->repetition = 0;
-    int end        = std::min(st->rule50, st->pliesFromNull);
+    uint16_t end    = std::min(st->rule50, st->pliesFromNull);
     if (end >= 4)
     {
         StateInfo* stp = st->previous->previous;
@@ -1005,7 +1005,6 @@ void Position::undo_move(Move m) {
     Color  us   = sideToMove;
     Square from = m.from_sq();
     Square to   = m.to_sq();
-    Piece  pc   = piece_on(to);
 
     assert(empty(from) || m.type_of() == CASTLING);
     assert(type_of(st->capturedPiece) != KING);
@@ -1017,7 +1016,7 @@ void Position::undo_move(Move m) {
         assert(type_of(pc) >= KNIGHT && type_of(pc) <= QUEEN);
 
         remove_piece(to);
-        pc = make_piece(us, PAWN);
+        Piece  pc = make_piece(us, PAWN);
         put_piece(pc, to);
     }
 
@@ -1415,7 +1414,7 @@ bool Position::is_repetition(int ply) const { return st->repetition && st->repet
 bool Position::has_repeated() const {
 
     StateInfo* stc = st;
-    int        end = std::min(st->rule50, st->pliesFromNull);
+    uint16_t   end = std::min(st->rule50, st->pliesFromNull);
     while (end-- >= 4)
     {
         if (stc->repetition)
@@ -1433,7 +1432,7 @@ bool Position::upcoming_repetition(int ply) const {
 
     int j;
 
-    int end = std::min(st->rule50, st->pliesFromNull);
+    uint16_t end = std::min(st->rule50, st->pliesFromNull);
 
     if (end < 3)
         return false;

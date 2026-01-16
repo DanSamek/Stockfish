@@ -42,15 +42,15 @@ struct SharedHistories;
 struct StateInfo {
 
     // Copied when making a move
-    Key    materialKey;
-    Key    pawnKey;
-    Key    minorPieceKey;
-    Key    nonPawnKey[COLOR_NB];
-    Value  nonPawnMaterial[COLOR_NB];
-    int    castlingRights;
-    int    rule50;
-    int    pliesFromNull;
-    Square epSquare;
+    Key      materialKey;
+    Key      pawnKey;
+    Key      minorPieceKey;
+    Key      nonPawnKey[COLOR_NB];
+    Value    nonPawnMaterial[COLOR_NB];
+    uint8_t  castlingRights;
+    uint16_t rule50;
+    uint16_t pliesFromNull;
+    Square   epSquare;
 
     // Not copied when making a move (will be recomputed anyhow)
     Key        key;
