@@ -77,14 +77,26 @@ using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 // (*Scaler) All tuned parameters at time controls shorter than
 // optimized for require verifications at longer time controls
 
+inline int avg(int a, int b){
+    return (a + b) / 2;
+}
+
 int correction_value(const Worker& w, const Position& pos, const Stack* const ss) {
     const Color us     = pos.side_to_move();
     const auto  m      = (ss - 1)->currentMove;
     const auto& shared = w.sharedHistory;
-    const int   pcv    = shared.pawn_correction_entry(pos).at(us).pawn;
-    const int   micv   = shared.minor_piece_correction_entry(pos).at(us).minor;
-    const int   wnpcv  = shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite;
-    const int   bnpcv  = shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack;
+
+    const int   pcv    = avg(shared.pawn_correction_entry(pos).at(us).pawn,
+                             w.pawnCorrectionHistory[pawn_correction_history_index(pos)][us]);
+
+    const int   micv   = avg(shared.minor_piece_correction_entry(pos).at(us).minor,
+                             w.minorPieceCorrectionHistory[minor_piece_index(pos)][us]);
+
+    const int   wnpcv  = avg(shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite,
+                             w.nonPawnCorrectionHistory[non_pawn_index<WHITE>(pos)][WHITE][us]);
+
+    const int   bnpcv  = avg(shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack,
+                             w.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]);
     const int   cntcv =
       m.is_ok() ? (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
@@ -113,6 +125,13 @@ void update_correction_history(const Position& pos,
     shared.minor_piece_correction_entry(pos).at(us).minor << bonus * 156 / 128;
     shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite << bonus * nonPawnWeight / 128;
     shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack << bonus * nonPawnWeight / 128;
+
+    workerThread.pawnCorrectionHistory[pawn_correction_history_index(pos)][us] << bonus;
+    workerThread.minorPieceCorrectionHistory[minor_piece_index(pos)][us] << bonus * 156 / 128;
+    workerThread.nonPawnCorrectionHistory[non_pawn_index<WHITE>(pos)][WHITE][us]
+            << bonus * nonPawnWeight / 128;
+    workerThread.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]
+            << bonus * nonPawnWeight / 128;
 
     if (m.is_ok())
     {
@@ -590,6 +609,10 @@ void Search::Worker::clear() {
     // Each thread is responsible for clearing their part of shared history
     sharedHistory.correctionHistory.clear_range(0, numaThreadIdx, numaTotal);
     sharedHistory.pawnHistory.clear_range(-1238, numaThreadIdx, numaTotal);
+
+    pawnCorrectionHistory.fill(0);
+    minorPieceCorrectionHistory.fill(0);
+    nonPawnCorrectionHistory.fill(0);
 
     ttMoveHistory = 0;
 

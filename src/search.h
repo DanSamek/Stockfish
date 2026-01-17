@@ -294,6 +294,11 @@ class Worker {
     ContinuationHistory             continuationHistory[2][2];
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
+    LocalCorrectionHistory<Pawn>    pawnCorrectionHistory;
+    LocalCorrectionHistory<Minor>   minorPieceCorrectionHistory;
+    LocalCorrectionHistory<NonPawn> nonPawnCorrectionHistory;
+
+
     TTMoveHistory    ttMoveHistory;
     SharedHistories& sharedHistory;
 

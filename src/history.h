@@ -47,6 +47,19 @@ static_assert((PAWN_HISTORY_BASE_SIZE & (PAWN_HISTORY_BASE_SIZE - 1)) == 0,
 static_assert((CORRHIST_BASE_SIZE & (CORRHIST_BASE_SIZE - 1)) == 0,
               "CORRHIST_BASE_SIZE has to be a power of 2");
 
+inline uint16_t pawn_correction_history_index(const Position& pos) {
+    return uint16_t(pos.pawn_key());
+}
+
+inline uint16_t minor_piece_index(const Position& pos) {
+    return uint16_t(pos.minor_piece_key());
+}
+
+template<Color c>
+inline uint16_t non_pawn_index(const Position& pos) {
+    return uint16_t(pos.non_pawn_key(c));
+}
+
 // StatsEntry is the container of various numerical statistics. We use a class
 // instead of a naked value to directly call history update operator<<() on
 // the entry. The first template parameter T is the base type of the array,
@@ -203,7 +216,6 @@ struct CorrHistTypedef<NonPawn> {
     using type = DynStats<Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, COLOR_NB, COLOR_NB>,
                           CORRHIST_BASE_SIZE>;
 };
-
 }
 
 using UnifiedCorrectionHistory =
@@ -212,6 +224,22 @@ using UnifiedCorrectionHistory =
 
 template<CorrHistType T>
 using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
+
+namespace Local{
+
+template<CorrHistType>
+struct LocalCorrHistTypedef {
+    using type = Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, UINT_16_HISTORY_SIZE, COLOR_NB>;
+};
+
+template<>
+struct LocalCorrHistTypedef<NonPawn> {
+    using type = Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, UINT_16_HISTORY_SIZE, COLOR_NB, COLOR_NB>;
+};
+};
+
+template<CorrHistType T>
+using LocalCorrectionHistory = typename Local::LocalCorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
 
