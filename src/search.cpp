@@ -77,8 +77,8 @@ using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 // (*Scaler) All tuned parameters at time controls shorter than
 // optimized for require verifications at longer time controls
 
-inline int avg(int a, int b){
-    return (a + b) / 2;
+inline int combine(int shared, int local){
+    return (2 * shared + local) / 3;
 }
 
 int correction_value(const Worker& w, const Position& pos, const Stack* const ss) {
@@ -86,16 +86,16 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
     const auto  m      = (ss - 1)->currentMove;
     const auto& shared = w.sharedHistory;
 
-    const int   pcv    = avg(shared.pawn_correction_entry(pos).at(us).pawn,
+    const int   pcv    = combine(shared.pawn_correction_entry(pos).at(us).pawn,
                              w.pawnCorrectionHistory[pawn_correction_history_index(pos)][us]);
 
-    const int   micv   = avg(shared.minor_piece_correction_entry(pos).at(us).minor,
+    const int   micv   = combine(shared.minor_piece_correction_entry(pos).at(us).minor,
                              w.minorPieceCorrectionHistory[minor_piece_index(pos)][us]);
 
-    const int   wnpcv  = avg(shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite,
+    const int   wnpcv  = combine(shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite,
                              w.nonPawnCorrectionHistory[non_pawn_index<WHITE>(pos)][WHITE][us]);
 
-    const int   bnpcv  = avg(shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack,
+    const int   bnpcv  = combine(shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack,
                              w.nonPawnCorrectionHistory[non_pawn_index<BLACK>(pos)][BLACK][us]);
     const int   cntcv =
       m.is_ok() ? (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
