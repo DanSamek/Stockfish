@@ -111,7 +111,7 @@ constexpr bool Is64Bit = true;
 constexpr bool Is64Bit = false;
     #endif
 
-using Key      = uint64_t;
+using Key      = uint32_t;
 using Bitboard = uint64_t;
 
 constexpr int MAX_MOVES = 256;
