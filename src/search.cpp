@@ -999,6 +999,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    bool extended = false;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1033,6 +1034,12 @@ moves_loop:  // When in check, search starts here
         capture    = pos.capture_stage(move);
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
+
+        if (!PvNode && !ss->inCheck && extended && ss->moveCount > 8)
+        {
+            depth--;
+            extended = false;
+        }
 
         // Calculate new depth for this move
         newDepth = depth - 1;
@@ -1149,6 +1156,7 @@ moves_loop:  // When in check, search starts here
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
 
                 depth++;
+                extended = true;
             }
 
             // Multi-cut pruning
