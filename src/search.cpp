@@ -1035,7 +1035,7 @@ moves_loop:  // When in check, search starts here
         movedPiece = pos.moved_piece(move);
         givesCheck = pos.gives_check(move);
 
-        if (!PvNode && !ss->inCheck && extended && ss->moveCount > 8)
+        if (extended && bestValue + 100 < alpha && ss->moveCount > 5)
         {
             depth--;
             extended = false;
