@@ -593,7 +593,7 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
-    cutoffHistory = 0;
+    cutoffHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -882,7 +882,7 @@ Value Search::Worker::search(
             Value futilityMult = 76 - 23 * !ss->ttHit;
 
             return futilityMult * d
-                 - (2474 * improving + 331 * opponentWorsening + cutoffHistory / 64) * futilityMult / 1024  //
+                 - (2474 * improving + 331 * opponentWorsening + cutoffHistory[us] / 64) * futilityMult / 1024  //
                  + std::abs(correctionValue) / 174665;
         };
 
@@ -1419,10 +1419,7 @@ moves_loop:  // When in check, search starts here
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
                          ttData.move, moveCount);
         if (!PvNode)
-        {
             ttMoveHistory << (bestMove == ttData.move ? 809 : -865);
-            cutoffHistory << (bestValue >= beta ? 500 : -600);
-        }
     }
 
     // Bonus for prior quiet countermove that caused the fail low
@@ -1459,6 +1456,9 @@ moves_loop:  // When in check, search starts here
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
+
+    if (!PvNode)
+        cutoffHistory[us] << (bestValue >= beta ? 700 : -700);
 
     // If no good move is found and the previous position was ttPv, then the previous
     // opponent move is probably good and the new position is added to the search tree.
