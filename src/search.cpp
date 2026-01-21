@@ -593,6 +593,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    cutoffHistory = 0;
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(8);
@@ -880,7 +882,7 @@ Value Search::Worker::search(
             Value futilityMult = 76 - 23 * !ss->ttHit;
 
             return futilityMult * d
-                 - (2474 * improving + 331 * opponentWorsening) * futilityMult / 1024  //
+                 - (2474 * improving + 331 * opponentWorsening + cutoffHistory / 64) * futilityMult / 1024  //
                  + std::abs(correctionValue) / 174665;
         };
 
@@ -1417,7 +1419,10 @@ moves_loop:  // When in check, search starts here
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
                          ttData.move, moveCount);
         if (!PvNode)
+        {
             ttMoveHistory << (bestMove == ttData.move ? 809 : -865);
+            cutoffHistory << (bestValue >= beta ? 500 : -600);
+        }
     }
 
     // Bonus for prior quiet countermove that caused the fail low
