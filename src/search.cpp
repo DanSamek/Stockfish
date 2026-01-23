@@ -312,6 +312,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
+    cutoffHistory.fill(0);
 
     for (Color c : {WHITE, BLACK})
         for (int i = 0; i < UINT_16_HISTORY_SIZE; i++)
@@ -700,6 +701,9 @@ Value Search::Worker::search(
     ss->statScore       = 0;
     (ss + 2)->cutoffCnt = 0;
 
+    if (ss->ply + 2 < MAX_PLY)
+        cutoffHistory[ss->ply + 2] = 0;
+
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
     posKey                         = pos.key();
@@ -882,7 +886,7 @@ Value Search::Worker::search(
             Value futilityMult = 76 - 23 * !ss->ttHit;
 
             return futilityMult * d
-                 - (2474 * improving + 331 * opponentWorsening + cutoffHistory[us] / 32) * futilityMult / 1024  //
+                 - (2474 * improving + 331 * opponentWorsening + cutoffHistory[ss->ply] / 32) * futilityMult / 1024  //
                  + std::abs(correctionValue) / 174665;
         };
 
@@ -1458,7 +1462,7 @@ moves_loop:  // When in check, search starts here
         bestValue = std::min(bestValue, maxValue);
 
     if (!PvNode)
-        cutoffHistory[us] << (bestValue >= beta ? 700 : -700);
+        cutoffHistory[ss->ply] << (bestValue >= beta ? 700 : -700);
 
     // If no good move is found and the previous position was ttPv, then the previous
     // opponent move is probably good and the new position is added to the search tree.

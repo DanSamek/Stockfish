@@ -215,7 +215,7 @@ using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
 
-using CutoffHistory = Stats<std::int16_t, 8192, COLOR_NB>;
+using CutoffHistory = Stats<std::int16_t, 8192, MAX_PLY + 1>;
 
 // Set of histories shared between groups of threads. To avoid excessive
 // cross-node data transfer, histories are shared only between threads
