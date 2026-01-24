@@ -1548,11 +1548,17 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     pvHit        = ttHit && ttData.is_pv;
 
-    // At non-PV nodes we check for an early TT cutoff
-    if (!PvNode && ttData.depth >= DEPTH_QS
-        && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
-        && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER)))
-        return ttData.value;
+    if (!PvNode && is_valid(ttData.value)) // Can happen when !ttHit or when access race in probe()
+    {
+        // At non-PV nodes we check for an early TT cutoff
+        if (ttData.depth >= DEPTH_QS
+            && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER)))
+            return ttData.value;
+
+        if (!ss->inCheck && ttData.move && pos.pseudo_legal(ttData.move) && pos.legal(ttData.move)
+            && !pos.capture_stage(ttData.move) && !is_decisive(ttData.value))
+            return ttData.value;
+    }
 
     // Step 4. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
