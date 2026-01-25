@@ -987,7 +987,7 @@ Value Search::Worker::search(
         && !pos.capture_stage(ttData.move) && !is_decisive(ttData.value))
         {
             value = qsearch<NonPV>(pos, ss, alpha, beta);
-            reduceCaptures = value + 200 * depth < ttData.value;
+            reduceCaptures = value + 250 < ttData.value;
         }
 
 moves_loop:  // When in check, search starts here
@@ -1205,7 +1205,9 @@ moves_loop:  // When in check, search starts here
         r += 714;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 73;
         r -= std::abs(correctionValue) / 30370;
-        r += (reduceCaptures && capture) * 250;
+
+        if (reduceCaptures && capture)
+            r += 512;
 
         // Increase reduction for cut nodes
         if (cutNode)
