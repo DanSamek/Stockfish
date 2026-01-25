@@ -651,6 +651,8 @@ Value Search::Worker::search(
     int   priorReduction;
     Piece movedPiece;
 
+    bool reduceCaptures = false;
+
     SearchedList capturesSearched;
     SearchedList quietsSearched;
 
@@ -980,6 +982,14 @@ Value Search::Worker::search(
         }
     }
 
+    if (!PvNode && depth <= 5 && is_valid(ttData.value)
+        && ttData.move && pos.pseudo_legal(ttData.move) && pos.legal(ttData.move)
+        && !pos.capture_stage(ttData.move) && !is_decisive(ttData.value))
+        {
+            value = qsearch<NonPV>(pos, ss, alpha, beta);
+            reduceCaptures = value + 200 * depth < ttData.value;
+        }
+
 moves_loop:  // When in check, search starts here
 
     // Step 12. A small Probcut idea
@@ -1195,6 +1205,7 @@ moves_loop:  // When in check, search starts here
         r += 714;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 73;
         r -= std::abs(correctionValue) / 30370;
+        r += (reduceCaptures && capture) * 250;
 
         // Increase reduction for cut nodes
         if (cutNode)
