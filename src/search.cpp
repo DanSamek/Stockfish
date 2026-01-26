@@ -1047,7 +1047,7 @@ moves_loop:  // When in check, search starts here
             r += 946;
 
         if (allNode)
-            r += 256;
+            r += 512;
 
         // Step 14. Pruning at shallow depths.
         // Depth conditions are important for mate finding.
@@ -1200,7 +1200,7 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 30370;
 
         if (allNode)
-            r -= 256;
+            r -= 512;
 
         // Increase reduction for cut nodes
         if (cutNode)
