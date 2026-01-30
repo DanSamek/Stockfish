@@ -68,6 +68,62 @@ constexpr int SEARCHEDLIST_CAPACITY = 32;
 constexpr int mainHistoryDefault    = 68;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 
+int ttPvReductions[2][5] = {
+    {2719, 983, 922, 934, 1011},
+    {2719, 983, 922, 934, 1011},
+};
+TUNE(ttPvReductions);
+
+int baseReduction[2] = {
+    714, 714
+};
+TUNE(baseReduction);
+
+int moveCountReduction[2] = {
+    73, 73
+};
+TUNE(moveCountReduction);
+
+int correctionValueDivisor[2] = {
+    30370, 30370
+};
+TUNE(SetRange(1, 60740),correctionValueDivisor);
+
+int cutnodeReductions[2][2] = {
+    {3372, 997},
+    {3372, 997},
+};
+TUNE(cutnodeReductions);
+
+int ttCaptureReduction[2] ={
+    1119, 1119
+};
+TUNE(ttCaptureReduction);
+
+int cutoffCntReductions[2][3] = {
+    {256, 1024, 1024},
+    {256, 1024, 1024}
+};
+TUNE(cutoffCntReductions);
+
+int ttMoveReductions[2] = {
+    2151, 2151
+};
+TUNE(ttMoveReductions);
+
+int statScoreMult[2] = {
+    850, 850
+};
+TUNE(statScoreMult);
+
+int a[2] = {
+    3957, 5654
+};
+
+int a2 = 1140;
+TUNE(a, a2);
+
+
 // (*Scalers):
 // The values with Scaler asterisks have proven non-linear scaling.
 // They are optimized to time controls of 180 + 1.8 and longer,
@@ -1187,30 +1243,37 @@ moves_loop:  // When in check, search starts here
         newDepth += extension;
         uint64_t nodeCount = rootNode ? uint64_t(nodes) : 0;
 
+        const bool lmr = depth >= 2 && moveCount > 1;
+
         // Decrease reduction for PvNodes (*Scaler)
         if (ss->ttPv)
-            r -= 2719 + PvNode * 983 + (ttData.value > alpha) * 922
-               + (ttData.depth >= depth) * (934 + cutNode * 1011);
+            r -= ttPvReductions[lmr][0] + PvNode * ttPvReductions[lmr][1]
+                    + (ttData.value > alpha) * ttPvReductions[lmr][2]
+                    + (ttData.depth >= depth) * (ttPvReductions[lmr][3]
+                    + cutNode * ttPvReductions[lmr][4]);
 
-        r += 714;  // Base reduction offset to compensate for other tweaks
-        r -= moveCount * 73;
-        r -= std::abs(correctionValue) / 30370;
+        r += baseReduction[lmr];  // Base reduction offset to compensate for other tweaks
+        r -= moveCount * moveCountReduction[lmr];
+        r -= std::abs(correctionValue) / correctionValueDivisor[lmr];
 
         // Increase reduction for cut nodes
         if (cutNode)
-            r += 3372 + 997 * !ttData.move;
+            r += cutnodeReductions[lmr][0]
+                    + cutnodeReductions[lmr][1] * !ttData.move;
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
-            r += 1119;
+            r += ttCaptureReduction[lmr];
 
         // Increase reduction if next ply has a lot of fail high
         if ((ss + 1)->cutoffCnt > 1)
-            r += 256 + 1024 * ((ss + 1)->cutoffCnt > 2) + 1024 * allNode;
+            r += cutoffCntReductions[lmr][0]
+                    + cutoffCntReductions[lmr][1] * ((ss + 1)->cutoffCnt > 2)
+                    + cutoffCntReductions[lmr][2] * allNode;
 
         // For first picked move (ttMove) reduce reduction
         if (move == ttData.move)
-            r -= 2151;
+            r -= ttMoveReductions[lmr];
 
         if (capture)
             ss->statScore = 868 * int(PieceValue[pos.captured_piece()]) / 128
@@ -1221,7 +1284,7 @@ moves_loop:  // When in check, search starts here
                           + (*contHist[1])[movedPiece][move.to_sq()];
 
         // Decrease/increase reduction for moves with a good/bad history
-        r -= ss->statScore * 850 / 8192;
+        r -= ss->statScore * statScoreMult[lmr] / 8192;
 
         // Scale up reductions for expected ALL nodes
         if (allNode)
@@ -1265,11 +1328,11 @@ moves_loop:  // When in check, search starts here
         {
             // Increase reduction if ttMove is not present
             if (!ttData.move)
-                r += 1140;
+                r += a2;
 
             // Note that if expected reduction is high, we reduce search depth here
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
-                                   newDepth - (r > 3957) - (r > 5654 && newDepth > 2), !cutNode);
+                                   newDepth - (r > a[0]) - (r > a[1] && newDepth > 2), !cutNode);
         }
 
         // For PV nodes only, do a full PV search on the first move or after a fail high,
