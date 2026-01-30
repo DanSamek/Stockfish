@@ -312,6 +312,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
+    cutoffHistory.fill(0);
 
     for (Color c : {WHITE, BLACK})
         for (int i = 0; i < UINT_16_HISTORY_SIZE; i++)
@@ -592,6 +593,8 @@ void Search::Worker::clear() {
     sharedHistory.pawnHistory.clear_range(-1238, numaThreadIdx, numaTotal);
 
     ttMoveHistory = 0;
+
+    cutoffHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -1195,6 +1198,7 @@ moves_loop:  // When in check, search starts here
         r += 714;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 73;
         r -= std::abs(correctionValue) / 30370;
+        r -= cutoffHistory[us] / 16;
 
         // Increase reduction for cut nodes
         if (cutNode)
@@ -1454,6 +1458,9 @@ moves_loop:  // When in check, search starts here
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
+
+    if (!PvNode)
+        cutoffHistory[us] << (bestValue >= beta ? 700 : -700);
 
     // If no good move is found and the previous position was ttPv, then the previous
     // opponent move is probably good and the new position is added to the search tree.
