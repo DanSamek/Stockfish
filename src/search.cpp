@@ -68,61 +68,17 @@ constexpr int SEARCHEDLIST_CAPACITY = 32;
 constexpr int mainHistoryDefault    = 68;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 
-int ttPvReductions[2][5] = {
-    {2719, 983, 922, 934, 1011},
-    {2719, 983, 922, 934, 1011},
-};
-TUNE(ttPvReductions);
-
-int baseReduction[2] = {
-    714, 714
-};
-TUNE(baseReduction);
-
-int moveCountReduction[2] = {
-    73, 73
-};
-TUNE(moveCountReduction);
-
-int correctionValueDivisor[2] = {
-    30370, 30370
-};
-TUNE(SetRange(1, 60740),correctionValueDivisor);
-
-int cutnodeReductions[2][2] = {
-    {3372, 997},
-    {3372, 997},
-};
-TUNE(cutnodeReductions);
-
-int ttCaptureReduction[2] ={
-    1119, 1119
-};
-TUNE(ttCaptureReduction);
-
-int cutoffCntReductions[2][3] = {
-    {256, 1024, 1024},
-    {256, 1024, 1024}
-};
-TUNE(cutoffCntReductions);
-
-int ttMoveReductions[2] = {
-    2151, 2151
-};
-TUNE(ttMoveReductions);
-
-int statScoreMult[2] = {
-    850, 850
-};
-TUNE(statScoreMult);
-
-int a[2] = {
-    3957, 5654
-};
-
-int a2 = 1140;
-TUNE(a, a2);
-
+constexpr int ttPvReductions[2][5] = {{2689, 888, 881, 931, 1052}, {2827, 980, 878, 958, 1010}};
+constexpr int baseReduction[2] = {637, 734};
+constexpr int moveCountReduction[2] = {72, 73};
+constexpr int correctionValueDivisor[2] = {29687, 29910};
+constexpr int cutnodeReductions[2][2] = {{3380, 986}, {3044, 1020}};
+constexpr int ttCaptureReduction[2] = {1170, 1132};
+constexpr int cutoffCntReductions[2][3] = {{252, 1016, 944}, {247, 973, 997}};
+constexpr int ttMoveReductions[2] = {2032, 2237};
+constexpr int statScoreMult[2] = {853, 850};
+constexpr int a[2] = {3990, 5476};
+constexpr int a2 = 1103;
 
 // (*Scalers):
 // The values with Scaler asterisks have proven non-linear scaling.
