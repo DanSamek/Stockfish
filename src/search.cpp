@@ -1431,7 +1431,7 @@ moves_loop:  // When in check, search starts here
         bonusScale += 156 * (!(ss - 1)->inCheck && bestValue <= -(ss - 1)->staticEval - 65);
 
         bonusScale = std::max(bonusScale, 0);
-        bonusScale += PvNode * bonusScale / 64;
+        bonusScale += PvNode * bonusScale / 128;
 
         // scaledBonus ranges from 0 to roughly 2.3M, overflows happen for multipliers larger than 900
         const int scaledBonus = std::min(141 * depth - 87, 1351) * bonusScale;
