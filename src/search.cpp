@@ -77,8 +77,6 @@ constexpr int ttCaptureReduction[2] = {1170, 1132};
 constexpr int cutoffCntReductions[2][3] = {{252, 1016, 944}, {247, 973, 997}};
 constexpr int ttMoveReductions[2] = {2032, 2237};
 constexpr int statScoreMult[2] = {853, 850};
-constexpr int a[2] = {3990, 5476};
-constexpr int a2 = 1103;
 
 // (*Scalers):
 // The values with Scaler asterisks have proven non-linear scaling.
@@ -1247,7 +1245,7 @@ moves_loop:  // When in check, search starts here
             r += r / (depth + 1);
 
         // Step 17. Late moves reduction / extension (LMR)
-        if (depth >= 2 && moveCount > 1)
+        if (lmr)
         {
             // In general we want to cap the LMR depth search at newDepth, but when
             // reduction is negative, we allow this move a limited search extension
@@ -1284,11 +1282,11 @@ moves_loop:  // When in check, search starts here
         {
             // Increase reduction if ttMove is not present
             if (!ttData.move)
-                r += a2;
+                r += 1103;
 
             // Note that if expected reduction is high, we reduce search depth here
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
-                                   newDepth - (r > a[0]) - (r > a[1] && newDepth > 2), !cutNode);
+                                   newDepth - (r > 3990) - (r > 5476 && newDepth > 2), !cutNode);
         }
 
         // For PV nodes only, do a full PV search on the first move or after a fail high,
