@@ -660,7 +660,6 @@ Value Search::Worker::search(
     priorCapture  = pos.captured_piece();
     Color us      = pos.side_to_move();
     ss->moveCount = 0;
-    ss->iirCount  = (ss - 1)->iirCount;
     bestValue     = -VALUE_INFINITE;
     maxValue      = VALUE_INFINITE;
 
@@ -699,6 +698,7 @@ Value Search::Worker::search(
     (ss - 1)->reduction = 0;
     ss->statScore       = 0;
     (ss + 2)->cutoffCnt = 0;
+    ss->iirCount        = (ss - 1)->iirCount;
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
