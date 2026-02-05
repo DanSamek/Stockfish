@@ -594,6 +594,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    cutoffHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(8);
@@ -878,10 +880,10 @@ Value Search::Worker::search(
     // The depth condition is important for mate finding.
     {
         auto futility_margin = [&](Depth d) {
-            Value futilityMult = 76 - 23 * !ss->ttHit;
+            Value futilityMult = 70 - 23 * !ss->ttHit;
 
             return futilityMult * d
-                 - (2474 * improving + 331 * opponentWorsening) * futilityMult / 1024  //
+                 - (2474 * improving + 331 * opponentWorsening + cutoffHistory[us] / 32) * futilityMult / 1024  //
                  + std::abs(correctionValue) / 174665;
         };
 
@@ -1460,6 +1462,9 @@ moves_loop:  // When in check, search starts here
     // opponent move is probably good and the new position is added to the search tree.
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
+
+    if (!PvNode)
+        cutoffHistory[us] << (bestValue >= beta ? 700 : -700);
 
     // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
