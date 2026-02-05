@@ -1200,7 +1200,7 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 30370;
 
         // Increase reduction for cut nodes
-        if (cutNode && cutoffHistory[us] > std::min(70 * depth, 7000))
+        if (cutNode && cutoffHistory[us] > std::min(350 * depth, 7000))
             r += 3372 + 997 * !ttData.move;
 
         // Increase reduction if ttMove is a capture
