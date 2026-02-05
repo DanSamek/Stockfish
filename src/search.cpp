@@ -967,7 +967,7 @@ Value Search::Worker::search(
             // If the qsearch held, perform the regular search
             if (value >= probCutBeta && probCutDepth > 0)
                 value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, probCutDepth,
-                                       !cutNode);
+                                       cutoffHistory[~us] > 5000);
 
             undo_move(pos, move);
 
@@ -1137,7 +1137,7 @@ moves_loop:  // When in check, search starts here
             Depth singularDepth = newDepth / 2;
 
             ss->excludedMove = move;
-            value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
+            value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutoffHistory[us] > 5000);
             ss->excludedMove = Move::none();
 
             if (value < singularBeta)
@@ -1200,7 +1200,7 @@ moves_loop:  // When in check, search starts here
         r -= std::abs(correctionValue) / 30370;
 
         // Increase reduction for cut nodes
-        if (cutNode && cutoffHistory[us] > std::min(350 * depth, 7000))
+        if (cutNode)
             r += 3372 + 997 * !ttData.move;
 
         // Increase reduction if ttMove is a capture
@@ -1256,7 +1256,7 @@ moves_loop:  // When in check, search starts here
                 newDepth += doDeeperSearch - doShallowerSearch;
 
                 if (newDepth > d)
-                    value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
+                    value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, cutoffHistory[~us] > 5000);
 
                 // Post LMR continuation history updates
                 update_continuation_histories(ss, movedPiece, move.to_sq(), 1365);
@@ -1272,7 +1272,7 @@ moves_loop:  // When in check, search starts here
 
             // Note that if expected reduction is high, we reduce search depth here
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
-                                   newDepth - (r > 3957) - (r > 5654 && newDepth > 2), !cutNode);
+                                   newDepth - (r > 3957) - (r > 5654 && newDepth > 2), cutoffHistory[~us] > 5000);
         }
 
         // For PV nodes only, do a full PV search on the first move or after a fail high,
