@@ -313,6 +313,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
+    cutoffHistory.fill(0);
 
     for (Color c : {WHITE, BLACK})
         for (int i = 0; i < UINT_16_HISTORY_SIZE; i++)
@@ -620,7 +621,6 @@ Value Search::Worker::search(
 
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
-    const bool     allNode  = !(PvNode || cutNode);
 
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
@@ -640,7 +640,6 @@ Value Search::Worker::search(
     assert(-VALUE_INFINITE <= alpha && alpha < beta && beta <= VALUE_INFINITE);
     assert(PvNode || (alpha == beta - 1));
     assert(0 < depth && depth < MAX_PLY);
-    assert(!(PvNode && cutNode));
 
     Move      pv[MAX_PLY + 1];
     StateInfo st;
@@ -664,6 +663,10 @@ Value Search::Worker::search(
     ss->moveCount = 0;
     bestValue     = -VALUE_INFINITE;
     maxValue      = VALUE_INFINITE;
+
+    cutNode &= cutoffHistory[us] > 4000;
+    const bool     allNode  = !(PvNode || cutNode);
+    assert(!(PvNode && cutNode));
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -967,7 +970,7 @@ Value Search::Worker::search(
             // If the qsearch held, perform the regular search
             if (value >= probCutBeta && probCutDepth > 0)
                 value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, probCutDepth,
-                                       cutoffHistory[~us] > 5000);
+                                       !cutNode);
 
             undo_move(pos, move);
 
@@ -1137,7 +1140,7 @@ moves_loop:  // When in check, search starts here
             Depth singularDepth = newDepth / 2;
 
             ss->excludedMove = move;
-            value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutoffHistory[us] > 5000);
+            value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
             ss->excludedMove = Move::none();
 
             if (value < singularBeta)
@@ -1256,7 +1259,7 @@ moves_loop:  // When in check, search starts here
                 newDepth += doDeeperSearch - doShallowerSearch;
 
                 if (newDepth > d)
-                    value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, cutoffHistory[~us] > 5000);
+                    value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
 
                 // Post LMR continuation history updates
                 update_continuation_histories(ss, movedPiece, move.to_sq(), 1365);
@@ -1272,7 +1275,7 @@ moves_loop:  // When in check, search starts here
 
             // Note that if expected reduction is high, we reduce search depth here
             value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
-                                   newDepth - (r > 3957) - (r > 5654 && newDepth > 2), cutoffHistory[~us] > 5000);
+                                   newDepth - (r > 3957) - (r > 5654 && newDepth > 2), !cutNode);
         }
 
         // For PV nodes only, do a full PV search on the first move or after a fail high,
