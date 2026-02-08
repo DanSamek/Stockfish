@@ -757,9 +757,6 @@ Value Search::Worker::search(
     if (priorReduction >= 2 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 173)
         depth--;
 
-    if (priorReduction >= 3 && correctionValue >= 51065417)
-        depth++;
-
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
@@ -870,6 +867,9 @@ Value Search::Worker::search(
             sharedHistory.pawn_entry(pos)[pos.piece_on(prevSq)][prevSq] << evalDiff * 13;
     }
 
+    // Increase depth, if current position has positive correction history.
+    if (priorReduction >= 3 && correctionValue >= 47661056)
+        depth++;
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
