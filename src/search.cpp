@@ -312,6 +312,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
+    searchCorrectionHistory.fill(0);
 
     for (Color c : {WHITE, BLACK})
         for (int i = 0; i < UINT_16_HISTORY_SIZE; i++)
@@ -591,6 +592,7 @@ void Search::Worker::clear() {
     sharedHistory.pawnHistory.clear_range(-1238, numaThreadIdx, numaTotal);
 
     ttMoveHistory = 0;
+    searchCorrectionHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -711,6 +713,9 @@ Value Search::Worker::search(
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
     const auto correctionValue      = correction_value(*this, pos, ss);
+
+    searchCorrectionHistory[us] << correctionValue / 49152;
+
     // Skip early pruning when in check
     if (ss->inCheck)
         ss->staticEval = eval = (ss - 2)->staticEval;
@@ -880,7 +885,8 @@ Value Search::Worker::search(
 
             return futilityMult * d
                  - (2474 * improving + 331 * opponentWorsening) * futilityMult / 1024  //
-                 + std::abs(correctionValue) / 174665;
+                 + std::abs(correctionValue) / 174665
+                 + searchCorrectionHistory[us] / 64;
         };
 
         if (!ss->ttPv && depth < 14 && eval - futility_margin(depth) >= beta && eval >= beta

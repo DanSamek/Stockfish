@@ -293,10 +293,10 @@ class Worker {
     CapturePieceToHistory           captureHistory;
     ContinuationHistory             continuationHistory[2][2];
     CorrectionHistory<Continuation> continuationCorrectionHistory;
+    SearchCorrectionHistory         searchCorrectionHistory;
 
     TTMoveHistory    ttMoveHistory;
     SharedHistories& sharedHistory;
-
    private:
     void iterative_deepening();
 
