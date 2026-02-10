@@ -294,6 +294,8 @@ class Worker {
     ContinuationHistory             continuationHistory[2][2];
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
+    OverallCaptureHistory overallCaptureHistory;
+
     TTMoveHistory    ttMoveHistory;
     SharedHistories& sharedHistory;
 

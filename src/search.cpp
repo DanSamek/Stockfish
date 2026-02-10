@@ -592,6 +592,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    overallCaptureHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(8);
@@ -934,7 +936,7 @@ Value Search::Worker::search(
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
-    probCutBeta = beta + 235 - 63 * improving;
+    probCutBeta = beta + 235 - 63 * improving - overallCaptureHistory[us] / 256;
     if (depth >= 3
         && !is_decisive(beta)
         // If value from transposition table is lower than probCutBeta, don't attempt
@@ -1416,7 +1418,10 @@ moves_loop:  // When in check, search starts here
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
                          ttData.move, moveCount);
         if (!PvNode)
+        {
+            overallCaptureHistory[us] << (pos.capture_stage(bestMove) ? 700 : -700);
             ttMoveHistory << (bestMove == ttData.move ? 809 : -865);
+        }
     }
 
     // Bonus for prior quiet countermove that caused the fail low
