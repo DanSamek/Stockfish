@@ -312,7 +312,6 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(97);
-    searchCorrectionHistory.fill(0);
 
     for (Color c : {WHITE, BLACK})
         for (int i = 0; i < UINT_16_HISTORY_SIZE; i++)
@@ -714,7 +713,13 @@ Value Search::Worker::search(
     Value      unadjustedStaticEval = VALUE_NONE;
     const auto correctionValue      = correction_value(*this, pos, ss);
 
-    searchCorrectionHistory[us] << correctionValue / 49152;
+    if (rootNode)
+        searchCorrectionHistory.fill(0);
+
+    if (!excludedMove)
+        searchCorrectionHistory[us] << correctionValue / 65536;
+
+    auto searchCorrectionHistoryValue = searchCorrectionHistory[us];
 
     // Skip early pruning when in check
     if (ss->inCheck)
@@ -885,8 +890,7 @@ Value Search::Worker::search(
 
             return futilityMult * d
                  - (2474 * improving + 331 * opponentWorsening) * futilityMult / 1024  //
-                 + std::abs(correctionValue) / 174665
-                 + searchCorrectionHistory[us] / 64;
+                 + std::abs(correctionValue) / 174665;
         };
 
         if (!ss->ttPv && depth < 14 && eval - futility_margin(depth) >= beta && eval >= beta
@@ -1145,10 +1149,11 @@ moves_loop:  // When in check, search starts here
             if (value < singularBeta)
             {
                 int corrValAdj   = std::abs(correctionValue) / 230673;
+                int sCorrValAdj  = std::abs(searchCorrectionHistoryValue) / 64;
                 int doubleMargin = -4 + 199 * PvNode - 201 * !ttCapture - corrValAdj
                                  - 897 * ttMoveHistory / 127649 - (ss->ply > rootDepth) * 42;
                 int tripleMargin = 73 + 302 * PvNode - 248 * !ttCapture + 90 * ss->ttPv - corrValAdj
-                                 - (ss->ply > rootDepth) * 48;
+                                 - (ss->ply > rootDepth) * 48 - sCorrValAdj;
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
