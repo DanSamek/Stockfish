@@ -84,12 +84,17 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
     const int   micv   = shared.minor_piece_correction_entry(pos).at(us).minor;
     const int   wnpcv  = shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite;
     const int   bnpcv  = shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack;
-    const int   cntcv =
+    const int   cntcv  =
       m.is_ok() ? (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                   : 8;
 
-    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv;
+    const int   ccv    =
+            pos.captured_piece() && m.is_ok()
+            ? w.captureCorrectionHistory[pos.piece_on(m.to_sq())][m.to_sq()][type_of(pos.captured_piece())]
+            : 0;
+
+    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 6000 * ccv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -121,6 +126,14 @@ void update_correction_history(const Position& pos,
     const int    bonus4 = (bonus * 59 / 128) * mask;
     (*(ss - 2)->continuationCorrectionHistory)[pc][to] << bonus2;
     (*(ss - 4)->continuationCorrectionHistory)[pc][to] << bonus4;
+
+
+    const Piece capturedPiece = pos.captured_piece();
+    if (capturedPiece && m.is_ok())
+    {
+        assert(capturedPiece != NO_PIECE);
+        workerThread.captureCorrectionHistory[pc][m.to_sq()][type_of(capturedPiece)] << bonus;
+    }
 }
 
 // Add a small random component to draw evaluations to avoid 3-fold blindness
@@ -591,6 +604,8 @@ void Search::Worker::clear() {
     sharedHistory.pawnHistory.clear_range(-1238, numaThreadIdx, numaTotal);
 
     ttMoveHistory = 0;
+
+    captureCorrectionHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
