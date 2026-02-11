@@ -207,7 +207,7 @@ struct CorrHistTypedef<NonPawn> {
 
 template<>
 struct CorrHistTypedef<Capture> {
-    using type = Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, PIECE_NB, SQUARE_NB, PIECE_TYPE_NB>;
+    using type = Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, PIECE_NB, SQUARE_NB, SQUARE_NB, PIECE_TYPE_NB>;
 };
 
 }

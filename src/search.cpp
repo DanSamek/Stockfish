@@ -91,10 +91,10 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
 
     const int   ccv    =
             pos.captured_piece() && m.is_ok()
-            ? w.captureCorrectionHistory[pos.piece_on(m.to_sq())][m.to_sq()][type_of(pos.captured_piece())]
+            ? w.captureCorrectionHistory[pos.piece_on(m.to_sq())][m.from_sq()][m.to_sq()][type_of(pos.captured_piece())]
             : 0;
 
-    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 6000 * ccv;
+    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 7000 * ccv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -132,7 +132,7 @@ void update_correction_history(const Position& pos,
     if (capturedPiece && m.is_ok())
     {
         assert(capturedPiece != NO_PIECE);
-        workerThread.captureCorrectionHistory[pc][m.to_sq()][type_of(capturedPiece)] << bonus;
+        workerThread.captureCorrectionHistory[pc][m.from_sq()][m.to_sq()][type_of(capturedPiece)] << bonus;
     }
 }
 
