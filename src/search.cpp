@@ -76,6 +76,22 @@ using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 // (*Scaler) All tuned parameters at time controls shorter than
 // optimized for require verifications at longer time controls
 
+int a1 = 10347;
+int a2 = 8821;
+int a3 = 11665;
+int a4 = 7841;
+int a5 = 7000;
+
+TUNE(a1, a2, a3, a4, a5);
+
+int b1 = 156;
+int b2 = 178;
+int b3 = 127;
+int b4 = 59;
+int b5 = 128;
+
+TUNE(b1, b2, b3, b4, b5);
+
 int correction_value(const Worker& w, const Position& pos, const Stack* const ss) {
     const Color us     = pos.side_to_move();
     const auto  m      = (ss - 1)->currentMove;
@@ -94,7 +110,7 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
             ? w.captureCorrectionHistory[pos.piece_on(m.to_sq())][m.from_sq()][m.to_sq()][type_of(pos.captured_piece())]
             : 0;
 
-    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 7000 * ccv;
+    return a1 * pcv + a2 * micv + a3 * (wnpcv + bnpcv) + a4 * cntcv + a5 * ccv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -110,20 +126,20 @@ void update_correction_history(const Position& pos,
     const Move  m  = (ss - 1)->currentMove;
     const Color us = pos.side_to_move();
 
-    constexpr int nonPawnWeight = 178;
+    //constexpr int nonPawnWeight = 178;
     auto&         shared        = workerThread.sharedHistory;
 
     shared.pawn_correction_entry(pos).at(us).pawn << bonus;
-    shared.minor_piece_correction_entry(pos).at(us).minor << bonus * 156 / 128;
-    shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite << bonus * nonPawnWeight / 128;
-    shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack << bonus * nonPawnWeight / 128;
+    shared.minor_piece_correction_entry(pos).at(us).minor << bonus * b1 / 128;
+    shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite << bonus * b2 / 128;
+    shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack << bonus * b2 / 128;
 
     // Branchless: use mask to zero bonus when move is not ok
     const int    mask   = int(m.is_ok());
     const Square to     = m.to_sq_unchecked();
     const Piece  pc     = pos.piece_on(to);
-    const int    bonus2 = (bonus * 127 / 128) * mask;
-    const int    bonus4 = (bonus * 59 / 128) * mask;
+    const int    bonus2 = (bonus * b3 / 128) * mask;
+    const int    bonus4 = (bonus * b4 / 128) * mask;
     (*(ss - 2)->continuationCorrectionHistory)[pc][to] << bonus2;
     (*(ss - 4)->continuationCorrectionHistory)[pc][to] << bonus4;
 
@@ -132,7 +148,7 @@ void update_correction_history(const Position& pos,
     if (capturedPiece && m.is_ok())
     {
         assert(capturedPiece != NO_PIECE);
-        workerThread.captureCorrectionHistory[pc][m.from_sq()][m.to_sq()][type_of(capturedPiece)] << bonus;
+        workerThread.captureCorrectionHistory[pc][m.from_sq()][m.to_sq()][type_of(capturedPiece)] << bonus * b5 / 128;
     }
 }
 
