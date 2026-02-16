@@ -47,6 +47,11 @@ static_assert((PAWN_HISTORY_BASE_SIZE & (PAWN_HISTORY_BASE_SIZE - 1)) == 0,
 static_assert((CORRHIST_BASE_SIZE & (CORRHIST_BASE_SIZE - 1)) == 0,
               "CORRHIST_BASE_SIZE has to be a power of 2");
 
+inline int pawn_history_index(const Position& pos) {
+    return pos.pawn_key() & (PAWN_HISTORY_BASE_SIZE - 1);
+}
+
+
 // StatsEntry is the container of various numerical statistics. We use a class
 // instead of a naked value to directly call history update operator<<() on
 // the entry. The first template parameter T is the base type of the array,
@@ -152,6 +157,8 @@ using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 // PawnHistory is addressed by the pawn structure and a move's [piece][to]
 using PawnHistory =
   DynStats<AtomicStats<std::int16_t, 8192, PIECE_NB, SQUARE_NB>, PAWN_HISTORY_BASE_SIZE>;
+
+using NullMoveHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_BASE_SIZE, COLOR_NB>;
 
 // Correction histories record differences between the static evaluation of
 // positions and their search score. It is used to improve the static evaluation

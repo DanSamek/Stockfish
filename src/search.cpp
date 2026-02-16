@@ -591,6 +591,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    nullMoveHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(8);
@@ -888,8 +890,8 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - 18 * depth + 350 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
+    if (cutNode && ss->staticEval >= beta - 18 * depth + 350 - nullMoveHistory[pawn_history_index(pos)][us] / 32
+        && !excludedMove && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
 
@@ -900,6 +902,8 @@ Value Search::Worker::search(
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
 
         undo_null_move(pos);
+
+        nullMoveHistory[pawn_history_index(pos)][us] << (nullValue >= beta ? 700 : -700);
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
