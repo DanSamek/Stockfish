@@ -76,7 +76,10 @@ using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 // (*Scaler) All tuned parameters at time controls shorter than
 // optimized for require verifications at longer time controls
 
-int correction_value(const Worker& w, const Position& pos, const Stack* const ss) {
+int correction_value(const Worker& w,
+                     const Position& pos,
+                     const Stack* const ss,
+                     Move ttMove) {
     const Color us     = pos.side_to_move();
     const auto  m      = (ss - 1)->currentMove;
     const auto& shared = w.sharedHistory;
@@ -84,12 +87,17 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
     const int   micv   = shared.minor_piece_correction_entry(pos).at(us).minor;
     const int   wnpcv  = shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite;
     const int   bnpcv  = shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack;
-    const int   cntcv =
+    const int   cntcv  =
       m.is_ok() ? (*(ss - 2)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                     + (*(ss - 4)->continuationCorrectionHistory)[pos.piece_on(m.to_sq())][m.to_sq()]
                   : 8;
 
-    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv;
+    const int   ttmcv  =
+        ttMove && pos.pseudo_legal(ttMove) && pos.legal(ttMove)
+            ? w.ttMoveCorrectionHistory[ttMove.from_sq()][ttMove.to_sq()][pos.piece_on(ttMove.to_sq())][pos.capture_stage(ttMove)]
+            : 0;
+
+    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 9000 * ttmcv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
@@ -101,7 +109,8 @@ Value to_corrected_static_eval(const Value v, const int cv) {
 void update_correction_history(const Position& pos,
                                Stack* const    ss,
                                Search::Worker& workerThread,
-                               const int       bonus) {
+                               const int       bonus,
+                               Move ttMove) {
     const Move  m  = (ss - 1)->currentMove;
     const Color us = pos.side_to_move();
 
@@ -121,6 +130,12 @@ void update_correction_history(const Position& pos,
     const int    bonus4 = (bonus * 59 / 128) * mask;
     (*(ss - 2)->continuationCorrectionHistory)[pc][to] << bonus2;
     (*(ss - 4)->continuationCorrectionHistory)[pc][to] << bonus4;
+
+    if (ttMove && pos.pseudo_legal(ttMove) && pos.legal(ttMove))
+    {
+        workerThread.ttMoveCorrectionHistory[ttMove.from_sq()][ttMove.to_sq()][pos.piece_on(ttMove.to_sq())][pos.capture_stage(ttMove)]
+            << bonus;
+    }
 }
 
 // Add a small random component to draw evaluations to avoid 3-fold blindness
@@ -585,6 +600,8 @@ void Search::Worker::clear() {
     mainHistory.fill(0);
     captureHistory.fill(-689);
 
+    ttMoveCorrectionHistory.fill(0);
+
     // Each thread is responsible for clearing their part of shared history
     sharedHistory.correctionHistory.clear_range(0, numaThreadIdx, numaTotal);
     sharedHistory.pawnHistory.clear_range(-1238, numaThreadIdx, numaTotal);
@@ -709,7 +726,7 @@ Value Search::Worker::search(
 
     // Step 6. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
-    const auto correctionValue      = correction_value(*this, pos, ss);
+    const auto correctionValue      = correction_value(*this, pos, ss, ttData.move);
     // Skip early pruning when in check
     if (ss->inCheck)
         ss->staticEval = eval = (ss - 2)->staticEval;
@@ -1475,7 +1492,7 @@ moves_loop:  // When in check, search starts here
     {
         auto bonus = std::clamp(int(bestValue - ss->staticEval) * depth / (bestMove ? 10 : 8),
                                 -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
-        update_correction_history(pos, ss, *this, bonus);
+        update_correction_history(pos, ss, *this, bonus, ttData.move);
     }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
@@ -1558,7 +1575,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         bestValue = futilityBase = -VALUE_INFINITE;
     else
     {
-        const auto correctionValue = correction_value(*this, pos, ss);
+        const auto correctionValue = correction_value(*this, pos, ss, ttData.move);
 
         if (ss->ttHit)
         {

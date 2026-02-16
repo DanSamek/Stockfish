@@ -163,6 +163,7 @@ enum CorrHistType {
     NonPawn,       // By non-pawn material positions and color
     PieceTo,       // By [piece][to] move
     Continuation,  // Combined history of move pairs
+    TTMove,        // By [from][to][moved_piece][capture]
 };
 
 template<typename T, int D>
@@ -202,6 +203,11 @@ template<>
 struct CorrHistTypedef<NonPawn> {
     using type = DynStats<Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, COLOR_NB, COLOR_NB>,
                           CORRHIST_BASE_SIZE>;
+};
+
+template<>
+struct CorrHistTypedef<TTMove> {
+    using type = Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, SQUARE_NB, SQUARE_NB, PIECE_NB, 2>;
 };
 
 }
