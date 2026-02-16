@@ -97,7 +97,7 @@ int correction_value(const Worker& w,
             ? w.ttMoveCorrectionHistory[ttMove.from_sq()][ttMove.to_sq()][pos.piece_on(ttMove.to_sq())][pos.capture_stage(ttMove)]
             : 0;
 
-    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 9000 * ttmcv;
+    return 10347 * pcv + 8821 * micv + 11665 * (wnpcv + bnpcv) + 7841 * cntcv + 8000 * ttmcv;
 }
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
