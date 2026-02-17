@@ -903,7 +903,8 @@ Value Search::Worker::search(
 
         undo_null_move(pos);
 
-        nullMoveHistory[pawn_history_index(pos)][us] << (nullValue >= beta ? 700 : -700);
+        nullMoveHistory[pawn_history_index(pos)][us]
+            << (nullValue >= beta ? std::min(700, depth * 70) : std::max(-700, depth * -70));
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
