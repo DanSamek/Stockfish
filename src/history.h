@@ -158,7 +158,7 @@ using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 using PawnHistory =
   DynStats<AtomicStats<std::int16_t, 8192, PIECE_NB, SQUARE_NB>, PAWN_HISTORY_BASE_SIZE>;
 
-using NullMoveHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_BASE_SIZE, COLOR_NB>;
+using ProbcutHistory = Stats<std::int16_t, 8192, PAWN_HISTORY_BASE_SIZE, COLOR_NB>;
 
 // Correction histories record differences between the static evaluation of
 // positions and their search score. It is used to improve the static evaluation

@@ -591,7 +591,7 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
-    nullMoveHistory.fill(0);
+    probcutHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -890,8 +890,8 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - 18 * depth + 350 - nullMoveHistory[pawn_history_index(pos)][us] / 64
-        && !excludedMove && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
+    if (cutNode && ss->staticEval >= beta - 18 * depth + 350 &&
+        !excludedMove && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
 
@@ -902,8 +902,6 @@ Value Search::Worker::search(
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
 
         undo_null_move(pos);
-
-        nullMoveHistory[pawn_history_index(pos)][us] << (nullValue >= beta ? 700 : -700);
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
@@ -937,7 +935,7 @@ Value Search::Worker::search(
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
-    probCutBeta = beta + 235 - 63 * improving;
+    probCutBeta = beta + 235 - 63 * improving - probcutHistory[pawn_history_index(pos)][us] / 128;
     if (depth >= 3
         && !is_decisive(beta)
         // If value from transposition table is lower than probCutBeta, don't attempt
@@ -972,6 +970,8 @@ Value Search::Worker::search(
 
             if (value >= probCutBeta)
             {
+                probcutHistory[pawn_history_index(pos)][us] << 700;
+
                 // Save ProbCut data into transposition table
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
@@ -980,6 +980,8 @@ Value Search::Worker::search(
                     return value - (probCutBeta - beta);
             }
         }
+
+        probcutHistory[pawn_history_index(pos)][us] << -700;
     }
 
 moves_loop:  // When in check, search starts here
