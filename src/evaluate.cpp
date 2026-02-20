@@ -63,7 +63,9 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
 
     bool smallNet = use_smallnet(pos);
     if (smallNet)
+    {
         smallNet = networks.mini.evaluate(miniAccumulators.current()) > 600;
+    }
 
     auto [psqt, positional] = smallNet ? networks.small.evaluate(pos, accumulators, caches.small)
                                        : networks.big.evaluate(pos, accumulators, caches.big);
