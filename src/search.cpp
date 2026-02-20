@@ -182,6 +182,7 @@ void Search::Worker::ensure_network_replicated() {
 void Search::Worker::start_searching() {
 
     accumulatorStack.reset();
+    miniAccumulatorStack.set_position(rootPos, networks->mini);
 
     // Non-main threads go directly to iterative_deepening()
     if (!is_mainthread())
@@ -554,6 +555,7 @@ void Search::Worker::do_move(
 
     auto [dirtyPiece, dirtyThreats] = accumulatorStack.push();
     pos.do_move(move, st, givesCheck, dirtyPiece, dirtyThreats, &tt, &sharedHistory);
+    miniAccumulatorStack.push(dirtyPiece, networks->mini);
 
     if (ss != nullptr)
     {
@@ -575,6 +577,7 @@ void Search::Worker::do_null_move(Position& pos, StateInfo& st, Stack* const ss)
 void Search::Worker::undo_move(Position& pos, const Move move) {
     pos.undo_move(move);
     accumulatorStack.pop();
+    miniAccumulatorStack.pop();
 }
 
 void Search::Worker::undo_null_move(Position& pos) { pos.undo_null_move(); }
@@ -1750,8 +1753,8 @@ TimePoint Search::Worker::elapsed() const {
 TimePoint Search::Worker::elapsed_time() const { return main_manager()->tm.elapsed_time(); }
 
 Value Search::Worker::evaluate(const Position& pos) {
-    return Eval::evaluate(networks[numaAccessToken], pos, accumulatorStack, refreshTable,
-                          optimism[pos.side_to_move()]);
+    return Eval::evaluate(networks[numaAccessToken], pos, accumulatorStack, miniAccumulatorStack,
+                          refreshTable, optimism[pos.side_to_move()]);
 }
 
 namespace {

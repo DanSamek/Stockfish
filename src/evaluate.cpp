@@ -34,6 +34,7 @@
 #include "types.h"
 #include "uci.h"
 #include "nnue/nnue_accumulator.h"
+#include "nnue/mini/nnue_mini_accumulator.h"
 
 namespace Stockfish {
 
@@ -53,12 +54,17 @@ bool Eval::use_smallnet(const Position& pos) { return std::abs(simple_eval(pos))
 Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
                      const Position&                pos,
                      Eval::NNUE::AccumulatorStack&  accumulators,
+                     const Eval::NNUE::MiniAccumulatorStack& miniAccumulators,
                      Eval::NNUE::AccumulatorCaches& caches,
                      int                            optimism) {
 
     assert(!pos.checkers());
 
-    bool smallNet           = use_smallnet(pos);
+
+    bool smallNet = use_smallnet(pos);
+    if (smallNet)
+        smallNet = networks.mini.evaluate(miniAccumulators.current()) > 600;
+
     auto [psqt, positional] = smallNet ? networks.small.evaluate(pos, accumulators, caches.small)
                                        : networks.big.evaluate(pos, accumulators, caches.big);
 
@@ -98,8 +104,10 @@ std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
     if (pos.checkers())
         return "Final evaluation: none (in check)";
 
-    auto accumulators = std::make_unique<Eval::NNUE::AccumulatorStack>();
-    auto caches       = std::make_unique<Eval::NNUE::AccumulatorCaches>(networks);
+
+    auto miniAccumulators = std::make_unique<Eval::NNUE::MiniAccumulatorStack>();
+    auto accumulators     = std::make_unique<Eval::NNUE::AccumulatorStack>();
+    auto caches           = std::make_unique<Eval::NNUE::AccumulatorCaches>(networks);
 
     std::stringstream ss;
     ss << std::showpoint << std::noshowpos << std::fixed << std::setprecision(2);
@@ -112,7 +120,7 @@ std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
     v                       = pos.side_to_move() == WHITE ? v : -v;
     ss << "NNUE evaluation        " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)\n";
 
-    v = evaluate(networks, pos, *accumulators, *caches, VALUE_ZERO);
+    v = evaluate(networks, pos, *accumulators, *miniAccumulators, *caches, VALUE_ZERO);
     v = pos.side_to_move() == WHITE ? v : -v;
     ss << "Final evaluation       " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)";
     ss << " [with scaled NNUE, ...]";

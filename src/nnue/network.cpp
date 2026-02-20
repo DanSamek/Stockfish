@@ -46,6 +46,7 @@
 #if !defined(_MSC_VER) && !defined(NNUE_EMBEDDING_OFF)
 INCBIN(EmbeddedNNUEBig, EvalFileDefaultNameBig);
 INCBIN(EmbeddedNNUESmall, EvalFileDefaultNameSmall);
+INCBIN(EmbeddedNNUEMini, EvalFileDefaultNameMini);
 #else
 const unsigned char        gEmbeddedNNUEBigData[1]   = {0x0};
 const unsigned char* const gEmbeddedNNUEBigEnd       = &gEmbeddedNNUEBigData[1];
@@ -53,6 +54,9 @@ const unsigned int         gEmbeddedNNUEBigSize      = 1;
 const unsigned char        gEmbeddedNNUESmallData[1] = {0x0};
 const unsigned char* const gEmbeddedNNUESmallEnd     = &gEmbeddedNNUESmallData[1];
 const unsigned int         gEmbeddedNNUESmallSize    = 1;
+const unsigned char        gEmbeddedNNUEMiniData[1] = {0x0};
+const unsigned char* const gEmbeddedNNUEMiniEnd     = &gEmbeddedNNUEMiniData[1];
+const unsigned int         gEmbeddedNNUEMiniSize    = 1;
 #endif
 
 namespace {
@@ -74,8 +78,10 @@ using namespace Stockfish::Eval::NNUE;
 EmbeddedNNUE get_embedded(EmbeddedNNUEType type) {
     if (type == EmbeddedNNUEType::BIG)
         return EmbeddedNNUE(gEmbeddedNNUEBigData, gEmbeddedNNUEBigEnd, gEmbeddedNNUEBigSize);
-    else
+    else if (type == EmbeddedNNUEType::SMALL)
         return EmbeddedNNUE(gEmbeddedNNUESmallData, gEmbeddedNNUESmallEnd, gEmbeddedNNUESmallSize);
+    else
+        return EmbeddedNNUE(gEmbeddedNNUEMiniData, gEmbeddedNNUEMiniEnd, gEmbeddedNNUEMiniSize);
 }
 
 }
@@ -272,17 +278,17 @@ void Network<Arch, Transformer>::load_user_net(const std::string& dir,
     }
 }
 
+// C++ way to prepare a buffer for a memory stream
+class MemoryBuffer: public std::basic_streambuf<char> {
+public:
+    MemoryBuffer(char* p, size_t n) {
+        setg(p, p, p + n);
+        setp(p, p + n);
+    }
+};
 
 template<typename Arch, typename Transformer>
 void Network<Arch, Transformer>::load_internal() {
-    // C++ way to prepare a buffer for a memory stream
-    class MemoryBuffer: public std::basic_streambuf<char> {
-       public:
-        MemoryBuffer(char* p, size_t n) {
-            setg(p, p, p + n);
-            setp(p, p + n);
-        }
-    };
 
     const auto embedded = get_embedded(embeddedType);
 
@@ -412,5 +418,73 @@ template class Network<NetworkArchitecture<TransformedFeatureDimensionsBig, L2Bi
 
 template class Network<NetworkArchitecture<TransformedFeatureDimensionsSmall, L2Small, L3Small>,
                        FeatureTransformer<TransformedFeatureDimensionsSmall>>;
+
+template class NetworkM<L1Mini>;
+
+template<int N>
+NetworkM<N>::NetworkM() {
+    load_internal();
+}
+
+template<int N>
+Value NetworkM<N>::evaluate(const MiniAccumulator<N>& accumulator) const {
+    Value result = 0;
+
+    for (int i = 0; i < N; i++)
+        result += screlu(accumulator[i]) * (int)outputLayerWeights[i];
+
+    result /= QA;
+
+    result += outputLayerBias;
+
+    result *= SCALE;
+    result /= QA * QB;
+    return result;
+}
+
+template<int N>
+void NetworkM<N>::load_internal() {
+    EmbeddedNNUE embedded = get_embedded(EmbeddedNNUEType::MINI);
+    MemoryBuffer buffer(const_cast<char*>(reinterpret_cast<const char*>(embedded.data)),
+                        size_t(embedded.size));
+
+    std::istream stream(&buffer);
+    load(stream);
+}
+
+template<int N>
+void NetworkM<N>::load(std::istream& stream) {
+    for(int i = 0; i < INPUT_LAYER_SIZE; i++)
+        for(int x = 0; x < N; x++)
+            inputLayerWeights[i][x] = read_little_endian<int16_t>(stream);
+
+    assert(!stream.eof());
+    for(int i = 0; i < N; i++)
+        inputLayerBias[i] = read_little_endian<int16_t>(stream);
+
+    assert(!stream.eof());
+    for(int i = 0; i < N; i++)
+        outputLayerWeights[i] = read_little_endian<int16_t>(stream);
+
+    assert(!stream.eof());
+    outputLayerBias = read_little_endian<int16_t>(stream);
+}
+
+template<int N>
+void NetworkM<N>::load(const std::string &rootDirectory, std::string evalFilePath) {
+    std::vector<std::string> dirs = {"", rootDirectory};
+
+    if (evalFilePath.empty())
+        evalFilePath = EvalFileDefaultNameMini;
+
+    for (const std::string& dir : dirs)
+    {
+        std::ifstream stream(dir + evalFilePath, std::ios::binary);
+        if (!stream)
+            continue;
+
+        load(stream);
+    }
+}
 
 }  // namespace Stockfish::Eval::NNUE

@@ -22,6 +22,7 @@
 #include <string>
 
 #include "types.h"
+#include "nnue/mini/nnue_mini_accumulator.h"
 
 namespace Stockfish {
 
@@ -35,6 +36,7 @@ namespace Eval {
 // in the Makefile/Fishtest.
 #define EvalFileDefaultNameBig "nn-5227780996d3.nnue"
 #define EvalFileDefaultNameSmall "nn-37f18f62d772.nnue"
+#define EvalFileDefaultNameMini "nn-8dd08fcaad6e.nnue"
 
 namespace NNUE {
 struct Networks;
@@ -49,6 +51,7 @@ bool  use_smallnet(const Position& pos);
 Value evaluate(const NNUE::Networks&          networks,
                const Position&                pos,
                Eval::NNUE::AccumulatorStack&  accumulators,
+               const Eval::NNUE::MiniAccumulatorStack& miniAccumulators,
                Eval::NNUE::AccumulatorCaches& caches,
                int                            optimism);
 }  // namespace Eval

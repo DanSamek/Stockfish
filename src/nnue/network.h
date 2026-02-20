@@ -36,6 +36,7 @@
 #include "nnue_common.h"
 #include "nnue_feature_transformer.h"
 #include "nnue_misc.h"
+#include "mini/nnue_mini_common.h"
 
 namespace Stockfish {
 class Position;
@@ -46,6 +47,7 @@ namespace Stockfish::Eval::NNUE {
 enum class EmbeddedNNUEType {
     BIG,
     SMALL,
+    MINI
 };
 
 using NetworkOutput = std::tuple<Value, Value>;
@@ -116,6 +118,36 @@ class Network {
     friend struct AccumulatorCaches::Cache;
 };
 
+
+template<int N>
+class NetworkM {
+    static inline constexpr int INPUT_LAYER_SIZE = 768;
+    static inline constexpr int SCALE = 400;
+    static inline constexpr int QA    = 255;
+    static inline constexpr int QB    = 64;
+
+public:
+    std::array<MiniAccumulator<N>, INPUT_LAYER_SIZE> inputLayerWeights;
+    MiniAccumulator<N> inputLayerBias;
+
+    MiniAccumulator<N> outputLayerWeights;
+    std::int16_t outputLayerBias;
+
+    NetworkM();
+    Value evaluate(const MiniAccumulator<N> &accumulator) const;
+    void load(const std::string& rootDirectory, std::string evalFilePath);
+
+private:
+
+    void load(std::istream& stream);
+    void load_internal();
+
+    inline int screlu(int value) const {
+        int result = std::clamp(value, 0, QA);
+        return result * result;
+    }
+};
+
 // Definitions of the network types
 using SmallFeatureTransformer = FeatureTransformer<TransformedFeatureDimensionsSmall>;
 using SmallNetworkArchitecture =
@@ -127,16 +159,18 @@ using BigNetworkArchitecture = NetworkArchitecture<TransformedFeatureDimensionsB
 using NetworkBig   = Network<BigNetworkArchitecture, BigFeatureTransformer>;
 using NetworkSmall = Network<SmallNetworkArchitecture, SmallFeatureTransformer>;
 
+using NetworkMini  = NetworkM<L1Mini>;
 
 struct Networks {
     Networks(EvalFile bigFile, EvalFile smallFile) :
         big(bigFile, EmbeddedNNUEType::BIG),
-        small(smallFile, EmbeddedNNUEType::SMALL) {}
+        small(smallFile, EmbeddedNNUEType::SMALL),
+        mini() {}
 
     NetworkBig   big;
     NetworkSmall small;
+    NetworkMini  mini;
 };
-
 
 }  // namespace Stockfish
 
@@ -157,5 +191,6 @@ struct std::hash<Stockfish::Eval::NNUE::Networks> {
         return h;
     }
 };
+
 
 #endif
