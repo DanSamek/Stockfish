@@ -591,6 +591,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    probcutHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(7);
@@ -933,7 +935,7 @@ Value Search::Worker::search(
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
-    probCutBeta = beta + 229 - 63 * improving;
+    probCutBeta = beta + 229 - 63 * improving - probcutHistory[probcut_history_index(pos)][us] / 128;
     if (depth >= 3
         && !is_decisive(beta)
         // If value from transposition table is lower than probCutBeta, don't attempt
@@ -944,6 +946,8 @@ Value Search::Worker::search(
 
         MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &captureHistory);
         Depth      probCutDepth = depth - 4;
+
+        bool bonus = false;
 
         while ((move = mp.next_move()) != Move::none())
         {
@@ -968,14 +972,20 @@ Value Search::Worker::search(
 
             if (value >= probCutBeta)
             {
+                bonus = true;
                 // Save ProbCut data into transposition table
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
 
                 if (!is_decisive(value))
+                {
+                    probcutHistory[probcut_history_index(pos)][us] << 800;
                     return value - (probCutBeta - beta);
+                }
             }
         }
+
+        probcutHistory[probcut_history_index(pos)][us] << (bonus ? 800 : -800);
     }
 
 moves_loop:  // When in check, search starts here
