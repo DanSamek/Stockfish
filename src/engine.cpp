@@ -145,7 +145,7 @@ Engine::Engine(std::optional<std::string> path) :
       }));
 
     options.add(  //
-      "EvalFileMini", Option(EvalFileDefaultNameSmall, [this](const Option& o) {
+      "EvalFileMini", Option(EvalFileDefaultNameMini, [this](const Option& o) {
           load_mini_network(o);
           return std::nullopt;
       }));
