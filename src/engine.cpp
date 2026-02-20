@@ -302,10 +302,12 @@ std::unique_ptr<Eval::NNUE::Networks> Engine::get_default_networks() const {
 
     auto networks_ =
       std::make_unique<NN::Networks>(NN::EvalFile{EvalFileDefaultNameBig, "None", ""},
-                                     NN::EvalFile{EvalFileDefaultNameSmall, "None", ""});
+                                     NN::EvalFile{EvalFileDefaultNameSmall, "None", ""},
+                                     NN::EvalFile{EvalFileDefaultNameMini, "None", ""});
 
     networks_->big.load(binaryDirectory, "");
     networks_->small.load(binaryDirectory, "");
+    networks_->mini.load(binaryDirectory, "");
 
     return networks_;
 }

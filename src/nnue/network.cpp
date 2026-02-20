@@ -422,9 +422,7 @@ template class Network<NetworkArchitecture<TransformedFeatureDimensionsSmall, L2
 template class NetworkM<L1Mini>;
 
 template<int N>
-NetworkM<N>::NetworkM() {
-    load_internal();
-}
+NetworkM<N>::NetworkM(EvalFile ef) : evalFile(ef) { }
 
 template<int N>
 Value NetworkM<N>::evaluate(const MiniAccumulator<N>& accumulator) const {
@@ -449,11 +447,13 @@ void NetworkM<N>::load_internal() {
                         size_t(embedded.size));
 
     std::istream stream(&buffer);
+
     load(stream);
 }
 
 template<int N>
 void NetworkM<N>::load(std::istream& stream) {
+    assert(!stream.eof());
     for(int i = 0; i < INPUT_LAYER_SIZE; i++)
         for(int x = 0; x < N; x++)
             inputLayerWeights[i][x] = read_little_endian<int16_t>(stream);
@@ -472,18 +472,29 @@ void NetworkM<N>::load(std::istream& stream) {
 
 template<int N>
 void NetworkM<N>::load(const std::string &rootDirectory, std::string evalFilePath) {
-    std::vector<std::string> dirs = {"", rootDirectory};
+    std::vector<std::string> dirs = {"<internal>", "", rootDirectory};
 
     if (evalFilePath.empty())
-        evalFilePath = EvalFileDefaultNameMini;
+        evalFilePath = evalFile.defaultName;
 
-    for (const std::string& dir : dirs)
+    for (const auto& directory : dirs)
     {
-        std::ifstream stream(dir + evalFilePath, std::ios::binary);
-        if (!stream)
-            continue;
+        if (std::string(evalFile.current) != evalFilePath)
+        {
+            if (directory != "<internal>")
+            {
+                std::ifstream stream(directory + evalFilePath, std::ios::binary);
+                if (!stream)
+                    continue;
 
-        load(stream);
+                load(stream);
+            }
+
+            if (directory == "<internal>" && evalFilePath == std::string(evalFile.defaultName))
+            {
+                load_internal();
+            }
+        }
     }
 }
 

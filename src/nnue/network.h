@@ -133,12 +133,12 @@ public:
     MiniAccumulator<N> outputLayerWeights;
     std::int16_t outputLayerBias;
 
-    NetworkM();
+    NetworkM(EvalFile ef);
     Value evaluate(const MiniAccumulator<N> &accumulator) const;
     void load(const std::string& rootDirectory, std::string evalFilePath);
 
 private:
-
+    EvalFile evalFile;
     void load(std::istream& stream);
     void load_internal();
 
@@ -162,10 +162,10 @@ using NetworkSmall = Network<SmallNetworkArchitecture, SmallFeatureTransformer>;
 using NetworkMini  = NetworkM<L1Mini>;
 
 struct Networks {
-    Networks(EvalFile bigFile, EvalFile smallFile) :
+    Networks(EvalFile bigFile, EvalFile smallFile, EvalFile miniFile) :
         big(bigFile, EmbeddedNNUEType::BIG),
         small(smallFile, EmbeddedNNUEType::SMALL),
-        mini() {}
+        mini(miniFile) {}
 
     NetworkBig   big;
     NetworkSmall small;
