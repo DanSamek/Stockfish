@@ -429,34 +429,9 @@ NetworkM<N>::NetworkM(EvalFile ef) : evalFile(ef) { }
 template<int N>
 Value NetworkM<N>::evaluate(const MiniAccumulator<N>& accumulator) const {
     Value result = 0;
-    #ifdef VECTOR
-        constexpr int STEP = sizeof(vec_t) / sizeof(std::int16_t);
 
-        vec_t vZero = vec_zero();
-        vec_t vQA   = vec_set_16(QA);
-
-        std::int32_t clamped;
-        alignas(vec_t) std::int16_t tmp[STEP];
-
-        for (int i = 0; i < N; i += STEP) {
-            vec_t vAcc = vec_load(reinterpret_cast<const vec_t*>(&accumulator[i]));
-
-            vAcc = vec_max_16(vAcc, vZero);
-            vAcc = vec_min_16(vAcc, vQA);
-
-            vec_store(reinterpret_cast<vec_t*>(tmp), vAcc);
-
-            for (int k = 0; k < STEP; k++)
-            {
-                clamped = tmp[k];
-                result += clamped * clamped * (int)outputLayerWeights[i + k];
-            }
-        }
-
-    #else
-        for (int i = 0; i < N; i++)
-            result += screlu(accumulator[i]) * (int)outputLayerWeights[i];
-    #endif
+    for (int i = 0; i < N; i++)
+        result += screlu(accumulator[i]) * (int)outputLayerWeights[i];
 
     result /= QA;
     result += outputLayerBias;
