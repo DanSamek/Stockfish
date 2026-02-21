@@ -39,16 +39,16 @@ namespace Stockfish::Eval::NNUE {
     template<int N>
     void MiniAccumulatorStackBase<N>::add(const MiniAccumulator<N>& weights) {
         #ifdef VECTOR
-            constexpr int NumVec = sizeof(MiniAccumulator<N>) / sizeof(vec_t);
+            constexpr int jmpSize = sizeof(vec_t) / sizeof(int16_t);
 
-            auto* dst = reinterpret_cast<vec_t*>(stack[stackIndex].data());
-            auto* src = reinterpret_cast<const vec_t*>(weights.data());
+            auto* dst = stack[stackIndex].data();
+            auto* src = weights.data();
 
-            for (int i = 0; i < NumVec; i++)
+            for (int i = 0; i < N; i+= jmpSize)
             {
-                vec_t a = vec_load(&dst[i]);
-                vec_t b = vec_load(&src[i]);
-                vec_store(&dst[i], vec_add_16(a, b));
+                vec_t a = vec_load(reinterpret_cast<const vec_t*>(&dst[i]));
+                vec_t b = vec_load(reinterpret_cast<const vec_t*>(&src[i]));
+                vec_store(reinterpret_cast<vec_t*>(&dst[i]), vec_add_16(a, b));
             }
         #else
             for (int i = 0; i < N; i++)
@@ -59,16 +59,16 @@ namespace Stockfish::Eval::NNUE {
     template<int N>
     void MiniAccumulatorStackBase<N>::sub(const MiniAccumulator<N>& weights) {
         #ifdef VECTOR
-            constexpr int NumVec = sizeof(MiniAccumulator<N>) / sizeof(vec_t);
+            constexpr int jmpSize = sizeof(vec_t) / sizeof(int16_t);
 
-            auto* dst = reinterpret_cast<vec_t*>(stack[stackIndex].data());
-            auto* src = reinterpret_cast<const vec_t*>(weights.data());
+            auto* dst = stack[stackIndex].data();
+            auto* src = weights.data();
 
-            for (int i = 0; i < NumVec; i++)
+            for (int i = 0; i < N; i+= jmpSize)
             {
-                vec_t a = vec_load(&dst[i]);
-                vec_t b = vec_load(&src[i]);
-                vec_store(&dst[i], vec_sub_16(a, b));
+                vec_t a = vec_load(reinterpret_cast<const vec_t*>(&dst[i]));
+                vec_t b = vec_load(reinterpret_cast<const vec_t*>(&src[i]));
+                vec_store(reinterpret_cast<vec_t*>(&dst[i]), vec_sub_16(a, b));
             }
         #else
             for (int i = 0; i < N; i++)
