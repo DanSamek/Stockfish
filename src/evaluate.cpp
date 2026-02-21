@@ -60,12 +60,7 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
 
     assert(!pos.checkers());
 
-
-    bool smallNet = use_smallnet(pos);
-    if (smallNet)
-    {
-        smallNet = networks.mini.evaluate(miniAccumulators.current()) > 600;
-    }
+    bool smallNet = std::abs(networks.mini.evaluate(miniAccumulators.current())) > 900;
 
     auto [psqt, positional] = smallNet ? networks.small.evaluate(pos, accumulators, caches.small)
                                        : networks.big.evaluate(pos, accumulators, caches.big);
@@ -77,8 +72,9 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
     {
         std::tie(psqt, positional) = networks.big.evaluate(pos, accumulators, caches.big);
         nnue                       = (125 * psqt + 131 * positional) / 128;
-        smallNet                   = false;
     }
+
+
 
     // Blend optimism and eval with nnue complexity
     int nnueComplexity = std::abs(psqt - positional);
