@@ -16,7 +16,7 @@ namespace Stockfish::Eval::NNUE {
 
     template<int N>
     class MiniAccumulatorStackBase {
-        std::array<MiniAccumulator<N>, MAX_PLY + 1> stack;
+        alignas(CacheLineSize) std::array<MiniAccumulator<N>, MAX_PLY + 1> stack;
         int stackIndex = 0;
 
     public:

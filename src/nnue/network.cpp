@@ -432,9 +432,7 @@ Value NetworkM<N>::evaluate(const MiniAccumulator<N>& accumulator) const {
         result += screlu(accumulator[i]) * (int)outputLayerWeights[i];
 
     result /= QA;
-
     result += outputLayerBias;
-
     result *= SCALE;
     result /= QA * QB;
     return result;
