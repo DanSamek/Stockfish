@@ -94,7 +94,7 @@ namespace Stockfish::Eval::NNUE {
 
     template<int N>
     int MiniAccumulatorStackBase<N>::index(Piece pc, Square sq) {
-        return (pc - 1 - (pc >= 8) * 2) * 64 + ((int)sq ^ 56);
+        return (pc - 1 - (pc >= 8) * 2) * 64 + sq;
     }
 
 }
