@@ -76,7 +76,6 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
     {
         dbg_hit_on((std::abs(nnue) < 277), 0); // Big net needed.
         dbg_hit_on((std::abs(nnue) >= 277), 1); // Used only smallnet.
-        /*
         bench:
             use_smallnet:
                 Hit #0: Total 288166 Hits 32912 Hit Rate (%) 11.4212
