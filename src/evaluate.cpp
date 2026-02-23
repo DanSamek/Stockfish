@@ -60,7 +60,7 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
 
     assert(!pos.checkers());
 
-    bool smallNet = std::abs(networks.mini.evaluate(miniAccumulators.current())) > 2750;
+    bool smallNet = std::abs(networks.mini.evaluate(miniAccumulators.current())) > 450;
 
     auto [psqt, positional] = smallNet ? networks.small.evaluate(pos, accumulators, caches.small)
                                        : networks.big.evaluate(pos, accumulators, caches.big);
@@ -72,16 +72,6 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
     {
         dbg_hit_on((std::abs(nnue) < 277), 0); // Big net needed.
         dbg_hit_on((std::abs(nnue) >= 277), 1); // Used only smallnet.
-        bench:
-            use_smallnet:
-                Hit #0: Total 288166 Hits 32912 Hit Rate (%) 11.4212
-                Hit #1: Total 288166 Hits 255254 Hit Rate (%) 88.5788
-            mininet:
-                Hit #0: Total 235716 Hits 13387 Hit Rate (%) 5.67929
-                Hit #1: Total 235716 Hits 222329 Hit Rate (%) 94.3207
-            use_smallnet & mininet:
-                Hit #0: Total 246705 Hits 12689 Hit Rate (%) 5.14339
-                Hit #1: Total 246705 Hits 234016 Hit Rate (%) 94.8566
     }*/
 
 
