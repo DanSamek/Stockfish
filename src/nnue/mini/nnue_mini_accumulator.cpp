@@ -38,42 +38,14 @@ namespace Stockfish::Eval::NNUE {
 
     template<int N>
     void MiniAccumulatorStackBase<N>::add(const MiniAccumulator<N>& weights) {
-        #ifdef VECTOR
-            constexpr int STEP = sizeof(vec_t) / sizeof(std::int16_t);
-
-            auto* dst = stack[stackIndex].data();
-            auto* src = weights.data();
-
-            for (int i = 0; i < N; i += STEP)
-            {
-                vec_t a = vec_load(reinterpret_cast<const vec_t*>(&dst[i]));
-                vec_t b = vec_load(reinterpret_cast<const vec_t*>(&src[i]));
-                vec_store(reinterpret_cast<vec_t*>(&dst[i]), vec_add_16(a, b));
-            }
-        #else
-            for (int i = 0; i < N; i++)
-                stack[stackIndex][i] += weights[i];
-        #endif
+        for (int i = 0; i < N; i++)
+            stack[stackIndex][i] += weights[i];
     }
 
     template<int N>
     void MiniAccumulatorStackBase<N>::sub(const MiniAccumulator<N>& weights) {
-        #ifdef VECTOR
-            constexpr int STEP = sizeof(vec_t) / sizeof(std::int16_t);
-
-            auto* dst = stack[stackIndex].data();
-            auto* src = weights.data();
-
-            for (int i = 0; i < N; i += STEP)
-            {
-                vec_t a = vec_load(reinterpret_cast<const vec_t*>(&dst[i]));
-                vec_t b = vec_load(reinterpret_cast<const vec_t*>(&src[i]));
-                vec_store(reinterpret_cast<vec_t*>(&dst[i]), vec_sub_16(a, b));
-            }
-        #else
-            for (int i = 0; i < N; i++)
-                stack[stackIndex][i] -= weights[i];
-        #endif
+        for (int i = 0; i < N; i++)
+            stack[stackIndex][i] -= weights[i];
     }
 
     template<int N>
