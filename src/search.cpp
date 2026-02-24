@@ -591,6 +591,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    moveCorrectionHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(7);
@@ -992,7 +994,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
-                  &sharedHistory, ss->ply);
+                  &sharedHistory, &moveCorrectionHistory, ss->ply);
 
     value = bestValue;
 
@@ -1458,7 +1460,7 @@ moves_loop:  // When in check, search starts here
     if (bestValue <= alpha)
         ss->ttPv = ss->ttPv || (ss - 1)->ttPv;
 
-    // Write gathered information in transposition table. Note that the
+        // Write gathered information in transposition table. Note that the
     // static evaluation is saved as it was before correction history.
     if (!excludedMove && !(rootNode && pvIdx))
         ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
@@ -1476,6 +1478,15 @@ moves_loop:  // When in check, search starts here
         auto bonus = std::clamp(int(bestValue - ss->staticEval) * depth / (bestMove ? 10 : 8),
                                 -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
         update_correction_history(pos, ss, *this, bonus);
+
+        if (bestMove)
+        {
+            moveCorrectionHistory[us][bestMove.raw()] << bonus;
+            for (Move quietMove : quietsSearched)
+            {
+                moveCorrectionHistory[us][quietMove.raw()] << -bonus;
+            }
+        }
     }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
@@ -1610,7 +1621,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
-                  contHist, &sharedHistory, ss->ply);
+                  contHist, &sharedHistory, &moveCorrectionHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.

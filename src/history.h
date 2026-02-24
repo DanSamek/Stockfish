@@ -215,6 +215,9 @@ using CorrectionHistory = typename Detail::CorrHistTypedef<T>::type;
 
 using TTMoveHistory = StatsEntry<std::int16_t, 8192>;
 
+
+using MoveCorrectionHistory = Stats<std::int16_t, 8192, COLOR_NB, UINT_16_HISTORY_SIZE>;
+
 // Set of histories shared between groups of threads. To avoid excessive
 // cross-node data transfer, histories are shared only between threads
 // on a given NUMA node. The passed size must be a power of two to make
