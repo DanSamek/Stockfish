@@ -903,13 +903,14 @@ Value Search::Worker::search(
 
         undo_null_move(pos);
 
-        nullMoveHistory[nmp_history_index(pos)][us] << (nullValue >= beta ? 700 : -700);
-
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
         {
             if (nmpMinPly || depth < 16)
+            {
+                nullMoveHistory[nmp_history_index(pos)][us] << 700;
                 return nullValue;
+            }
 
             assert(!nmpMinPly);  // Recursive verification is not allowed
 
@@ -922,8 +923,18 @@ Value Search::Worker::search(
             nmpMinPly = 0;
 
             if (v >= beta)
+            {
+                nullMoveHistory[nmp_history_index(pos)][us] << 700;
                 return nullValue;
+            }
+            else
+            {
+                nullMoveHistory[nmp_history_index(pos)][us] << -700;
+            }
         }
+
+        if (nullValue < beta)
+             nullMoveHistory[nmp_history_index(pos)][us] << -700;
     }
 
     improving |= ss->staticEval >= beta;
