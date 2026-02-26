@@ -591,6 +591,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    razoringHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(7);
@@ -868,8 +870,12 @@ Value Search::Worker::search(
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
-    if (!PvNode && eval < alpha - 507 - 312 * depth * depth)
-        return qsearch<NonPV>(pos, ss, alpha, beta);
+    if (!PvNode && eval < alpha - 507 - 312 * depth * depth - razoringHistory[razoring_history_index(pos)][us] / 32)
+    {
+        const Value qSearchValue = qsearch<NonPV>(pos, ss, alpha, beta);
+        razoringHistory[razoring_history_index(pos)][us] << (qSearchValue >= alpha ? 700 : -700);
+        return qSearchValue;
+    }
 
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
