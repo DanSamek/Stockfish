@@ -62,6 +62,17 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
+int a1 = 17;
+int a2 = 359;
+
+int a3 = 256;
+int a4 = 16384;
+
+int a5 = 700;
+int a6 = -700;
+
+TUNE(a1,a2,a3,a4,a5,a6);
+
 namespace {
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
@@ -890,7 +901,7 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - 17 * depth + 359 - nullMoveHistory[nmp_history_index(pos)][us] / 64
+    if (cutNode && ss->staticEval >= beta - a1 * depth + a2 - (a3 * nullMoveHistory[nmp_history_index(pos)][us]) / a4
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
@@ -903,7 +914,7 @@ Value Search::Worker::search(
 
         undo_null_move(pos);
 
-        nullMoveHistory[nmp_history_index(pos)][us] << (nullValue >= beta ? 700 : -700);
+        nullMoveHistory[nmp_history_index(pos)][us] << (nullValue >= beta ? a5 : a6);
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
