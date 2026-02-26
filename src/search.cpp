@@ -873,7 +873,7 @@ Value Search::Worker::search(
     if (!PvNode && eval < alpha - 507 - 312 * depth * depth - razoringHistory[razoring_history_index(pos)][us] / 32)
     {
         const Value qSearchValue = qsearch<NonPV>(pos, ss, alpha, beta);
-        razoringHistory[razoring_history_index(pos)][us] << (qSearchValue >= alpha ? 700 : -700);
+        razoringHistory[razoring_history_index(pos)][us] << (qSearchValue >= beta ? 1000 : qSearchValue >= alpha ? 700 : -700);
         return qSearchValue;
     }
 
