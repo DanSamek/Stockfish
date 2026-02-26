@@ -62,6 +62,20 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
+int a1 = 256;
+int a2 = 16384;
+
+int a3 = 17;
+int a4 = 359;
+
+int a5 = 700;
+int a6 = 700;
+
+int a7 = -700;
+int a8 = -700;
+
+TUNE(a1,a2,a3,a4,a5,a6,a7,a8);
+
 namespace {
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
@@ -890,7 +904,7 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - 17 * depth + 359 - nullMoveHistory[nmp_history_index(pos)][us] / 64
+    if (cutNode && ss->staticEval >= beta - a3 * depth + a4 - (a1 * nullMoveHistory[nmp_history_index(pos)][us]) / a2
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
@@ -908,7 +922,7 @@ Value Search::Worker::search(
         {
             if (nmpMinPly || depth < 16)
             {
-                nullMoveHistory[nmp_history_index(pos)][us] << 700;
+                nullMoveHistory[nmp_history_index(pos)][us] << a5;
                 return nullValue;
             }
 
@@ -924,17 +938,17 @@ Value Search::Worker::search(
 
             if (v >= beta)
             {
-                nullMoveHistory[nmp_history_index(pos)][us] << 700;
+                nullMoveHistory[nmp_history_index(pos)][us] << a6;
                 return nullValue;
             }
             else
             {
-                nullMoveHistory[nmp_history_index(pos)][us] << -700;
+                nullMoveHistory[nmp_history_index(pos)][us] << a7;
             }
         }
 
         if (nullValue < beta)
-             nullMoveHistory[nmp_history_index(pos)][us] << -700;
+             nullMoveHistory[nmp_history_index(pos)][us] << a8;
     }
 
     improving |= ss->staticEval >= beta;
