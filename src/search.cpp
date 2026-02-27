@@ -74,7 +74,9 @@ int a6 = 700;
 int a7 = -700;
 int a8 = -700;
 
-TUNE(a1,a2,a3,a4,a5,a6,a7,a8);
+int a9 = 50;
+
+TUNE(a1,a2,a3,a4,a5,a6,a7,a8,a9);
 
 namespace {
 
@@ -904,7 +906,7 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - a3 * depth + a4 - (a1 * nullMoveHistory[nmp_history_index(pos)][us]) / a2
+    if (cutNode && ss->staticEval >= beta - a3 * depth - a9 * improving + a4 - (a1 * nullMoveHistory[nmp_history_index(pos)][us]) / a2
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
