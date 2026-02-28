@@ -62,21 +62,15 @@ void syzygy_extend_pv(const OptionsMap&            options,
 
 using namespace Search;
 
-int a1 = 256;
-int a2 = 16384;
-
-int a3 = 17;
-int a4 = 359;
-
-int a5 = 700;
-int a6 = 700;
-
-int a7 = -700;
-int a8 = -700;
-
-int a9 = 50;
-
-TUNE(a1,a2,a3,a4,a5,a6,a7,a8,a9);
+constexpr int a1 = 257;
+constexpr int a2 = 16442;
+constexpr int a3 = 17;
+constexpr int a4 = 357;
+constexpr int a5 = 707;
+constexpr int a6 = 687;
+constexpr int a7 = -691;
+constexpr int a8 = -688;
+constexpr int a9 = 50;
 
 namespace {
 
