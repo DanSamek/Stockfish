@@ -1224,7 +1224,7 @@ moves_loop:  // When in check, search starts here
         r -= ss->statScore * 454 / 4096;
 
         // Scale up reductions for expected ALL nodes
-        if (allNode)
+        if (allNode && ttCapture)
             r += r * 276 / (256 * depth + 254);
 
         // Step 17. Late moves reduction / extension (LMR)
