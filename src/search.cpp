@@ -593,6 +593,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    probcutHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(7);
@@ -945,7 +947,9 @@ Value Search::Worker::search(
         assert(probCutBeta < VALUE_INFINITE && probCutBeta > beta);
 
         MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &captureHistory);
-        Depth      probCutDepth = depth - 4;
+        Depth      probCutDepth = std::clamp(depth - 4 - probcutHistory[probcut_history_index(pos)][us] / 2048, 0, depth);
+
+        bool probcutBonus = false;
 
         while ((move = mp.next_move()) != Move::none())
         {
@@ -970,6 +974,9 @@ Value Search::Worker::search(
 
             if (value >= probCutBeta)
             {
+                probcutBonus = true;
+                probcutHistory[probcut_history_index(pos)][us] << std::min(700, 70 * probCutDepth);
+
                 // Save ProbCut data into transposition table
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
@@ -977,6 +984,11 @@ Value Search::Worker::search(
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);
             }
+        }
+
+        if (!probcutBonus)
+        {
+            probcutHistory[probcut_history_index(pos)][us] << std::max(-700, -70 * probCutDepth);
         }
     }
 
