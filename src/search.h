@@ -287,8 +287,9 @@ class Worker {
     void ensure_network_replicated();
 
     // Public because they need to be updatable by the stats
-    ButterflyHistory mainHistory;
-    LowPlyHistory    lowPlyHistory;
+    ButterflyHistory  mainHistory;
+    LowPlyHistory     lowPlyHistory;
+    LowPlyPawnHistory lowPlyPawnHistory;
 
     CapturePieceToHistory           captureHistory;
     ContinuationHistory             continuationHistory[2][2];
