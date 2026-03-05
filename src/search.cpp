@@ -592,6 +592,7 @@ void Search::Worker::clear() {
     sharedHistory.pawnHistory.clear_range(-1238, numaThreadIdx, numaTotal);
 
     ttMoveHistory = 0;
+    cutNodeHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -1198,7 +1199,7 @@ moves_loop:  // When in check, search starts here
 
         // Increase reduction for cut nodes
         if (cutNode)
-            r += 3582 + 1015 * !ttData.move;
+            r += 3582 + 1015 * !ttData.move - cutNodeHistory[cutnode_history_index(pos)][us] / 16;
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
@@ -1451,6 +1452,10 @@ moves_loop:  // When in check, search starts here
         assert(capturedPiece != NO_PIECE);
         captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 993;
     }
+
+    if (cutNode)
+        cutNodeHistory[cutnode_history_index(pos)][us]
+            << (bestValue >= beta ? std::min(800, depth * 80) : std::max(-800, depth * -80));
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
