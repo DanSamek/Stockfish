@@ -592,6 +592,7 @@ void Search::Worker::clear() {
     sharedHistory.pawnHistory.clear_range(-1238, numaThreadIdx, numaTotal);
 
     ttMoveHistory = 0;
+    lowPlyTTMoveHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
@@ -1140,8 +1141,9 @@ moves_loop:  // When in check, search starts here
             if (value < singularBeta)
             {
                 int corrValAdj   = std::abs(correctionValue) / 220870;
+                int lpttmhValue  = (ss->ply < LOW_PLY_HISTORY_SIZE ? lowPlyTTMoveHistory[ss->ply][lpttm_history_index(pos)][us] : ttMoveHistory);
                 int doubleMargin = -4 + 213 * PvNode - 196 * !ttCapture - corrValAdj
-                                 - 943 * ttMoveHistory / 123477 - (ss->ply > rootDepth) * 45;
+                                 - 943 * (ttMoveHistory + lpttmhValue) / 246954 - (ss->ply > rootDepth) * 45;
                 int tripleMargin = 73 + 324 * PvNode - 229 * !ttCapture + 87 * ss->ttPv - corrValAdj
                                  - (ss->ply > rootDepth) * 50;
 
@@ -1417,7 +1419,12 @@ moves_loop:  // When in check, search starts here
         update_all_stats(pos, ss, *this, bestMove, prevSq, quietsSearched, capturesSearched, depth,
                          ttData.move);
         if (!PvNode)
+        {
             ttMoveHistory << (bestMove == ttData.move ? 804 : -860);
+
+            if (ss->ply < LOW_PLY_HISTORY_SIZE)
+                lowPlyTTMoveHistory[ss->ply][lpttm_history_index(pos)][us] << (bestMove == ttData.move ? 800 : -850);
+        }
     }
 
     // Bonus for prior quiet countermove that caused the fail low
