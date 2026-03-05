@@ -926,12 +926,6 @@ Value Search::Worker::search(
 
     improving |= ss->staticEval >= beta;
 
-    // Step 10. Internal iterative reductions
-    // At sufficient depth, reduce depth for PV/Cut nodes without a TTMove.
-    // (*Scaler) Making IIR more aggressive scales poorly.
-    if (!allNode && depth >= 6 && !ttData.move && priorReduction <= 3)
-        depth--;
-
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
@@ -1195,6 +1189,12 @@ moves_loop:  // When in check, search starts here
         r += 690;  // Base reduction offset to compensate for other tweaks
         r -= moveCount * 70;
         r -= std::abs(correctionValue) / 26878;
+
+        // Internal iterative reductions
+        // At sufficient depth, reduce depth for PV/Cut nodes without a TTMove.
+        // (*Scaler) Making IIR more aggressive scales poorly.
+        if (!allNode && depth >= 6 && !ttData.move && priorReduction <= 3)
+            r += 1024;
 
         // Increase reduction for cut nodes
         if (cutNode)
