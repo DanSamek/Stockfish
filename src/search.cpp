@@ -757,7 +757,7 @@ Value Search::Worker::search(
         depth--;
 
     if (depth >= 2 && (ss - 2)->excludedMove != Move::none() && ss->staticEval > beta + 333)
-        depth--;
+        depth++;
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
