@@ -756,6 +756,9 @@ Value Search::Worker::search(
     if (priorReduction >= 2 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
 
+    if (depth >= 2 && (ss - 2)->excludedMove != Move::none() && ss->staticEval > beta + 333)
+        depth--;
+
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
