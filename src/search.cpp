@@ -697,6 +697,7 @@ Value Search::Worker::search(
     (ss - 1)->reduction = 0;
     ss->statScore       = 0;
     (ss + 2)->cutoffCnt = 0;
+    ss->evalAboveBetaCnt = (ss - 1)->evalAboveBetaCnt;
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -755,6 +756,14 @@ Value Search::Worker::search(
         depth++;
     if (priorReduction >= 2 && depth >= 2 && ss->staticEval + (ss - 1)->staticEval > 188)
         depth--;
+
+    if (ss->staticEval > beta)
+        ss->evalAboveBetaCnt++;
+    else
+        ss->evalAboveBetaCnt = 0;
+
+    if (ss->evalAboveBetaCnt > 5)
+        depth++;
 
     // At non-PV nodes we check for an early TT cutoff
     if (!PvNode && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
