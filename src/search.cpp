@@ -620,12 +620,14 @@ Value Search::Worker::search(
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
 
-    if (!PvNode && rootDepth > 10 && depth <= 4)
+    // For lower depths "correct" cutNode flag based on cutNodeCorrectionHistory value.
+    if (!PvNode && rootDepth > 10 && depth <= 6)
     {
         const auto cutNodeCorrectionHistoryValue = cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][pos.side_to_move()];
 
-        if (cutNodeCorrectionHistoryValue < -850) cutNode = false;
-        if (cutNodeCorrectionHistoryValue > 850) cutNode = true;
+        constexpr int cutnode_correction_bound = 933;
+        if (cutNodeCorrectionHistoryValue < -cutnode_correction_bound) cutNode = false;
+        if (cutNodeCorrectionHistoryValue > cutnode_correction_bound) cutNode = true;
     }
 
 
@@ -1469,7 +1471,7 @@ moves_loop:  // When in check, search starts here
 
     if (!PvNode)
     {
-        const int bonus = std::clamp((bestValue - beta) * depth / 10,
+        const int bonus = std::clamp((bestValue - beta) * depth / (bestValue >= beta ? 4 : 6),
                                      -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
         cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][us] << bonus;
     }
