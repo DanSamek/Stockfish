@@ -619,19 +619,14 @@ Value Search::Worker::search(
 
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
+    const bool     allNode  = !(PvNode || cutNode);
 
-    // For lower depths "correct" cutNode flag based on cutNodeCorrectionHistory value.
+    bool likelyCutNode = false;
     if (!PvNode && rootDepth > 10 && depth <= 6)
     {
         const auto cutNodeCorrectionHistoryValue = cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][pos.side_to_move()];
-
-        constexpr int cutnode_correction_bound = 933;
-        if (cutNodeCorrectionHistoryValue < -cutnode_correction_bound) cutNode = false;
-        if (cutNodeCorrectionHistoryValue > cutnode_correction_bound) cutNode = true;
+        likelyCutNode = cutNodeCorrectionHistoryValue > 933 && !cutNode;
     }
-
-
-    const bool     allNode  = !(PvNode || cutNode);
 
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
@@ -904,7 +899,7 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - 17 * depth - 50 * improving + 359 && !excludedMove
+    if ((cutNode || likelyCutNode) && ss->staticEval >= beta - 17 * depth - 50 * improving + 359 && !excludedMove
         && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
