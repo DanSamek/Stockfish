@@ -617,11 +617,12 @@ template<NodeType nodeType>
 Value Search::Worker::search(
   Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode) {
 
-    if (depth >= 10 && cutNode)
-        cutNode = cutNodeHistory[cutnode_history_index(pos)][pos.side_to_move()] > 1000;
-
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
+
+    if (!PvNode && depth >= 10)
+        cutNode = cutNodeHistory[cutnode_history_index(pos)][pos.side_to_move()] > 2222;
+
     const bool     allNode  = !(PvNode || cutNode);
 
     // Dive into quiescence search when the depth reaches zero
