@@ -620,12 +620,8 @@ Value Search::Worker::search(
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
 
-    ss->cutNodeCorrectionMinPly = (ss - 1)->cutNodeCorrectionMinPly;
-    if (!PvNode && ss->cutNodeCorrectionMinPly <= ss->ply && depth >= 10)
-    {
-        ss->cutNodeCorrectionMinPly = ss->ply + 5;
-        cutNode = cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][pos.side_to_move()] > 3333;
-    }
+    if (!PvNode && rootDepth > 10 && depth <= 4)
+        cutNode = cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][pos.side_to_move()] > 0;
 
     const bool     allNode  = !(PvNode || cutNode);
 
@@ -1465,9 +1461,12 @@ moves_loop:  // When in check, search starts here
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
 
-    if (cutNode)
-        cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][us]
-            << (bestValue >= beta ? std::min(800, 100 * depth) : std::max(-800, -100 * depth));
+    if (!PvNode)
+    {
+        const int bonus = std::clamp((bestValue - beta) * depth / 10,
+                                     -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
+        cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][us] << bonus;
+    }
 
     // If no good move is found and the previous position was ttPv, then the previous
     // opponent move is probably good and the new position is added to the search tree.
