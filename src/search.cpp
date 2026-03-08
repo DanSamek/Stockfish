@@ -622,10 +622,10 @@ Value Search::Worker::search(
     const bool     allNode  = !(PvNode || cutNode);
 
     bool likelyCutNode = false;
-    if (!PvNode && rootDepth > 10 && depth <= 6)
+    if (!PvNode && depth + 4 < rootDepth)
     {
         const auto cutNodeCorrectionHistoryValue = cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][pos.side_to_move()];
-        likelyCutNode = cutNodeCorrectionHistoryValue > 933 && !cutNode;
+        likelyCutNode = cutNodeCorrectionHistoryValue > 933;
     }
 
     // Dive into quiescence search when the depth reaches zero
