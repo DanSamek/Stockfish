@@ -620,8 +620,12 @@ Value Search::Worker::search(
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
 
-    if (!PvNode && depth >= 10)
-        cutNode = cutNodeHistory[cutnode_history_index(pos)][pos.side_to_move()] > 2222;
+    ss->cutNodeCorrectionMinPly = (ss - 1)->cutNodeCorrectionMinPly;
+    if (!PvNode && ss->cutNodeCorrectionMinPly <= ss->ply && depth >= 10)
+    {
+        ss->cutNodeCorrectionMinPly = ss->ply + 5;
+        cutNode = cutNodeHistory[cutnode_history_index(pos)][pos.side_to_move()] > 3333;
+    }
 
     const bool     allNode  = !(PvNode || cutNode);
 
