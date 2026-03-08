@@ -620,7 +620,7 @@ Value Search::Worker::search(
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
 
-    if (!PvNode && rootDepth > 10)
+    if (!PvNode && rootDepth > 10 && depth <= 4)
     {
         const auto cutNodeCorrectionHistoryValue = cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][pos.side_to_move()];
 
