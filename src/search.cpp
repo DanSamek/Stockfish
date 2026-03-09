@@ -621,11 +621,11 @@ Value Search::Worker::search(
     constexpr bool rootNode = nodeType == Root;
     const bool     allNode  = !(PvNode || cutNode);
 
-    bool likelyCutNode = false;
-    if (!PvNode && depth + 4 < rootDepth)
+    bool likelyCutNode = true;
+    if (cutNode && depth + 4 < rootDepth)
     {
         const auto cutNodeCorrectionHistoryValue = cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][pos.side_to_move()];
-        likelyCutNode = cutNodeCorrectionHistoryValue > 7987;
+        if (cutNodeCorrectionHistoryValue < -7987) likelyCutNode = false;
     }
 
     // Dive into quiescence search when the depth reaches zero
@@ -1205,9 +1205,9 @@ moves_loop:  // When in check, search starts here
         r -= moveCount * 70;
         r -= std::abs(correctionValue) / 26878;
 
-        // Increase reduction for cut nodes or probably cutnodes.
-        if (cutNode || likelyCutNode)
-            r += 3582 + 1015 * !ttData.move;
+        // Increase reduction for cut nodes.
+        if (cutNode)
+            r += (3582 + 1015 * !ttData.move) / (likelyCutNode ? 1 : 2);
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
