@@ -161,7 +161,7 @@ using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 using PawnHistory =
   DynStats<AtomicStats<std::int16_t, 8192, PIECE_NB, SQUARE_NB>, PAWN_HISTORY_BASE_SIZE>;
 
-using CutNodeCorrectionHistory = Stats<std::int16_t, CORRECTION_HISTORY_LIMIT, CUTNODE_CORRECTION_HISTORY_BASE_SIZE, COLOR_NB>;
+using CutNodeCorrectionHistory = Stats<std::int16_t, 8192, CUTNODE_CORRECTION_HISTORY_BASE_SIZE, COLOR_NB>;
 
 // Correction histories record differences between the static evaluation of
 // positions and their search score. It is used to improve the static evaluation
