@@ -769,7 +769,7 @@ Value Search::Worker::search(
     if (!PvNode && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER))
-        && ((cutNode || likelyCutNode) == (ttData.value >= beta) || depth > 5))
+        && (cutNode == (ttData.value >= beta) || depth > 5))
     {
         // If ttMove is quiet, update move sorting heuristics on TT hit
         if (ttData.move && ttData.value >= beta)
@@ -1205,8 +1205,8 @@ moves_loop:  // When in check, search starts here
         r -= moveCount * 70;
         r -= std::abs(correctionValue) / 26878;
 
-        // Increase reduction for cut nodes
-        if (cutNode)
+        // Increase reduction for cut nodes or probably cutnodes.
+        if (cutNode || likelyCutNode)
             r += 3582 + 1015 * !ttData.move;
 
         // Increase reduction if ttMove is a capture
