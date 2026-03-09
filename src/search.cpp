@@ -625,7 +625,7 @@ Value Search::Worker::search(
     if (!PvNode && depth + 4 < rootDepth)
     {
         const auto cutNodeCorrectionHistoryValue = cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][pos.side_to_move()];
-        likelyCutNode = cutNodeCorrectionHistoryValue > 966;
+        likelyCutNode = cutNodeCorrectionHistoryValue > 8069;
     }
 
     // Dive into quiescence search when the depth reaches zero
@@ -769,7 +769,7 @@ Value Search::Worker::search(
     if (!PvNode && !excludedMove && ttData.depth > depth - (ttData.value <= beta)
         && is_valid(ttData.value)  // Can happen when !ttHit or when access race in probe()
         && (ttData.bound & (ttData.value >= beta ? BOUND_LOWER : BOUND_UPPER))
-        && (cutNode == (ttData.value >= beta) || depth > 5))
+        && ((cutNode || likelyCutNode) == (ttData.value >= beta) || depth > 5))
     {
         // If ttMove is quiet, update move sorting heuristics on TT hit
         if (ttData.move && ttData.value >= beta)
@@ -899,7 +899,7 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if ((cutNode || likelyCutNode) && ss->staticEval >= beta - 17 * depth - 50 * improving + 359 && !excludedMove
+    if (cutNode && ss->staticEval >= beta - 17 * depth - 50 * improving + 359 && !excludedMove
         && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
@@ -1466,8 +1466,7 @@ moves_loop:  // When in check, search starts here
 
     if (!PvNode)
     {
-        const int bonus = std::clamp((bestValue - beta) * depth / (bestValue >= beta ? 4 : 6),
-                                     -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
+        const int bonus = std::clamp((bestValue - beta) * depth, -800, 800);
         cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][us] << bonus;
     }
 
