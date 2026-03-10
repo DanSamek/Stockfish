@@ -896,7 +896,7 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - 17 * depth - 50 * improving - cutNodeCorrectionHistoryValue / 128 + 359
+    if (cutNode && ss->staticEval >= beta - 17 * depth - 50 * improving - cutNodeCorrectionHistoryValue / 256 + 359
         && !excludedMove && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
@@ -1202,9 +1202,9 @@ moves_loop:  // When in check, search starts here
         r -= moveCount * 70;
         r -= std::abs(correctionValue) / 26878;
 
-        // Increase reduction for cut nodes.
+        // Increase reduction for cut nodes
         if (cutNode)
-            r += 3300 + 1015 * !ttData.move;
+            r += 3582 + 1015 * !ttData.move;
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
