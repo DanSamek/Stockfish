@@ -625,7 +625,6 @@ Value Search::Worker::search(
     if (cutNode)
         cutNodeCorrectionHistoryValue = cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][pos.side_to_move()];
 
-
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
         return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
@@ -897,8 +896,8 @@ Value Search::Worker::search(
     }
 
     // Step 9. Null move search with verification search
-    if (cutNode && ss->staticEval >= beta - 17 * depth - 50 * improving + 359 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
+    if (cutNode && ss->staticEval >= beta - 17 * depth - 50 * improving - cutNodeCorrectionHistoryValue / 128 + 359
+        && !excludedMove && pos.non_pawn_material(us) && ss->ply >= nmpMinPly && !is_loss(beta))
     {
         assert((ss - 1)->currentMove != Move::null());
 
@@ -1205,7 +1204,7 @@ moves_loop:  // When in check, search starts here
 
         // Increase reduction for cut nodes.
         if (cutNode)
-            r += 3300 + 1015 * !ttData.move + cutNodeCorrectionHistoryValue / 16;
+            r += 3300 + 1015 * !ttData.move;
 
         // Increase reduction if ttMove is a capture
         if (ttCapture)
@@ -1464,7 +1463,7 @@ moves_loop:  // When in check, search starts here
 
     if (cutNode)
     {
-        const int bonus = std::clamp((bestValue - beta) * depth, -800, 800);
+        const int bonus = std::clamp((bestValue - beta) * depth * 6, -800, 800);
         cutNodeCorrectionHistory[cutnode_correction_history_index(pos)][us] << bonus;
     }
 
