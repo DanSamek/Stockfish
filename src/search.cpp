@@ -1196,6 +1196,12 @@ moves_loop:  // When in check, search starts here
         r -= moveCount * 70;
         r -= std::abs(correctionValue) / 26878;
 
+        // Reduce reduction for ttMove if ttValue is above beta
+        // but ttDepth is above current search depth
+        if (move == ttData.move && is_valid(ttData.value)
+            && ttData.value > beta && depth < ttData.depth)
+            r -= std::max((ttData.depth - depth - 2 /* ttMove reduction reduce */) * 1024, 0);
+
         // Increase reduction for cut nodes
         if (cutNode)
             r += 3582 + 1015 * !ttData.move;
