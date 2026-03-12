@@ -593,6 +593,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+     nullMoveHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(7);
@@ -907,7 +909,10 @@ Value Search::Worker::search(
         if (nullValue >= beta && !is_win(nullValue))
         {
             if (nmpMinPly || depth < 16)
+            {
+                nullMoveHistory[nmp_history_index(pos)][us] << 700;
                 return nullValue;
+            }
 
             assert(!nmpMinPly);  // Recursive verification is not allowed
 
@@ -915,13 +920,24 @@ Value Search::Worker::search(
             // until ply exceeds nmpMinPly.
             nmpMinPly = ss->ply + 3 * (depth - R) / 4;
 
-            Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
+            const auto nmpHistoryValue = nullMoveHistory[nmp_history_index(pos)][us];
+            Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R - (nmpHistoryValue > 7987), false);
 
             nmpMinPly = 0;
 
             if (v >= beta)
+            {
+                nullMoveHistory[nmp_history_index(pos)][us] << 700;
                 return nullValue;
+            }
+            else
+            {
+                nullMoveHistory[nmp_history_index(pos)][us] << -700;
+            }
         }
+
+        if (nullValue < beta)
+            nullMoveHistory[nmp_history_index(pos)][us] << -700;
     }
 
     improving |= ss->staticEval >= beta;
