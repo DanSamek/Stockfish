@@ -273,7 +273,7 @@ void Search::Worker::iterative_deepening() {
 
     // Allocate stack with extra size to allow access from (ss - 7) to (ss + 2):
     // (ss - 7) is needed for update_continuation_histories(ss - 1) which accesses (ss - 6),
-    // (ss + 2) is needed for initialization of cutOffCnt.
+    // (ss + 2) is needed for initialization of cutOffValue.
     Stack  stack[MAX_PLY + 10] = {};
     Stack* ss                  = stack + 7;
 
@@ -696,7 +696,7 @@ Value Search::Worker::search(
     priorReduction = (ss - 1)->reduction;
     (ss - 1)->reduction = 0;
     ss->statScore       = 0;
-    (ss + 2)->cutoffCnt = 0;
+    (ss + 2)->cutoffValue = 0;
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -1205,8 +1205,8 @@ moves_loop:  // When in check, search starts here
             r += 1075;
 
         // Increase reduction if next ply has a lot of fail high
-        if ((ss + 1)->cutoffCnt > 1)
-            r += 249 + 1073 * ((ss + 1)->cutoffCnt > 2) + 1064 * allNode;
+        if ((ss + 1)->cutoffValue > 1024)
+            r += 249 + 1073 * ((ss + 1)->cutoffValue > 2048) + 1064 * allNode;
 
         // For first picked move (ttMove) reduce reduction
         if (move == ttData.move)
@@ -1371,7 +1371,7 @@ moves_loop:  // When in check, search starts here
                 if (value >= beta)
                 {
                     // (*Scaler) Infrequent and small updates scale well
-                    ss->cutoffCnt += (extension < 2) || PvNode;
+                    ss->cutoffValue += PvNode ? 1024 : 512 * (extension < 2);
                     assert(value >= beta);  // Fail high
                     break;
                 }
