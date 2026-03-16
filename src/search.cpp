@@ -1208,6 +1208,12 @@ moves_loop:  // When in check, search starts here
         if ((ss + 1)->cutoffCnt > 1)
             r += 249 + 1073 * ((ss + 1)->cutoffCnt > 2) + 1064 * allNode;
 
+        // Increase reduction for tt prior move if the statscore is very bad,
+        // and we have tt information that the current position failed high.
+        if (prevSq != SQ_NONE && (ss - 1)->statScore < -30000
+            && (ttData.bound & BOUND_LOWER) && (ss - 1)->moveCount == 1 && (ss - 1)->ttHit)
+            r += 512;
+
         // For first picked move (ttMove) reduce reduction
         if (move == ttData.move)
             r -= 2069;
