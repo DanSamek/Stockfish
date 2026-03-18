@@ -975,10 +975,7 @@ Value Search::Worker::search(
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
 
                 if (!is_decisive(value))
-                {
-                    const int adjustedDepth = std::max(3, probCutDepth);
-                    return (adjustedDepth * value + beta) / (adjustedDepth + 1);
-                }
+                    return value - (probCutBeta - beta);
             }
         }
     }
