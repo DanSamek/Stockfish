@@ -1212,7 +1212,7 @@ moves_loop:  // When in check, search starts here
         // and we have tt information that the current position failed high.
         if (prevSq != SQ_NONE && (ss - 1)->statScore < -30000
             && (ttData.bound & BOUND_LOWER) && (ss - 1)->moveCount == 1 && (ss - 1)->ttHit)
-            r += 512;
+            r += 1024;
 
         // For first picked move (ttMove) reduce reduction
         if (move == ttData.move)
