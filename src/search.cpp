@@ -274,7 +274,7 @@ void Search::Worker::iterative_deepening() {
 
     // Allocate stack with extra size to allow access from (ss - 7) to (ss + 2):
     // (ss - 7) is needed for update_continuation_histories(ss - 1) which accesses (ss - 6),
-    // (ss + 2) is needed for initialization of cutOffCnt.
+    // (ss + 2) is needed for initialization of cutoffValue.
     Stack  stack[MAX_PLY + 10] = {};
     Stack* ss                  = stack + 7;
 
@@ -714,9 +714,9 @@ Value Search::Worker::search(
     Square prevSq  = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     bestMove       = Move::none();
     priorReduction = (ss - 1)->reduction;
-    (ss - 1)->reduction = 0;
-    ss->statScore       = 0;
-    (ss + 2)->cutoffCnt = 0;
+    (ss - 1)->reduction   = 0;
+    ss->statScore         = 0;
+    (ss + 2)->cutoffValue = 0;
 
     // Step 4. Transposition table lookup
     excludedMove                   = ss->excludedMove;
@@ -1225,8 +1225,8 @@ moves_loop:  // When in check, search starts here
             r += 1054;
 
         // Increase reduction if next ply has a lot of fail high
-        if ((ss + 1)->cutoffCnt > 1)
-            r += 251 + 1124 * ((ss + 1)->cutoffCnt > 2) + 1042 * allNode;
+        if ((ss + 1)->cutoffValue > 1024)
+            r += 251 + 1124 * ((ss + 1)->cutoffValue > 2048) + 1042 * allNode;
 
         // For first picked move (ttMove) reduce reduction
         if (move == ttData.move)
@@ -1391,7 +1391,7 @@ moves_loop:  // When in check, search starts here
                 if (value >= beta)
                 {
                     // (*Scaler) Infrequent and small updates scale well
-                    ss->cutoffCnt += (extension < 2) || PvNode;
+                    ss->cutoffValue += 1024 * ((extension < 2) || PvNode);
                     assert(value >= beta);  // Fail high
                     break;
                 }
@@ -1471,6 +1471,9 @@ moves_loop:  // When in check, search starts here
         assert(capturedPiece != NO_PIECE);
         captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 1018;
     }
+
+    if (!bestMove)
+        ss->cutoffValue -= PvNode * 256;
 
     if (PvNode)
         bestValue = std::min(bestValue, maxValue);
