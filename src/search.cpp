@@ -1427,7 +1427,7 @@ moves_loop:  // When in check, search starts here
     if (bestValue >= beta && !is_decisive(bestValue) && !is_decisive(alpha))
     {
         const int quadraticDepth = depth * depth;
-        const int middleDepth = (quadraticDepth + depth) / 2
+        const int middleDepth = (quadraticDepth + depth) / 2;
         bestValue = (bestValue * middleDepth + beta) / (middleDepth + 1);
     }
 
