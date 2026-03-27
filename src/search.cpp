@@ -1691,6 +1691,12 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         do_move(pos, move, st, givesCheck, ss);
 
         value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha);
+        if (value < beta && move == ttData.move && ttData.bound == BOUND_LOWER && !PvNode)
+        {
+            assert(!PvNode);
+            value = -search<nodeType>(pos, ss + 1, -beta, -alpha, 1, true);
+        }
+
         undo_move(pos, move);
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
