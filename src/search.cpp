@@ -1637,6 +1637,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
+    bool searchDived = false;
     while ((move = mp.next_move()) != Move::none())
     {
         assert(move.is_ok());
@@ -1644,6 +1645,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         if (!pos.legal(move))
             continue;
 
+        searchDived = false;
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
 
@@ -1691,10 +1693,14 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         do_move(pos, move, st, givesCheck, ss);
 
         value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha);
-        if (value < beta && move == ttData.move && ttData.bound == BOUND_LOWER && !PvNode)
+        if (!PvNode && !searchDive && move == ttData.move
+            && value < beta && ttData.bound == BOUND_LOWER)
         {
             assert(!PvNode);
-            value = -search<nodeType>(pos, ss + 1, -beta, -alpha, 1, true);
+            searchDive  = true;
+            value       = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, 1, true);
+            searchDive  = false;
+            searchDived = true;
         }
 
         undo_move(pos, move);
@@ -1750,9 +1756,12 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
-    ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), pvHit,
+    if (!searchDived)
+    {
+        ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), pvHit,
                    bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, DEPTH_QS, bestMove,
                    unadjustedStaticEval, tt.generation());
+    }
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
