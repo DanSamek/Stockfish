@@ -1645,7 +1645,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         if (!pos.legal(move))
             continue;
 
-        searchDived = false;
         givesCheck = pos.gives_check(move);
         capture    = pos.capture_stage(move);
 
@@ -1756,7 +1755,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
-    if (!searchDived)
+    if (!(searchDived && move == ttData.move))
     {
         ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), pvHit,
                    bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, DEPTH_QS, bestMove,
