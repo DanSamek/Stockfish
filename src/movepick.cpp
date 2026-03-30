@@ -88,6 +88,7 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        const SharedHistories*       sh,
+                       const LeafHistory*           lh,
                        int                          pl) :
     pos(p),
     mainHistory(mh),
@@ -95,6 +96,7 @@ MovePicker::MovePicker(const Position&              p,
     captureHistory(cph),
     continuationHistory(ch),
     sharedHistory(sh),
+    leafHistory(lh),
     ttMove(ttm),
     depth(d),
     ply(pl) {
@@ -177,6 +179,9 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
 
             if (ply < LOW_PLY_HISTORY_SIZE)
                 m.value += 8 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
+
+            if (depth <= LEAF_HISTORY_MAX_DEPTH)
+                m.value += (*leafHistory)[us][m.raw()];
         }
 
         else  // Type == EVASIONS

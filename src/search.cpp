@@ -130,7 +130,7 @@ Value value_from_tt(Value v, int ply, int r50c);
 void  update_pv(Move* pv, Move move, const Move* childPv);
 void  update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
 void  update_quiet_histories(
-   const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus);
+   const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus, int depth);
 void update_all_stats(const Position& pos,
                       Stack*          ss,
                       Search::Worker& workerThread,
@@ -609,6 +609,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    leafHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(6);
@@ -788,7 +790,7 @@ Value Search::Worker::search(
             // Bonus for a quiet ttMove that fails high
             if (!ttCapture)
                 update_quiet_histories(pos, ss, *this, ttData.move,
-                                       std::min(119 * depth - 74, 855));
+                                       std::min(119 * depth - 74, 855), depth);
 
             // Extra penalty for early quiet moves of the previous ply
             if (prevSq != SQ_NONE && (ss - 1)->moveCount < 4 && !priorCapture)
@@ -884,6 +886,9 @@ Value Search::Worker::search(
         if (!ttHit && type_of(pos.piece_on(prevSq)) != PAWN
             && ((ss - 1)->currentMove).type_of() != PROMOTION)
             sharedHistory.pawn_entry(pos)[pos.piece_on(prevSq)][prevSq] << evalDiff * 12;
+
+        if (depth <= LEAF_HISTORY_MAX_DEPTH)
+             leafHistory[~us][((ss - 1)->currentMove).raw()] << evalDiff * 10;
     }
 
 
@@ -1014,7 +1019,7 @@ moves_loop:  // When in check, search starts here
 
 
     MovePicker mp(pos, ttData.move, depth, &mainHistory, &lowPlyHistory, &captureHistory, contHist,
-                  &sharedHistory, ss->ply);
+                  &sharedHistory, &leafHistory, ss->ply);
 
     value = bestValue;
 
@@ -1633,7 +1638,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // the moves. We presently use two stages of move generator in quiescence search:
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &mainHistory, &lowPlyHistory, &captureHistory,
-                  contHist, &sharedHistory, ss->ply);
+                  contHist, &sharedHistory, &leafHistory, ss->ply);
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.
@@ -1856,14 +1861,14 @@ void update_all_stats(const Position& pos,
 
     if (!pos.capture_stage(bestMove))
     {
-        update_quiet_histories(pos, ss, workerThread, bestMove, bonus * 806 / 1024);
+        update_quiet_histories(pos, ss, workerThread, bestMove, bonus * 806 / 1024, depth);
 
         int actualMalus = malus * 1113 / 1024;
         // Decrease stats for all non-best quiet moves
         for (Move move : quietsSearched)
         {
             actualMalus = actualMalus * 977 / 1024;
-            update_quiet_histories(pos, ss, workerThread, move, -actualMalus);
+            update_quiet_histories(pos, ss, workerThread, move, -actualMalus, depth);
         }
     }
     else
@@ -1919,7 +1924,7 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 // Updates move sorting heuristics
 
 void update_quiet_histories(
-  const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus) {
+  const Position& pos, Stack* ss, Search::Worker& workerThread, Move move, int bonus, int depth) {
 
     Color us = pos.side_to_move();
     workerThread.mainHistory[us][move.raw()] << bonus;  // Untuned to prevent duplicate effort
@@ -1931,6 +1936,10 @@ void update_quiet_histories(
 
     workerThread.sharedHistory.pawn_entry(pos)[pos.moved_piece(move)][move.to_sq()]
       << bonus * (bonus > 0 ? 974 : 543) / 1024;
+
+    if (depth <= LEAF_HISTORY_MAX_DEPTH)
+        workerThread.leafHistory[us][move.raw()] << bonus;
+
 }
 
 }

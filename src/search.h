@@ -298,6 +298,8 @@ class Worker {
     TTMoveHistory    ttMoveHistory;
     SharedHistories& sharedHistory;
 
+    LeafHistory      leafHistory;
+
    private:
     void iterative_deepening();
 
