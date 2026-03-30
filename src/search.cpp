@@ -312,6 +312,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(98);
+    leafHistory.fill(0);
 
     for (Color c : {WHITE, BLACK})
         for (int i = 0; i < UINT_16_HISTORY_SIZE; i++)
@@ -608,8 +609,6 @@ void Search::Worker::clear() {
     sharedHistory.pawnHistory.clear_range(-1238, numaThreadIdx, numaTotal);
 
     ttMoveHistory = 0;
-
-    leafHistory.fill(0);
 
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
