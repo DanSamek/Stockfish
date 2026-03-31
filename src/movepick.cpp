@@ -181,7 +181,7 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
                 m.value += 8 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
 
             if (depth <= LEAF_HISTORY_MAX_DEPTH)
-                m.value += (*leafHistory)[us][m.raw()];
+                m.value += 5 * (*leafHistory)[us][m.raw()] / depth;
         }
 
         else  // Type == EVASIONS
