@@ -885,9 +885,6 @@ Value Search::Worker::search(
         if (!ttHit && type_of(pos.piece_on(prevSq)) != PAWN
             && ((ss - 1)->currentMove).type_of() != PROMOTION)
             sharedHistory.pawn_entry(pos)[pos.piece_on(prevSq)][prevSq] << evalDiff * 12;
-
-        if (depth <= LEAF_HISTORY_MAX_DEPTH)
-             leafHistory[~us][((ss - 1)->currentMove).raw()] << evalDiff * 10;
     }
 
 
