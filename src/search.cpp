@@ -985,9 +985,7 @@ Value Search::Worker::search(
             else
             {
                 if (move == ttData.move && is_valid(ttData.value) && ttData.depth >= DEPTH_QS)
-                {
                     value = ttData.value;
-                }
                 // Perform a preliminary qsearch to verify that the move holds
                 else
                     value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
