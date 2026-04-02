@@ -978,13 +978,25 @@ Value Search::Worker::search(
 
             do_move(pos, move, st, ss);
 
-            // Perform a preliminary qsearch to verify that the move holds
-            value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
+            if (move == ttData.move && is_valid(ttData.value) && ttData.depth >= probCutDepth)
+            {
+                value = ttData.value;
+            }
+            else
+            {
+                if (move == ttData.move && is_valid(ttData.value) && ttData.depth >= DEPTH_QS)
+                {
+                    value = ttData.value;
+                }
+                // Perform a preliminary qsearch to verify that the move holds
+                else
+                    value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
 
-            // If the qsearch held, perform the regular search
-            if (value >= probCutBeta && probCutDepth > 0)
-                value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, probCutDepth,
-                                       !cutNode);
+                // If the qsearch held, perform the regular search
+                if (value >= probCutBeta && probCutDepth > 0)
+                    value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, probCutDepth,
+                                           !cutNode);
+            }
 
             undo_move(pos, move);
 
