@@ -1347,6 +1347,16 @@ void Position::update_piece_threats(Piece                     pc,
         add_dirty_threat<PutPiece>(dts, srcPc, pc, srcSq, s);
     }
 #endif
+
+    if (type_of(pc) == PAWN && PutPiece)
+    {
+        const bool passed_pawn = is_passed_pawn(color_of(pc), s, pieces(PAWN, ~color_of(pc)));
+        dts->list.push_back({pc, Piece::NO_PIECE, s, Square::SQ_NONE, passed_pawn, PAWN_PUSH});
+    }
+    else if(type_of(pc) == PAWN && !PutPiece)
+    {
+        dts->list.push_back({pc, Piece::NO_PIECE, s, Square::SQ_NONE, PutPiece, PAWN_PUSH});
+    }
 }
 
 // Helper used to do/undo a castling move. This is a bit

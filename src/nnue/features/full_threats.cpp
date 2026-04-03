@@ -205,6 +205,13 @@ inline sf_always_inline IndexType FullThreats::make_index(
          + index_lut2[attacker_oriented][from_oriented][to_oriented];
 }
 
+inline IndexType passed_pawn_index(Color color, Square square) {
+    constexpr IndexType offset = 60720;
+    IndexType index =  color * 40 + (square - (color + 1) * 8);
+    assert(index >= 0 && index < 80);
+    return index + offset;
+}
+
 // Get a list of indices for active features in ascending order
 
 void FullThreats::append_active_indices(Color perspective, const Position& pos, IndexList& active) {
@@ -264,6 +271,19 @@ void FullThreats::append_active_indices(Color perspective, const Position& pos, 
                     if (index < Dimensions)
                         active.push_back(index);
                 }
+
+                // Set of passed pawns
+                Bitboard opponent_pawns = pos.pieces(~color, PAWN);
+                while (bb)
+                {
+                    Square from = pop_lsb(bb);
+                    if (!is_passed_pawn(color, from, opponent_pawns))
+                        continue;
+
+                    IndexType index = passed_pawn_index(color, from);
+                    if (index < Dimensions)
+                        active.push_back(index);
+                }
             }
             else
             {
@@ -307,6 +327,7 @@ void FullThreats::append_changed_indices(Color                   perspective,
         auto from     = dirty.pc_sq();
         auto to       = dirty.threatened_sq();
         auto add      = dirty.add();
+        auto op       = dirty.special_operation();
 
         if (fusedData)
         {
@@ -340,7 +361,9 @@ void FullThreats::append_changed_indices(Color                   perspective,
         }
 
         auto&           insert = add ? added : removed;
-        const IndexType index  = make_index(perspective, attacker, from, to, attacked, ksq);
+        const IndexType index = op == NONE
+                ? make_index(perspective, attacker, from, to, attacked, ksq)
+                : passed_pawn_index(color_of(attacker), from);
 
         if (index < Dimensions)
         {

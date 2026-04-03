@@ -291,6 +291,11 @@ struct DirtyPiece {
     Piece  remove_pc, add_pc;
 };
 
+enum SpecialOp {
+    NONE,
+    PAWN_PUSH
+};
+
 // Keep track of what threats change on the board (used by NNUE)
 struct DirtyThreat {
     static constexpr int PcSqOffset         = 0;
@@ -301,7 +306,7 @@ struct DirtyThreat {
     DirtyThreat() { /* don't initialize data */ }
     DirtyThreat(uint32_t raw) :
         data(raw) {}
-    DirtyThreat(Piece pc, Piece threatened_pc, Square pc_sq, Square threatened_sq, bool add) {
+    DirtyThreat(Piece pc, Piece threatened_pc, Square pc_sq, Square threatened_sq, bool add, SpecialOp special_operation = NONE) : op(special_operation) {
         data = (uint32_t(add) << 31) | (pc << PcOffset) | (threatened_pc << ThreatenedPcOffset)
              | (threatened_sq << ThreatenedSqOffset) | (pc_sq << PcSqOffset);
     }
@@ -312,9 +317,11 @@ struct DirtyThreat {
     Square pc_sq() const { return static_cast<Square>(data >> PcSqOffset & 0xff); }
     bool   add() const { return data >> 31; }
     uint32_t raw() const { return data; }
+    SpecialOp special_operation() const { op; }
 
    private:
     uint32_t data;
+    SpecialOp op = NONE;
 };
 
 // A piece can be involved in at most 8 outgoing attacks and 16 incoming attacks.

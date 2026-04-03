@@ -412,6 +412,35 @@ inline constexpr auto PawnPushOrAttacks = []() constexpr {
     return attacks;
 }();
 
+inline constexpr auto PassedPawnsMasks = []() constexpr {
+    std::array<std::array<Bitboard, SQUARE_NB>, COLOR_NB> masks{};
+    for (Square s1 = SQ_A2; s1 <= SQ_H6; ++s1){
+        int tmp = s1;
+        File file = file_of(s1);
+        while (tmp <= SQ_H7)
+        {
+            masks[WHITE][s1] |= square_bb(Square(tmp));
+            if (file != FILE_H) masks[WHITE][s1] |= square_bb(Square(tmp + 1));
+            if (file != FILE_A) masks[WHITE][s1] |= square_bb(Square(tmp - 1));
+            tmp += 8;
+        }
+    }
+
+    for (Square s1 = SQ_A3; s1 <= SQ_H7; ++s1){
+        int tmp = s1;
+        File file = file_of(s1);
+        while (tmp >= SQ_A3)
+        {
+            masks[BLACK][s1] |= square_bb(Square(tmp));
+            if (file != FILE_H) masks[BLACK][s1] |= square_bb(Square(tmp + 1));
+            if (file != FILE_A) masks[BLACK][s1] |= square_bb(Square(tmp - 1));
+            tmp -= 8;
+        }
+    }
+    return masks;
+}();
+
+
 
 // Returns the pseudo attacks of the given piece type
 // assuming an empty board.
@@ -466,6 +495,15 @@ inline Bitboard attacks_bb(PieceType pt, Square s, Bitboard occupied) {
 inline Bitboard attacks_bb(Piece pc, Square s, Bitboard occupied) {
     return type_of(pc) == PAWN ? PseudoAttacks[color_of(pc)][s]
                                : attacks_bb(type_of(pc), s, occupied);
+}
+
+inline bool is_passed_pawn(Color color, Square square, Bitboard opponentPawns) {
+    if (color == WHITE && rank_of(square) == RANK_7) return false;
+    if (color == BLACK && rank_of(square) == RANK_2) return false;
+
+    Bitboard bb = PassedPawnsMasks[color][square];
+    bool passed = (opponentPawns & bb) == 0;
+    return passed;
 }
 
 }  // namespace Stockfish
