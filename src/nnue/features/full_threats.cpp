@@ -205,7 +205,7 @@ inline sf_always_inline IndexType FullThreats::make_index(
          + index_lut2[attacker_oriented][from_oriented][to_oriented];
 }
 
-inline bool valid_passed_pawn_square(Color color, Square square) {
+inline bool valid_passed_pawn_square(Color perspective, Color color, Square square) {
     // <A2, H6>
     constexpr Rank rankOfA2 = rank_of(SQ_A2);
     constexpr Rank rankOfH6 = rank_of(SQ_H6);
@@ -215,15 +215,21 @@ inline bool valid_passed_pawn_square(Color color, Square square) {
     constexpr Rank rankOfH7 = rank_of(SQ_H7);
 
     const Rank rank = rank_of(square);
-    return (color == WHITE && rank >= rankOfA2 && rank <= rankOfH6)
-        || (color == BLACK && rank >= rankOfA3 && rank <= rankOfH7);
+    int rel_rank = (color == perspective) ? rank : (7 - rank);
+
+    return (color == perspective && rel_rank >= rankOfA2 && rel_rank <= rankOfH6)
+        || (color != perspective && rel_rank >= rankOfA3 && rel_rank <= rankOfH7);
 }
 
-inline IndexType passed_pawn_index(Color color, Square square) {
+inline IndexType passed_pawn_index(Color perspective, Color color, Square square) {
     constexpr IndexType offset = 60720;
-    if (!valid_passed_pawn_square(color, square)) return -1;
+    auto perspective_square = Square(int(square) ^ (perspective * 56));
+    if (!valid_passed_pawn_square(perspective, color, perspective_square)) return -1;
 
-    int index = color * 40 + (square - (color + 1) * 8);
+    int rank = rank_of(perspective_square);
+    int rel_rank = (color == perspective) ? rank : (7 - rank);
+
+    int index = color * 40 + file_of(perspective_square) * 5 + (rel_rank - ((color == perspective) ? 1 : 2));
     assert(index >= 0 && index <= 79);
     return IndexType(index + offset);
 }
@@ -289,14 +295,14 @@ void FullThreats::append_active_indices(Color perspective, const Position& pos, 
                 }
 
                 // Set of passed pawns
-                Bitboard opponent_pawns = pos.pieces(~color, PAWN);
+                Bitboard opponent_pawns = pos.pieces(~c, PAWN);
                 while (bb)
                 {
                     Square from = pop_lsb(bb);
-                    if (!is_passed_pawn(color, from, opponent_pawns))
+                    if (!is_passed_pawn(c, from, opponent_pawns))
                         continue;
 
-                    IndexType index = passed_pawn_index(color, from);
+                    IndexType index = passed_pawn_index(perspective, c, from);
                     if (index < Dimensions)
                         active.push_back(index);
                 }
@@ -379,7 +385,7 @@ void FullThreats::append_changed_indices(Color                   perspective,
         auto&           insert = add ? added : removed;
         const IndexType index = op == NONE
                 ? make_index(perspective, attacker, from, to, attacked, ksq)
-                : passed_pawn_index(color_of(attacker), from);
+                : passed_pawn_index(perspective, color_of(attacker), from);
 
         if (index < Dimensions)
         {
