@@ -329,7 +329,7 @@ void FullThreats::append_changed_indices(Color                   perspective,
         auto add      = dirty.add();
         auto op       = dirty.special_operation();
 
-        if (fusedData)
+        if (fusedData && op == NONE)
         {
             if (from == fusedData->dp2removed)
             {
