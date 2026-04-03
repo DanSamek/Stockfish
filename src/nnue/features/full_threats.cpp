@@ -364,7 +364,7 @@ void FullThreats::append_changed_indices(Color                   perspective,
         const IndexType index = op == NONE
                 ? make_index(perspective, attacker, from, to, attacked, ksq)
                 : passed_pawn_index(color_of(attacker), from);
-
+        
         if (index < Dimensions)
         {
             if (prefetchBase)

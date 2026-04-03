@@ -317,7 +317,7 @@ struct DirtyThreat {
     Square pc_sq() const { return static_cast<Square>(data >> PcSqOffset & 0xff); }
     bool   add() const { return data >> 31; }
     uint32_t raw() const { return data; }
-    SpecialOp special_operation() const { op; }
+    SpecialOp special_operation() const { return op; }
 
    private:
     uint32_t data;

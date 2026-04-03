@@ -415,7 +415,7 @@ inline constexpr auto PawnPushOrAttacks = []() constexpr {
 inline constexpr auto PassedPawnsMasks = []() constexpr {
     std::array<std::array<Bitboard, SQUARE_NB>, COLOR_NB> masks{};
     for (Square s1 = SQ_A2; s1 <= SQ_H6; ++s1){
-        int tmp = s1;
+        int tmp = int(s1) + 8;
         File file = file_of(s1);
         while (tmp <= SQ_H7)
         {
@@ -427,9 +427,9 @@ inline constexpr auto PassedPawnsMasks = []() constexpr {
     }
 
     for (Square s1 = SQ_A3; s1 <= SQ_H7; ++s1){
-        int tmp = s1;
+        int tmp = int(s1) - 8;
         File file = file_of(s1);
-        while (tmp >= SQ_A3)
+        while (tmp >= SQ_A2)
         {
             masks[BLACK][s1] |= square_bb(Square(tmp));
             if (file != FILE_H) masks[BLACK][s1] |= square_bb(Square(tmp + 1));
