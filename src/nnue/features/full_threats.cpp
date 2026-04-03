@@ -206,13 +206,17 @@ inline sf_always_inline IndexType FullThreats::make_index(
 }
 
 inline bool valid_passed_pawn_square(Color color, Square square) {
+    // <A2, H6>
     constexpr Rank rankOfA2 = rank_of(SQ_A2);
     constexpr Rank rankOfH6 = rank_of(SQ_H6);
-    constexpr Rank rankOfH8 = rank_of(SQ_H8);
+
+    // <A3, H7>
+    constexpr Rank rankOfA3 = rank_of(SQ_A3);
+    constexpr Rank rankOfH7 = rank_of(SQ_H7);
 
     const Rank rank = rank_of(square);
-    return (color == WHITE && rank <= rankOfH8)
-        || (color == BLACK && rank >= rankOfA2 && rank <= rankOfH6);
+    return (color == WHITE && rank >= rankOfA2 && rank <= rankOfH6)
+        || (color == BLACK && rank >= rankOfA3 && rank <= rankOfH7);
 }
 
 inline IndexType passed_pawn_index(Color color, Square square) {
