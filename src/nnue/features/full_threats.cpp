@@ -205,8 +205,20 @@ inline sf_always_inline IndexType FullThreats::make_index(
          + index_lut2[attacker_oriented][from_oriented][to_oriented];
 }
 
+inline bool valid_passed_pawn_square(Color color, Square square) {
+    constexpr Rank rankOfA2 = rank_of(SQ_A2);
+    constexpr Rank rankOfH6 = rank_of(SQ_H6);
+    constexpr Rank rankOfH8 = rank_of(SQ_H8);
+
+    const Rank rank = rank_of(square);
+    return (color == WHITE && rank <= rankOfH8)
+        || (color == BLACK && rank >= rankOfA2 && rank <= rankOfH6);
+}
+
 inline IndexType passed_pawn_index(Color color, Square square) {
     constexpr IndexType offset = 60720;
+    if (!valid_passed_pawn_square(color, square)) return -1;
+
     int index = color * 40 + (square - (color + 1) * 8);
     assert(index >= 0 && index <= 79);
     return IndexType(index + offset);
