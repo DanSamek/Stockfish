@@ -207,9 +207,9 @@ inline sf_always_inline IndexType FullThreats::make_index(
 
 inline IndexType passed_pawn_index(Color color, Square square) {
     constexpr IndexType offset = 60720;
-    IndexType index =  color * 40 + (square - (color + 1) * 8);
-    assert(index >= 0 && index < 80);
-    return index + offset;
+    int index = color * 40 + (square - (color + 1) * 8);
+    assert(index >= 0 && index <= 79);
+    return IndexType(index + offset);
 }
 
 // Get a list of indices for active features in ascending order
@@ -364,7 +364,7 @@ void FullThreats::append_changed_indices(Color                   perspective,
         const IndexType index = op == NONE
                 ? make_index(perspective, attacker, from, to, attacked, ksq)
                 : passed_pawn_index(color_of(attacker), from);
-        
+
         if (index < Dimensions)
         {
             if (prefetchBase)
