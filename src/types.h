@@ -297,13 +297,14 @@ struct DirtyThreat {
     static constexpr int ThreatenedSqOffset = 8;
     static constexpr int ThreatenedPcOffset = 16;
     static constexpr int PcOffset           = 20;
+    static constexpr int disableFusedOffset = 24;
 
     DirtyThreat() { /* don't initialize data */ }
     DirtyThreat(uint32_t raw) :
         data(raw) {}
-    DirtyThreat(Piece pc, Piece threatened_pc, Square pc_sq, Square threatened_sq, bool add) {
+    DirtyThreat(Piece pc, Piece threatened_pc, Square pc_sq, Square threatened_sq, bool add, bool disableFused) {
         data = (uint32_t(add) << 31) | (pc << PcOffset) | (threatened_pc << ThreatenedPcOffset)
-             | (threatened_sq << ThreatenedSqOffset) | (pc_sq << PcSqOffset);
+             | (threatened_sq << ThreatenedSqOffset) | (pc_sq << PcSqOffset) | (disableFused << disableFusedOffset);
     }
 
     Piece  pc() const { return static_cast<Piece>(data >> PcOffset & 0xf); }
@@ -311,6 +312,7 @@ struct DirtyThreat {
     Square threatened_sq() const { return static_cast<Square>(data >> ThreatenedSqOffset & 0xff); }
     Square pc_sq() const { return static_cast<Square>(data >> PcSqOffset & 0xff); }
     bool   add() const { return data >> 31; }
+    bool   disable_fused() const {return (data >> disableFusedOffset) & 1; }
     uint32_t raw() const { return data; }
 
    private:

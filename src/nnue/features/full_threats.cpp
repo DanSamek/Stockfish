@@ -264,7 +264,6 @@ void FullThreats::append_active_indices(Color perspective, const Position& pos, 
                     if (index < Dimensions)
                         active.push_back(index);
                 }
-
                 // Set of passed pawns
                 Bitboard opponent_pawns = pos.pieces(~c, PAWN);
                 while (bb)
@@ -317,13 +316,14 @@ void FullThreats::append_changed_indices(Color                   perspective,
 
     for (const auto& dirty : diff.list)
     {
-        auto attacker = dirty.pc();
-        auto attacked = dirty.threatened_pc();
-        auto from     = dirty.pc_sq();
-        auto to       = dirty.threatened_sq();
-        auto add      = dirty.add();
+        auto attacker     = dirty.pc();
+        auto attacked     = dirty.threatened_pc();
+        auto from         = dirty.pc_sq();
+        auto to           = dirty.threatened_sq();
+        auto add          = dirty.add();
+        auto disableFused = dirty.disable_fused();
 
-        if (fusedData)
+        if (fusedData && !disableFused)
         {
             if (from == fusedData->dp2removed)
             {

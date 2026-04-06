@@ -1169,7 +1169,7 @@ void Position::undo_move(Move m) {
     assert(pos_is_ok());
 }
 
-template<bool PutPiece>
+template<bool PutPiece, bool DisableFused = false>
 inline void add_dirty_threat(
   DirtyThreats* const dts, Piece pc, Piece threatened, Square s, Square threatenedSq) {
     if (PutPiece)
@@ -1178,7 +1178,7 @@ inline void add_dirty_threat(
         dts->threateningSqs |= s;
     }
 
-    dts->list.push_back({pc, threatened, s, threatenedSq, PutPiece});
+    dts->list.push_back({pc, threatened, s, threatenedSq, PutPiece, DisableFused});
 }
 
 #ifdef USE_AVX512ICL
@@ -1295,8 +1295,9 @@ void Position::update_piece_threats(Piece                     pc,
         assert(((withoutCurrentPawn >> s) & 1) == 0);
 
         const bool isPassed = is_passed_pawn(color, s, opponentPawns);
+
         if (isPassed)
-            add_dirty_threat<PutPiece>(dts, pc, pc, s, reverse_target_promo_square(s, color));
+            add_dirty_threat<PutPiece, true>(dts, pc, pc, s, reverse_target_promo_square(s, color));
 
         Bitboard opponentPawnsPassedChange = PassedPawnsMasks[color][s] & opponentPawns;
         while (opponentPawnsPassedChange)
@@ -1306,9 +1307,9 @@ void Position::update_piece_threats(Piece                     pc,
             if (!passed) continue;
 
             if (PutPiece) // Opponent's pawns may no longer be passed on the adjacent/forward file.
-                add_dirty_threat<false>(dts, opponentPawn, opponentPawn, sq, reverse_target_promo_square(sq, ~color));
+                add_dirty_threat<false, true>(dts, opponentPawn, opponentPawn, sq, reverse_target_promo_square(sq, ~color));
             else // Opponent's pawns can be passed on the adjacent/forward file.
-                add_dirty_threat<true>(dts, opponentPawn, opponentPawn, sq, reverse_target_promo_square(sq, ~color));
+                add_dirty_threat<true, true>(dts, opponentPawn, opponentPawn, sq, reverse_target_promo_square(sq, ~color));
         }
     }
     else
