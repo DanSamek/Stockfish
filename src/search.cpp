@@ -877,7 +877,7 @@ Value Search::Worker::search(
     if (((ss - 1)->currentMove).is_ok() && !(ss - 1)->inCheck && !priorCapture)
     {
         int evalDiff = std::clamp(-int((ss - 1)->staticEval + ss->staticEval), -214, 171) + 60;
-        const int scale = depth <= 3 ? 192 : 128;
+        const int scale = depth <= 3 ? 64 : 128;
         mainHistory[~us][((ss - 1)->currentMove).raw()] << (evalDiff * scale * 10) / 128;
         if (!ttHit && type_of(pos.piece_on(prevSq)) != PAWN
             && ((ss - 1)->currentMove).type_of() != PROMOTION)
