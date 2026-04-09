@@ -1327,7 +1327,7 @@ void Position::update_piece_threats(Piece                     pc,
         dts->threateningSqs |= Bitboard(bool(threatened)) << s;
     }
 
-    DirtyThreat dt_template{pc, NO_PIECE, s, Square(0), PutPiece};
+    DirtyThreat dt_template{pc, NO_PIECE, s, Square(0), PutPiece, false};
     write_multiple_dirties<DirtyThreat::ThreatenedSqOffset, DirtyThreat::ThreatenedPcOffset>(
       *this, threatened, dt_template, dts);
 
@@ -1339,7 +1339,7 @@ void Position::update_piece_threats(Piece                     pc,
         dts->threateningSqs |= all_attackers;
     }
 
-    dt_template = {NO_PIECE, pc, Square(0), s, PutPiece};
+    dt_template = {NO_PIECE, pc, Square(0), s, PutPiece, false};
     write_multiple_dirties<DirtyThreat::PcSqOffset, DirtyThreat::PcOffset>(*this, all_attackers,
                                                                            dt_template, dts);
 #else
