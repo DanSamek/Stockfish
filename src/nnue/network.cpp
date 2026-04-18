@@ -107,8 +107,8 @@ bool write_parameters(std::ostream& stream, const T& reference) {
 
 }  // namespace Detail
 
-template<typename Arch, typename Transformer>
-void Network<Arch, Transformer>::load(const std::string& rootDirectory, std::string evalfilePath) {
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+void Network<Arch, Transformer, PSQTBuckets, LayerStacks>::load(const std::string& rootDirectory, std::string evalfilePath) {
 #if defined(DEFAULT_NNUE_DIRECTORY)
     std::vector<std::string> dirs = {"<internal>", "", rootDirectory,
                                      stringify(DEFAULT_NNUE_DIRECTORY)};
@@ -137,8 +137,8 @@ void Network<Arch, Transformer>::load(const std::string& rootDirectory, std::str
 }
 
 
-template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::save(const std::optional<std::string>& filename) const {
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+bool Network<Arch, Transformer, PSQTBuckets, LayerStacks>::save(const std::optional<std::string>& filename) const {
     std::string actualFilename;
     std::string msg;
 
@@ -167,27 +167,35 @@ bool Network<Arch, Transformer>::save(const std::optional<std::string>& filename
     return saved;
 }
 
-int bucket_index(const Position& pos) {
-    const int pawn_progress = pos.pawn_progress() / 32; // [0..2]
-    const int pieces        = (pos.count<ALL_PIECES>() - 1) / 4; // [0..7]
-    const int bucket        = pawn_progress * 8 + pieces;
-    return bucket;
+template<int PSQTBuckets>
+inline int bucket_index(const Position& pos) {
+    if constexpr (PSQTBuckets == PSQTBucketsBig)
+    {
+        const int pawn_progress = pos.pawn_progress() / 32; // [0..2]
+        const int pieces        = (pos.count<ALL_PIECES>() - 1) / 4; // [0..7]
+        const int bucket        = pawn_progress * 8 + pieces;
+        return bucket;
+    }
+    if constexpr (PSQTBuckets == PSQTBucketsSmall)
+    {
+        return (pos.count<ALL_PIECES>() - 1) / 4;
+    }
 }
 
-template<typename Arch, typename Transformer>
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
 NetworkOutput
-Network<Arch, Transformer>::evaluate(const Position&                         pos,
+Network<Arch, Transformer, PSQTBuckets, LayerStacks>::evaluate(const Position&                         pos,
                                      AccumulatorStack&                       accumulatorStack,
-                                     AccumulatorCaches::Cache<FTDimensions>& cache) const {
+                                     AccumulatorCaches::Cache<FTDimensions, PSQTBuckets>& cache) const {
 
     constexpr uint64_t alignment = CacheLineSize;
 
     alignas(alignment)
-      TransformedFeatureType transformedFeatures[FeatureTransformer<FTDimensions>::BufferSize];
+      TransformedFeatureType transformedFeatures[FeatureTransformer<FTDimensions, PSQTBuckets>::BufferSize];
 
     ASSERT_ALIGNED(transformedFeatures, alignment);
 
-    const auto bucket = bucket_index(pos);
+    const auto bucket = bucket_index<PSQTBuckets>(pos);
     const auto psqt =
       featureTransformer.transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
     const auto positional = network[bucket].propagate(transformedFeatures);
@@ -195,8 +203,8 @@ Network<Arch, Transformer>::evaluate(const Position&                         pos
 }
 
 
-template<typename Arch, typename Transformer>
-void Network<Arch, Transformer>::verify(std::string                                  evalfilePath,
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+void Network<Arch, Transformer, PSQTBuckets, LayerStacks>::verify(std::string                                  evalfilePath,
                                         const std::function<void(std::string_view)>& f) const {
     if (evalfilePath.empty())
         evalfilePath = evalFile.defaultName;
@@ -236,21 +244,21 @@ void Network<Arch, Transformer>::verify(std::string                             
 }
 
 
-template<typename Arch, typename Transformer>
-NnueEvalTrace
-Network<Arch, Transformer>::trace_evaluate(const Position&                         pos,
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+NnueEvalTrace<PSQTBuckets, LayerStacks>
+Network<Arch, Transformer, PSQTBuckets, LayerStacks>::trace_evaluate(const Position&                         pos,
                                            AccumulatorStack&                       accumulatorStack,
-                                           AccumulatorCaches::Cache<FTDimensions>& cache) const {
+                                           AccumulatorCaches::Cache<FTDimensions, PSQTBuckets>& cache) const {
 
     constexpr uint64_t alignment = CacheLineSize;
 
     alignas(alignment)
-      TransformedFeatureType transformedFeatures[FeatureTransformer<FTDimensions>::BufferSize];
+      TransformedFeatureType transformedFeatures[FeatureTransformer<FTDimensions, PSQTBuckets>::BufferSize];
 
     ASSERT_ALIGNED(transformedFeatures, alignment);
 
-    NnueEvalTrace t{};
-    t.correctBucket = bucket_index(pos);
+    NnueEvalTrace<PSQTBuckets, LayerStacks> t{};
+    t.correctBucket = bucket_index<PSQTBuckets>(pos);
     for (IndexType bucket = 0; bucket < LayerStacks; ++bucket)
     {
         const auto materialist =
@@ -265,8 +273,8 @@ Network<Arch, Transformer>::trace_evaluate(const Position&                      
 }
 
 
-template<typename Arch, typename Transformer>
-void Network<Arch, Transformer>::load_user_net(const std::string& dir,
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+void Network<Arch, Transformer, PSQTBuckets, LayerStacks>::load_user_net(const std::string& dir,
                                                const std::string& evalfilePath) {
     std::ifstream stream(dir + evalfilePath, std::ios::binary);
     auto          description = load(stream);
@@ -279,8 +287,8 @@ void Network<Arch, Transformer>::load_user_net(const std::string& dir,
 }
 
 
-template<typename Arch, typename Transformer>
-void Network<Arch, Transformer>::load_internal() {
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+void Network<Arch, Transformer, PSQTBuckets, LayerStacks>::load_internal() {
     // C++ way to prepare a buffer for a memory stream
     class MemoryBuffer: public std::basic_streambuf<char> {
        public:
@@ -306,14 +314,14 @@ void Network<Arch, Transformer>::load_internal() {
 }
 
 
-template<typename Arch, typename Transformer>
-void Network<Arch, Transformer>::initialize() {
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+void Network<Arch, Transformer, PSQTBuckets, LayerStacks>::initialize() {
     initialized = true;
 }
 
 
-template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::save(std::ostream&      stream,
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+bool Network<Arch, Transformer, PSQTBuckets, LayerStacks>::save(std::ostream&      stream,
                                       const std::string& name,
                                       const std::string& netDescription) const {
     if (name.empty() || name == "None")
@@ -323,8 +331,8 @@ bool Network<Arch, Transformer>::save(std::ostream&      stream,
 }
 
 
-template<typename Arch, typename Transformer>
-std::optional<std::string> Network<Arch, Transformer>::load(std::istream& stream) {
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+std::optional<std::string> Network<Arch, Transformer, PSQTBuckets, LayerStacks>::load(std::istream& stream) {
     initialize();
     std::string description;
 
@@ -332,8 +340,8 @@ std::optional<std::string> Network<Arch, Transformer>::load(std::istream& stream
 }
 
 
-template<typename Arch, typename Transformer>
-std::size_t Network<Arch, Transformer>::get_content_hash() const {
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+std::size_t Network<Arch, Transformer, PSQTBuckets, LayerStacks>::get_content_hash() const {
     if (!initialized)
         return 0;
 
@@ -347,8 +355,8 @@ std::size_t Network<Arch, Transformer>::get_content_hash() const {
 }
 
 // Read network header
-template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::read_header(std::istream&  stream,
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+bool Network<Arch, Transformer, PSQTBuckets, LayerStacks>::read_header(std::istream&  stream,
                                              std::uint32_t* hashValue,
                                              std::string*   desc) const {
     std::uint32_t version, size;
@@ -365,8 +373,8 @@ bool Network<Arch, Transformer>::read_header(std::istream&  stream,
 
 
 // Write network header
-template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::write_header(std::ostream&      stream,
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+bool Network<Arch, Transformer, PSQTBuckets, LayerStacks>::write_header(std::ostream&      stream,
                                               std::uint32_t      hashValue,
                                               const std::string& desc) const {
     write_little_endian<std::uint32_t>(stream, Version);
@@ -377,8 +385,8 @@ bool Network<Arch, Transformer>::write_header(std::ostream&      stream,
 }
 
 
-template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+bool Network<Arch, Transformer, PSQTBuckets, LayerStacks>::read_parameters(std::istream& stream,
                                                  std::string&  netDescription) {
     std::uint32_t hashValue;
     if (!read_header(stream, &hashValue, &netDescription))
@@ -396,8 +404,8 @@ bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
 }
 
 
-template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::write_parameters(std::ostream&      stream,
+template<typename Arch, typename Transformer, int PSQTBuckets, int LayerStacks>
+bool Network<Arch, Transformer, PSQTBuckets, LayerStacks>::write_parameters(std::ostream&      stream,
                                                   const std::string& netDescription) const {
     if (!write_header(stream, Network::hash, netDescription))
         return false;
@@ -413,10 +421,11 @@ bool Network<Arch, Transformer>::write_parameters(std::ostream&      stream,
 
 // Explicit template instantiations
 
+
 template class Network<NetworkArchitecture<TransformedFeatureDimensionsBig, L2Big, L3Big>,
-                       FeatureTransformer<TransformedFeatureDimensionsBig>>;
+                       FeatureTransformer<TransformedFeatureDimensionsBig, PSQTBucketsBig>, PSQTBucketsBig, LayerStacksBig>;
 
 template class Network<NetworkArchitecture<TransformedFeatureDimensionsSmall, L2Small, L3Small>,
-                       FeatureTransformer<TransformedFeatureDimensionsSmall>>;
+                       FeatureTransformer<TransformedFeatureDimensionsSmall, PSQTBucketsSmall>, PSQTBucketsSmall, LayerStacksSmall>;
 
 }  // namespace Stockfish::Eval::NNUE
