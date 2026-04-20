@@ -87,6 +87,8 @@ class Network {
     void load_user_net(const std::string&, const std::string&);
     void load_internal();
 
+    int bucket_index(const Position& pos) const;
+
     void initialize();
 
     bool                       save(std::ostream&, const std::string&, const std::string&) const;

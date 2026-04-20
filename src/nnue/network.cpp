@@ -184,6 +184,23 @@ bool Network<Arch, Transformer>::save(const std::optional<std::string>& filename
     return saved;
 }
 
+template<typename Arch, typename Transformer>
+int Network<Arch, Transformer>::bucket_index(const Position& pos) const {
+    if (embeddedType == EmbeddedNNUEType::BIG)
+    {
+        const int pawn_count     = pos.count<PAWN>();
+        const int non_pawn_count = pos.count<ALL_PIECES>() - pawn_count - 2; // We also remove kings.
+        const int pawn_index = std::min(pawn_count / 11, 1);
+        const int non_pawn_index = std::min(non_pawn_count / 4, 3);
+        const int bucket = pawn_index * 4 + non_pawn_index;
+        assert(bucket <= 7);
+        return bucket;
+    }
+    else
+    {
+        return (pos.count<ALL_PIECES>() - 1) / 4;
+    }
+}
 
 template<typename Arch, typename Transformer>
 NetworkOutput
@@ -198,7 +215,7 @@ Network<Arch, Transformer>::evaluate(const Position&                         pos
 
     ASSERT_ALIGNED(transformedFeatures, alignment);
 
-    const int  bucket = (pos.count<ALL_PIECES>() - 1) / 4;
+    const int  bucket = bucket_index(pos);
     const auto psqt =
       featureTransformer.transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
     const auto positional = network[bucket].propagate(transformedFeatures);
