@@ -184,7 +184,6 @@ bool Network<Arch, Transformer>::save(const std::optional<std::string>& filename
     return saved;
 }
 
-
 template<typename Arch, typename Transformer>
 NetworkOutput
 Network<Arch, Transformer>::evaluate(const Position&                         pos,
@@ -198,7 +197,8 @@ Network<Arch, Transformer>::evaluate(const Position&                         pos
 
     ASSERT_ALIGNED(transformedFeatures, alignment);
 
-    const int  bucket = (pos.count<ALL_PIECES>() - 1) / 4;
+    const int  bucket = (pos.count<ALL_PIECES>() - 2) / 4; // We don't count kings for bucket.
+    assert(bucket <= 7);
     const auto psqt =
       featureTransformer.transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
     const auto positional = network[bucket].propagate(transformedFeatures);
