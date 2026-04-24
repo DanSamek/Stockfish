@@ -913,10 +913,13 @@ Value Search::Worker::search(
         assert((ss - 1)->currentMove != Move::null());
 
         // Null move dynamic reduction based on depth
-        Depth R = 7 + depth / 3;
+        Depth R             = 7 + depth / 3;
+        Depth nullMoveDepth = depth - R;
         do_null_move(pos, st, ss);
 
-        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
+        Value nullValue = -qsearch<NonPV>(pos, ss + 1, -beta, -beta + 1);
+        if (nullValue >= beta && nullMoveDepth > 0)
+            nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, nullMoveDepth, false);
 
         undo_null_move(pos);
 
@@ -930,9 +933,9 @@ Value Search::Worker::search(
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
-            nmpMinPly = ss->ply + 3 * (depth - R) / 4;
+            nmpMinPly = ss->ply + 3 * nullMoveDepth / 4;
 
-            Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
+            Value v = search<NonPV>(pos, ss, beta - 1, beta, nullMoveDepth, false);
 
             nmpMinPly = 0;
 
