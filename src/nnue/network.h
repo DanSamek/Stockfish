@@ -98,6 +98,8 @@ class Network {
     bool read_parameters(std::istream&, std::string&);
     bool write_parameters(std::ostream&, const std::string&) const;
 
+    int  bucket(const Position&) const;
+
     // Input feature converter
     Transformer featureTransformer;
 

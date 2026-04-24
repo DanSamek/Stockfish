@@ -184,6 +184,13 @@ bool Network<Arch, Transformer>::save(const std::optional<std::string>& filename
     return saved;
 }
 
+template<typename Arch, typename Transformer>
+int
+Network<Arch, Transformer>::bucket(const Stockfish::Position & position) const {
+    return embeddedType == EmbeddedNNUEType::BIG
+        ? (position.count<ALL_PIECES>() - 1) / 4
+        : (position.count<ALL_PIECES>() - 2) / 4; // We don't count kings.
+}
 
 template<typename Arch, typename Transformer>
 NetworkOutput
@@ -198,10 +205,10 @@ Network<Arch, Transformer>::evaluate(const Position&                         pos
 
     ASSERT_ALIGNED(transformedFeatures, alignment);
 
-    const int  bucket = (pos.count<ALL_PIECES>() - 1) / 4;
+    const int  bckt = bucket(pos);
     const auto psqt =
-      featureTransformer.transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
-    const auto positional = network[bucket].propagate(transformedFeatures);
+      featureTransformer.transform(pos, accumulatorStack, cache, transformedFeatures, bckt);
+    const auto positional = network[bckt].propagate(transformedFeatures);
     return {static_cast<Value>(psqt / OutputScale), static_cast<Value>(positional / OutputScale)};
 }
 
