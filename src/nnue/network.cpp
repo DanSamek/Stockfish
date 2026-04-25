@@ -188,14 +188,14 @@ template<int PSQTBuckets>
 inline int bucket_index(const Position& pos) {
     if constexpr (PSQTBuckets == PSQTBucketsBig)
     {
+        return (pos.count<ALL_PIECES>() - 1) / 4;
+    }
+    if constexpr (PSQTBuckets == PSQTBucketsSmall)
+    {
         const int pawn_progress = pos.pawn_progress() / 72; // [0..1]
         const int pieces        = (pos.count<ALL_PIECES>() - 1) / 4; // [0..7]
         const int bucket        = pawn_progress * 8 + pieces;
         return bucket;
-    }
-    if constexpr (PSQTBuckets == PSQTBucketsSmall)
-    {
-        return (pos.count<ALL_PIECES>() - 1) / 4;
     }
 }
 
