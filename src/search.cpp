@@ -1216,6 +1216,12 @@ moves_loop:  // When in check, search starts here
             else if (cutNode)
                 extension = -2;
         }
+        else if (!rootNode && move == ttData.move && depth < 6 && is_valid(ttData.value)
+            && !is_decisive(ttData.value) && (ttData.bound == BOUND_LOWER) && ttData.depth > depth
+            && ttData.value >= beta + 400)
+        {
+            extension = ttData.depth - depth + 1;
+        }
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck, ss);
