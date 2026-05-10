@@ -67,7 +67,8 @@ using namespace Search;
 
 namespace {
 
-constexpr uint64_t NODES_LIMIT_OUTPUT = 10'000'000;
+constexpr uint64_t NODES_LIMIT_OUTPUT    = 10'000'000;
+constexpr int      TT_STAT_SCORE_UNKNOWN = -1'000'000;
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
@@ -733,6 +734,7 @@ Value Search::Worker::search(
     priorReduction = (ss - 1)->reduction;
     (ss - 1)->reduction = 0;
     ss->statScore       = 0;
+    ss->ttStatScore     = TT_STAT_SCORE_UNKNOWN;
     (ss + 2)->cutoffCnt = 0;
 
     // Step 4. Transposition table lookup
@@ -902,7 +904,6 @@ Value Search::Worker::search(
             && ((ss - 1)->currentMove).type_of() != PROMOTION)
             sharedHistory.pawn_entry(pos)[pos.piece_on(prevSq)][prevSq] << evalDiff * 12;
     }
-
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
@@ -1258,6 +1259,9 @@ moves_loop:  // When in check, search starts here
                           + (*contHist[0])[movedPiece][move.to_sq()]
                           + (*contHist[1])[movedPiece][move.to_sq()];
 
+        if (move == ttData.move)
+            ss->ttStatScore = ss->statScore;
+
         // Decrease/increase reduction for moves with a good/bad history
         r -= ss->statScore * 428 / 4096;
 
@@ -1275,26 +1279,42 @@ moves_loop:  // When in check, search starts here
             // std::clamp has been replaced by a more robust implementation.
             Depth d = std::max(1, std::min(newDepth - r / 1024, newDepth + 2)) + PvNode;
 
-            ss->reduction = newDepth - d;
-            value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
-            ss->reduction = 0;
-
-            // Do a full-depth search when reduced LMR search fails high
-            // (*Scaler) Shallower searches here don't scale well
-            if (value > alpha)
+            Value histDiffSearchValue = VALUE_NONE;
+            if (ss->ttStatScore != TT_STAT_SCORE_UNKNOWN && ss->ttStatScore > ss->statScore + 45'000)
             {
-                // Adjust full-depth search based on LMR results - if the result was
-                // good enough search deeper, if it was bad enough search shallower.
-                const bool doDeeperSearch    = d < newDepth && value > bestValue + 48;
-                const bool doShallowerSearch = value < bestValue + 9;
+                Depth d2            = std::max(1, d - 3);
+                ss->reduction       = newDepth - d2;
+                histDiffSearchValue = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d2, true);
+                ss->reduction       = 0;
+            }
 
-                newDepth += doDeeperSearch - doShallowerSearch;
+            if (histDiffSearchValue == VALUE_NONE || histDiffSearchValue > alpha)
+            {
+                ss->reduction = newDepth - d;
+                value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
+                ss->reduction = 0;
 
-                if (newDepth > d)
-                    value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
+                // Do a full-depth search when reduced LMR search fails high
+                // (*Scaler) Shallower searches here don't scale well
+                if (value > alpha)
+                {
+                    // Adjust full-depth search based on LMR results - if the result was
+                    // good enough search deeper, if it was bad enough search shallower.
+                    const bool doDeeperSearch    = d < newDepth && value > bestValue + 48;
+                    const bool doShallowerSearch = value < bestValue + 9;
 
-                // Post LMR continuation history updates
-                update_continuation_histories(ss, movedPiece, move.to_sq(), 1426);
+                    newDepth += doDeeperSearch - doShallowerSearch;
+
+                    if (newDepth > d)
+                        value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
+
+                    // Post LMR continuation history updates
+                    update_continuation_histories(ss, movedPiece, move.to_sq(), 1426);
+                }
+            }
+            else
+            {
+                value = histDiffSearchValue;
             }
         }
 
