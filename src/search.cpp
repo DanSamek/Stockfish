@@ -67,7 +67,8 @@ using namespace Search;
 
 namespace {
 
-constexpr uint64_t NODES_LIMIT_OUTPUT = 10'000'000;
+constexpr uint64_t NODES_LIMIT_OUTPUT     = 10'000'000;
+constexpr int      TT_MOVE_HISTORY_UKNOWN = -10'000'000;
 
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
@@ -289,6 +290,7 @@ bool Search::Worker::iterative_deepening() {
           &continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
         (ss - i)->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
         (ss - i)->staticEval                    = VALUE_NONE;
+        (ss - i)->ttMoveHistory                 = TT_MOVE_HISTORY_UKNOWN;
     }
 
     for (int i = 0; i <= MAX_PLY + 2; ++i)
@@ -746,6 +748,9 @@ Value Search::Worker::search(
     ttData.value = ttHit ? value_from_tt(ttData.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
     ss->ttPv     = excludedMove ? ss->ttPv : PvNode || (ttHit && ttData.is_pv);
     ttCapture    = ttData.move && pos.capture_stage(ttData.move);
+
+    if (!excludedMove)
+        ss->ttMoveHistory = TT_MOVE_HISTORY_UKNOWN;
 
     // Step 5. Static evaluation of the position
     Value      unadjustedStaticEval = VALUE_NONE;
@@ -1259,6 +1264,14 @@ moves_loop:  // When in check, search starts here
             ss->statScore = 2 * mainHistory[us][move.raw()]
                           + (*contHist[0])[movedPiece][move.to_sq()]
                           + (*contHist[1])[movedPiece][move.to_sq()];
+
+        if (move == ttData.move)
+            ss->ttMoveHistory = ss->statScore;
+
+        if (ss->ttMoveHistory != TT_MOVE_HISTORY_UKNOWN
+            && (ss - 1)->ttMoveHistory != TT_MOVE_HISTORY_UKNOWN
+            && (ss - 1)->ttMoveHistory > ss->ttMoveHistory + 30'000)
+            r += 512;
 
         // Decrease/increase reduction for moves with a good/bad history
         r -= ss->statScore * 445 / 4096;
