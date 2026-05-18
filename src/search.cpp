@@ -748,9 +748,10 @@ Value Search::Worker::search(
     Square prevSq  = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     bestMove       = Move::none();
     priorReduction = (ss - 1)->reduction;
-    (ss - 1)->reduction = 0;
-    ss->statScore       = 0;
-    (ss + 2)->cutoffCnt = 0;
+    (ss - 1)->reduction   = 0;
+    ss->statScore         = 0;
+    (ss + 2)->cutoffCnt   = 0;
+    ss->residualReduction = (ss - 1)->residualReduction;
 
     const auto correctionValue = correction_value(*this, pos, ss);
 
@@ -1288,16 +1289,22 @@ moves_loop:  // When in check, search starts here
         // Step 17. Late moves reduction / extension (LMR)
         if (depth >= 2 && moveCount > 1)
         {
+            const int currentResidualReduction = ss->residualReduction;
+            r += currentResidualReduction;
+
             // In general we want to cap the LMR depth search at newDepth, but when
             // reduction is negative, we allow this move a limited search extension
             // beyond the first move depth.
             // To prevent problems when the max value is less than the min value,
             // std::clamp has been replaced by a more robust implementation.
+
             Depth d = std::max(1, std::min(newDepth - r / 1024, newDepth + 2)) + PvNode;
 
-            ss->reduction = newDepth - d;
-            value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
-            ss->reduction = 0;
+            ss->reduction         = newDepth - d;
+            ss->residualReduction = (r > 0) * (r & 1023);
+            value                 = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
+            ss->reduction         = 0;
+            ss->residualReduction = currentResidualReduction;
 
             // Do a full-depth search when reduced LMR search fails high
             // (*Scaler) Shallower searches here don't scale well
