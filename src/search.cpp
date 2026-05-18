@@ -1289,7 +1289,7 @@ moves_loop:  // When in check, search starts here
         if (ss->ttMoveHistory != TT_MOVE_HISTORY_UKNOWN
             && (ss - 1)->ttMoveHistory != TT_MOVE_HISTORY_UKNOWN
             && (ss - 1)->ttMoveHistory > ss->ttMoveHistory + 30'000)
-            r += 1024;
+            r += 768;
 
         // Decrease/increase reduction for moves with a good/bad history
         r -= ss->statScore * 445 / 4096;
