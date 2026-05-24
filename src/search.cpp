@@ -1182,6 +1182,17 @@ moves_loop:  // When in check, search starts here
             }
         }
 
+        if (move == ttData.move)
+        {
+            if (capture)
+                ss->ttMoveHistory = 809 * int(PieceValue[pos.piece_on(move.to_sq())]) / 128
+                                    + captureHistory[movedPiece][move.to_sq()][type_of(pos.piece_on(move.to_sq()))];
+            else
+                ss->ttMoveHistory = 2 * mainHistory[us][move.raw()]
+                                + (*contHist[0])[movedPiece][move.to_sq()]
+                                + (*contHist[1])[movedPiece][move.to_sq()];
+        }
+
         // Step 15. Extensions
         // Singular extension search. If all moves but one
         // fail low on a search of (alpha-s, beta-s), and just one fails high on
@@ -1205,8 +1216,12 @@ moves_loop:  // When in check, search starts here
 
             if (value < singularBeta)
             {
+                bool goodTtm      = ss->ttMoveHistory != TT_MOVE_HISTORY_UKNOWN
+                                       && (ss - 1)->ttMoveHistory != TT_MOVE_HISTORY_UKNOWN
+                                       && (ss - 1)->ttMoveHistory + 30'000 < ss->ttMoveHistory;
+
                 int corrValAdj   = std::abs(correctionValue) / 194822;
-                int doubleMargin = -3 + 201 * PvNode - 157 * !ttCapture - corrValAdj
+                int doubleMargin = -3 + 201 * PvNode - 157 * !ttCapture - corrValAdj - 30 * goodTtm
                                  - 1081 * ttMoveHistory / 117824 - (ss->ply > rootDepth) * 41;
                 int tripleMargin = 72 + 306 * PvNode - 188 * !ttCapture + 84 * ss->ttPv - corrValAdj
                                  - (ss->ply > rootDepth) * 45;
@@ -1287,13 +1302,6 @@ moves_loop:  // When in check, search starts here
                           + (*contHist[0])[movedPiece][move.to_sq()]
                           + (*contHist[1])[movedPiece][move.to_sq()];
 
-        if (move == ttData.move)
-            ss->ttMoveHistory = ss->statScore;
-
-        if (ss->ttMoveHistory != TT_MOVE_HISTORY_UKNOWN
-            && (ss - 1)->ttMoveHistory != TT_MOVE_HISTORY_UKNOWN
-            && (ss - 1)->ttMoveHistory > ss->ttMoveHistory + 30'000)
-            r += 512;
 
         // Decrease/increase reduction for moves with a good/bad history
         r -= ss->statScore * 445 / 4096;
