@@ -856,8 +856,8 @@ Value Search::Worker::search(
              && is_valid(ttData.value) && ttData.bound != BOUND_EXACT
              && ttData.bound & (ttData.value >= beta ? BOUND_UPPER : BOUND_LOWER) && depth > 5)
     {
-        // Extra bonus for early quiet moves of the previous ply
-        if (prevSq != SQ_NONE && (ss - 1)->moveCount < 4 && !priorCapture)
+        // Extra bonus for late quiet moves of the previous ply
+        if (prevSq != SQ_NONE && (ss - 1)->moveCount > 6 && !priorCapture)
             update_continuation_histories(ss - 1, pos.piece_on(prevSq), prevSq, 1000);
 
         // If a window-bound mismatch is the only reason cutoff failed, penalize the now-useless tte
