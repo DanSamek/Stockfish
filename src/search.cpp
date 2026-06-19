@@ -1001,10 +1001,6 @@ Value Search::Worker::search(
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
         {
-            if ((!ttHit || ttData.depth < nullDepth) && nullDepth > 0)
-                ttWriter.write(posKey, value_to_tt(nullValue, ss->ply), ss->ttPv, BOUND_LOWER,
-                               nullDepth, Move::null(), unadjustedStaticEval, tt.generation());
-
             if (nmpMinPly || depth < 16)
                 return nullValue;
 
@@ -1019,7 +1015,12 @@ Value Search::Worker::search(
             nmpMinPly = 0;
 
             if (v >= beta)
+            {
+                if ((!ttHit || ttData.depth < nullDepth) && nullDepth > 0)
+                    ttWriter.write(posKey, value_to_tt(nullValue, ss->ply), ss->ttPv, BOUND_LOWER,
+                                   nullDepth, Move::null(), unadjustedStaticEval, tt.generation());
                 return nullValue;
+            }
         }
     }
 
