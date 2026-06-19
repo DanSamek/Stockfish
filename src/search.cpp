@@ -990,16 +990,21 @@ Value Search::Worker::search(
         assert((ss - 1)->currentMove != Move::null());
 
         // Null move dynamic reduction based on depth
-        Depth R = 7 + depth / 3;
+        Depth R         = 7 + depth / 3;
+        Depth nullDepth = depth - R;
         do_null_move(pos, st, ss);
 
-        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
+        Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, nullDepth, false);
 
         undo_null_move(pos);
 
         // Do not return unproven mate or TB scores
         if (nullValue >= beta && !is_win(nullValue))
         {
+            if ((!ttHit || ttData.depth < nullDepth) && nullDepth > 0)
+                ttWriter.write(posKey, value_to_tt(nullValue, ss->ply), ss->ttPv, BOUND_LOWER,
+                               nullDepth, Move::null(), unadjustedStaticEval, tt.generation());
+
             if (nmpMinPly || depth < 16)
                 return nullValue;
 
@@ -1007,9 +1012,9 @@ Value Search::Worker::search(
 
             // Do verification search at high depths, with null move pruning disabled
             // until ply exceeds nmpMinPly.
-            nmpMinPly = ss->ply + 3 * (depth - R) / 4;
+            nmpMinPly = ss->ply + 3 * nullDepth / 4;
 
-            Value v = search<NonPV>(pos, ss, beta - 1, beta, depth - R, false);
+            Value v = search<NonPV>(pos, ss, beta - 1, beta, nullDepth, false);
 
             nmpMinPly = 0;
 
