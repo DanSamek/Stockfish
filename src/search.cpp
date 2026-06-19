@@ -1211,6 +1211,18 @@ moves_loop:  // When in check, search starts here
             }
         }
 
+        int ttMoveHist;
+        if (move == ttData.move)
+        {
+            if (capture)
+                ttMoveHist = 809 * int(PieceValue[pos.captured_piece()]) / 128
+                             + captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())];
+            else
+                ttMoveHist = 2 * mainHistory[us][move.raw()]
+                             + (*contHist[0])[movedPiece][move.to_sq()]
+                             + (*contHist[1])[movedPiece][move.to_sq()];
+        }
+
         // Step 15. Extensions
         // Singular extension search. If all moves but one
         // fail low on a search of (alpha-s, beta-s), and just one fails high on
@@ -1238,7 +1250,7 @@ moves_loop:  // When in check, search starts here
                 int doubleMargin = -3 + 201 * PvNode - 157 * !ttCapture - corrValAdj
                                  - 1081 * ttMoveHistory / 117824 - (ss->ply > rootDepth) * 41;
                 int tripleMargin = 72 + 306 * PvNode - 188 * !ttCapture + 84 * ss->ttPv - corrValAdj
-                                 - (ss->ply > rootDepth) * 45;
+                                 - (ss->ply > rootDepth) * 45 - ttMoveHist / 512;
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
