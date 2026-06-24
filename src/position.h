@@ -129,6 +129,7 @@ class Position {
     Bitboard attackers_to(Square s) const;
     Bitboard attackers_to(Square s, Bitboard occupied) const;
     bool     attackers_to_exist(Square s, Bitboard occupied, Color c) const;
+    bool     any_attacker_except(Square s, Square exceptS, Color us) const;
     void     update_slider_blockers(Color c) const;
     template<PieceType Pt>
     Bitboard attacks_by(Color c) const;
@@ -418,6 +419,12 @@ inline void Position::do_move(Move m, StateInfo& newSt, const TranspositionTable
 }
 
 inline StateInfo* Position::state() const { return st; }
+
+inline bool Position::any_attacker_except(Square s, Square exceptS, Color us) const {
+    assert((pieces(us) & square_bb(exceptS)) != 0);
+    assert((pieces(us) ^ square_bb(exceptS)) != pieces(us));
+    return (attackers_to(s) & (pieces(us) ^ square_bb(exceptS))) != 0;
+}
 
 }  // namespace Stockfish
 

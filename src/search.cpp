@@ -1154,7 +1154,8 @@ moves_loop:  // When in check, search starts here
             if (capture || givesCheck)
             {
                 Piece capturedPiece = pos.piece_on(move.to_sq());
-                int   captHist = captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
+                int   captHist = captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)]
+                                               [pos.any_attacker_except(move.to_sq(), move.from_sq(), us)];
 
                 // Futility pruning for captures
                 if (!givesCheck && lmrDepth < 7)
@@ -1277,6 +1278,7 @@ moves_loop:  // When in check, search starts here
 
         u64 nodeCount = rootNode ? u64(nodes) : 0;
 
+        ss->anyOtherAttacker = capture ? pos.any_attacker_except(move.to_sq(), move.from_sq(), us) : false;
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck, ss);
 
@@ -1310,7 +1312,7 @@ moves_loop:  // When in check, search starts here
 
         if (capture)
             ss->statScore = 809 * int(PieceValue[pos.captured_piece()]) / 128
-                          + captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())];
+                          + captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())][ss->anyOtherAttacker];
         else
             ss->statScore = 2 * mainHistory[us][move.raw()]
                           + (*contHist[0])[movedPiece][move.to_sq()]
@@ -1545,7 +1547,7 @@ moves_loop:  // When in check, search starts here
     {
         Piece capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
-        captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 901;
+        captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)][(ss - 1)->anyOtherAttacker] << 901;
     }
 
     if (PvNode)
@@ -1911,6 +1913,7 @@ void update_all_stats(const Position& pos,
     CapturePieceToHistory& captureHistory = workerThread.captureHistory;
     Piece                  movedPiece     = pos.moved_piece(bestMove);
     PieceType              capturedPiece;
+    Color                  us             = pos.side_to_move();
 
     int bonus =
       std::min(134 * depth - 79, 1572) + 382 * (bestMove == ttMove) + (ss - 1)->statScore / 30;
@@ -1937,7 +1940,8 @@ void update_all_stats(const Position& pos,
     {
         // Increase stats for the best move in case it was a capture move
         capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
-        captureHistory[movedPiece][bestMove.to_sq()][capturedPiece] << bonus * 1366 / 1024;
+        captureHistory[movedPiece][bestMove.to_sq()][capturedPiece]
+                      [pos.any_attacker_except(bestMove.to_sq(), bestMove.from_sq(), us)] << bonus * 1366 / 1024;
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1950,7 +1954,8 @@ void update_all_stats(const Position& pos,
     {
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
-        captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1518 / 1024;
+        captureHistory[movedPiece][move.to_sq()][capturedPiece]
+                      [pos.any_attacker_except(move.to_sq(), move.from_sq(), us)] << -malus * 1518 / 1024;
     }
 }
 
