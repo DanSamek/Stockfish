@@ -1030,6 +1030,9 @@ Value Search::Worker::search(
     if (!ss->followPV && !allNode && depth >= 6 && !ttData.move)
         depth--;
 
+    if (ss->followPV && depth <= 2)
+        depth++;
+
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
     // returns a value much above beta, we can (almost) safely prune the previous move.
