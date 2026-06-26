@@ -1465,6 +1465,10 @@ moves_loop:  // When in check, search starts here
             {
                 bestMove = move;
 
+                if (!rootNode && value < beta && (!ttHit || ttData.depth + 3 < depth))
+                    ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
+                                   BOUND_UPPER, depth, bestMove, unadjustedStaticEval, tt.generation());
+
                 if (PvNode && !rootNode)  // Update pv even in fail-high case
                     ss->pv->update(move, (ss + 1)->pv);
 
