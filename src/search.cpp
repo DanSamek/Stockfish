@@ -1030,7 +1030,7 @@ Value Search::Worker::search(
     if (!ss->followPV && !allNode && depth >= 6 && !ttData.move)
         depth--;
 
-    if (ss->followPV && depth <= 2)
+    if (!PvNode && ss->followPV && depth <= 2)
         depth++;
 
     // Step 11. ProbCut
