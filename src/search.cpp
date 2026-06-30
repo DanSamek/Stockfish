@@ -1476,6 +1476,10 @@ moves_loop:  // When in check, search starts here
                     break;
                 }
 
+                if (!rootNode && value < beta && (!ttHit || ttData.depth + 3 < depth) && bestMove != ttData.move)
+                    ttWriter.write(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
+                                   BOUND_UPPER, depth, bestMove, unadjustedStaticEval, tt.generation());
+
                 // Reduce other moves if we have found at least one score improvement
                 if (depth > 2 && depth < 13 && !is_decisive(value))
                     depth -= 2;
