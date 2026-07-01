@@ -970,7 +970,7 @@ Value Search::Worker::search(
     if (!PvNode && eval < alpha - 465 - 300 * depth * depth)
         return qsearch<NonPV>(pos, ss, alpha, beta);
 
-    pruningDisabled = (ss - 2)->currentMove == Move::null() && ss->staticEval + 250 <= (ss - 2)->staticEval;
+    pruningDisabled = (ss - 2)->currentMove == Move::null() && ss->staticEval + 750 <= (ss - 2)->staticEval;
 
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
