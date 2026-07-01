@@ -734,7 +734,7 @@ Value Search::Worker::search(
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
-    bool  capture, ttCapture;
+    bool  capture, ttCapture, pruningDisabled;
     int   priorReduction;
     Piece movedPiece;
 
@@ -964,17 +964,18 @@ Value Search::Worker::search(
             sharedHistory.pawn_entry(pos)[pos.piece_on(prevSq)][prevSq] << evalDiff * 13;
     }
 
-
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
     if (!PvNode && eval < alpha - 465 - 300 * depth * depth)
         return qsearch<NonPV>(pos, ss, alpha, beta);
 
+    pruningDisabled = (ss - 2)->currentMove == Move::null() && ss->staticEval + 250 <= (ss - 2)->staticEval;
+
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
     if (!ss->ttPv && depth < 17 && eval >= beta && (!ttData.move || ttCapture) && !is_loss(beta)
-        && !is_win(eval))
+        && !is_win(eval) && !pruningDisabled)
     {
         Value futilityMult = interpolate(std::min(int(depth), 10), 1, 10, 40, 80);
         futilityMult -= 20 * !ss->ttHit;
