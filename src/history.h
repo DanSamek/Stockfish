@@ -36,6 +36,7 @@
 namespace Stockfish {
 
 constexpr int PAWN_HISTORY_BASE_SIZE   = 8192;  // has to be a power of 2
+constexpr int SE_HISTORY_BASE_SIZE     = 1024;  // has to be a power of 2
 constexpr int UINT_16_HISTORY_SIZE     = std::numeric_limits<u16>::max() + 1;
 constexpr int CORRHIST_BASE_SIZE       = UINT_16_HISTORY_SIZE;
 constexpr int CORRECTION_HISTORY_LIMIT = 1024;
@@ -44,8 +45,15 @@ constexpr int LOW_PLY_HISTORY_SIZE     = 5;
 static_assert((PAWN_HISTORY_BASE_SIZE & (PAWN_HISTORY_BASE_SIZE - 1)) == 0,
               "PAWN_HISTORY_BASE_SIZE has to be a power of 2");
 
+static_assert((SE_HISTORY_BASE_SIZE & (SE_HISTORY_BASE_SIZE - 1)) == 0,
+              "SE_HISTORY_BASE_SIZE has to be a power of 2");
+
 static_assert((CORRHIST_BASE_SIZE & (CORRHIST_BASE_SIZE - 1)) == 0,
               "CORRHIST_BASE_SIZE has to be a power of 2");
+
+inline int se_history_key(const Position& pos) {
+    return pos.pawn_key() & (SE_HISTORY_BASE_SIZE - 1);
+}
 
 // StatsEntry is the container of various numerical statistics. We use a class
 // instead of a naked value to directly call history update operator<<() on
@@ -141,6 +149,8 @@ using ContinuationHistory = MultiArray<PieceToHistory, PIECE_NB, SQUARE_NB>;
 
 // PawnHistory is addressed by the pawn structure and a move's [piece][to]
 using PawnHistory = DynStats<AtomicStats<i16, 8192, PIECE_NB, SQUARE_NB>, PAWN_HISTORY_BASE_SIZE>;
+
+using SeHistory = Stats<i16, 8192, SE_HISTORY_BASE_SIZE, PIECE_NB, SQUARE_NB>;
 
 // Correction histories record differences between the static evaluation of
 // positions and their search score. It is used to improve the static evaluation

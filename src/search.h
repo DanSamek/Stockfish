@@ -338,6 +338,8 @@ class Worker {
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
     TTMoveHistory    ttMoveHistory;
+    SeHistory        seHistory;
+
     SharedHistories& sharedHistory;
     ContinuationHistory (&continuationHistory)[2][2];
 

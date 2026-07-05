@@ -680,6 +680,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    seHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(5);
@@ -1225,7 +1227,7 @@ moves_loop:  // When in check, search starts here
 
         // (*Scaler) Generally, higher singularBeta (i.e closer to ttValue)
         // and lower extension margins scale well.
-        if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv
+        if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv - (seHistory[se_history_key(pos)][pos.moved_piece(move)][move.to_sq()] / 4096)
             && is_valid(ttData.value) && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
             && ttData.depth >= depth - 3 && !is_shuffling(move, ss, pos))
         {
@@ -1235,6 +1237,9 @@ moves_loop:  // When in check, search starts here
             ss->excludedMove = move;
             value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
             ss->excludedMove = Move::none();
+
+            seHistory[se_history_key(pos)][pos.moved_piece(move)][move.to_sq()]
+                << (value < singularBeta ? std::min(1200, 100 * depth) : std::max(-1200, -100 * depth));
 
             if (value < singularBeta)
             {
