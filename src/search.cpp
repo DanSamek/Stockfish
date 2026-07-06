@@ -1227,7 +1227,7 @@ moves_loop:  // When in check, search starts here
 
         // (*Scaler) Generally, higher singularBeta (i.e closer to ttValue)
         // and lower extension margins scale well.
-        if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv - (seHistory[se_history_key(pos)][pos.moved_piece(move)][move.to_sq()] / 4096)
+        if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv - (seHistory[se_history_key(pos)][pos.moved_piece(move)][move.to_sq()] / 6144)
             && is_valid(ttData.value) && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
             && ttData.depth >= depth - 3 && !is_shuffling(move, ss, pos))
         {
@@ -1239,7 +1239,7 @@ moves_loop:  // When in check, search starts here
             ss->excludedMove = Move::none();
 
             seHistory[se_history_key(pos)][pos.moved_piece(move)][move.to_sq()]
-                << (value < singularBeta ? std::min(1200, 100 * depth) : std::max(-1200, -100 * depth));
+                << (value < singularBeta ? std::min(600, 50 * depth) : std::max(-600, -50 * depth));
 
             if (value < singularBeta)
             {
