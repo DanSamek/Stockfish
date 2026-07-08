@@ -1227,12 +1227,14 @@ moves_loop:  // When in check, search starts here
 
         // (*Scaler) Generally, higher singularBeta (i.e closer to ttValue)
         // and lower extension margins scale well.
-        if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv - (seHistory[se_history_key(pos)][pos.moved_piece(move)][move.to_sq()] / 6144)
+        if (!rootNode && move == ttData.move && !excludedMove && depth >= 6 + ss->ttPv
             && is_valid(ttData.value) && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
             && ttData.depth >= depth - 3 && !is_shuffling(move, ss, pos))
         {
             Value singularBeta  = ttData.value - (60 + 70 * (ss->ttPv && !PvNode)) * depth / 59;
             Depth singularDepth = newDepth / 2;
+
+            const bool likelySeFail = seHistory[se_history_key(pos)][pos.moved_piece(move)][move.to_sq()] <= -6144;
 
             ss->excludedMove = move;
             value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
@@ -1247,7 +1249,7 @@ moves_loop:  // When in check, search starts here
                 int doubleMargin = -3 + 201 * PvNode - 157 * !ttCapture - corrValAdj
                                  - 1081 * ttMoveHistory / 117824 - (ss->ply > rootDepth) * 41;
                 int tripleMargin = 72 + 306 * PvNode - 188 * !ttCapture + 84 * ss->ttPv - corrValAdj
-                                 - (ss->ply > rootDepth) * 45;
+                                 - (ss->ply > rootDepth) * 45 - 50 * likelySeFail;
 
                 extension =
                   1 + (value < singularBeta - doubleMargin) + (value < singularBeta - tripleMargin);
