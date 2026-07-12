@@ -1349,8 +1349,18 @@ moves_loop:  // When in check, search starts here
             {
                 // Adjust full-depth search based on LMR results - if the result was
                 // good enough search deeper, if it was bad enough search shallower.
-                const bool doDeeperSearch    = d < newDepth && value > bestValue + 52;
+                const int  deeperBound       = bestValue + 52;
+                bool doDeeperSearch          = d < newDepth && value > deeperBound;
                 const bool doShallowerSearch = value < bestValue + 9;
+
+                if (d < newDepth && value <= deeperBound)
+                {
+                    auto [ttHitLmr, ttDataLmr, _]     = tt.probe(pos.key());
+                    ttDataLmr.value                   = ttHitLmr ? value_from_tt(ttDataLmr.value, ss->ply, pos.rule50_count()) : VALUE_NONE;
+                    if (ttDataLmr.depth >= d && (ttDataLmr.bound & BOUND_LOWER) && is_valid(ttDataLmr.value)
+                        && ttDataLmr.value > deeperBound)
+                        doDeeperSearch = true;
+                }
 
                 newDepth += doDeeperSearch - doShallowerSearch;
 
