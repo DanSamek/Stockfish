@@ -683,6 +683,8 @@ void Search::Worker::clear() {
 
     ttMoveHistory = 0;
 
+    singularExtensionHistory.fill(0);
+
     for (auto& to : continuationCorrectionHistory)
         for (auto& h : to)
             h.fill(5);
@@ -1232,12 +1234,17 @@ moves_loop:  // When in check, search starts here
             && is_valid(ttData.value) && !is_decisive(ttData.value) && (ttData.bound & BOUND_LOWER)
             && ttData.depth >= depth - 3 && !is_shuffling(move, ss, pos))
         {
-            Value singularBeta  = ttData.value - (59 + 66 * (ss->ttPv && !PvNode)) * depth / 63;
+            Value singularBeta  = ttData.value - (59 + 66 * (ss->ttPv && !PvNode) - singularExtensionHistory[move.raw()][us] / 256) * depth / 63;
             Depth singularDepth = newDepth / 2;
 
             ss->excludedMove = move;
             value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
             ss->excludedMove = Move::none();
+
+            if (value < singularBeta)
+                singularExtensionHistory[move.raw()][us] << 800;
+            else
+                singularExtensionHistory[move.raw()][us] = 0;
 
             if (value < singularBeta)
             {
