@@ -740,7 +740,7 @@ Value Search::Worker::search(
     Value bestValue, value, eval, maxValue, probCutBeta;
     bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
-    int   priorReduction;
+    int   priorReduction, likelyCutoffValue;
     Piece movedPiece;
 
     SearchedList capturesSearched;
@@ -848,6 +848,13 @@ Value Search::Worker::search(
     // for us than at the last ply.
     improving         = ss->staticEval > (ss - 2)->staticEval;
     opponentWorsening = ss->staticEval > -(ss - 1)->staticEval;
+
+    likelyCutoffValue = correctionValue / 2097152
+                        + 50 * (eval >= beta + 400)
+                        + 15 * (ss->cutoffCnt > 10);
+
+    if (cutNode && depth >= 2 && likelyCutoffValue > 90)
+        depth--;    
 
     // Hindsight adjustment of reductions based on static evaluation difference.
     if (priorReduction >= 3 && !opponentWorsening)
