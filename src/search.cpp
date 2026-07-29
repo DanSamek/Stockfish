@@ -1276,7 +1276,11 @@ moves_loop:  // When in check, search starts here
 
             // If the ttMove is assumed to fail high over current beta
             else if (ttData.value >= beta)
+            {
+                ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, ttData.bound,
+                               singularDepth, Move::none(), unadjustedStaticEval, tt.generation());
                 extension = -3;
+            }
 
             // If we are on a cutNode but the ttMove is not assumed to fail high
             // over current beta
