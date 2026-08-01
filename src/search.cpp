@@ -1102,6 +1102,7 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    int nonTtMoveExtension = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1285,7 +1286,14 @@ moves_loop:  // When in check, search starts here
 
             // If the ttMove is assumed to fail high over current beta or
             // if we are on a cutNode
-            else if (ttData.value >= beta || cutNode)
+            else if (ttData.value >= beta)
+            {
+                if (PvNode)
+                    nonTtMoveExtension = 1;
+                
+                extension = -3;
+            }
+            else if (cutNode) 
                 extension = -3;
         }
 
@@ -1296,6 +1304,9 @@ moves_loop:  // When in check, search starts here
 
         // Add extension to new depth
         newDepth += extension;
+
+        if (move != ttData.move)
+            newDepth += nonTtMoveExtension;
 
         // Decrease reduction for PvNodes (*Scaler)
         if (ss->ttPv)
