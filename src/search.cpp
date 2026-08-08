@@ -1610,7 +1610,7 @@ moves_loop:  // When in check, search starts here
           std::clamp(int(bestValue - ss->staticEval) * depth * (bestMove ? 12 : 18) / 128,
                      -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
 
-        constexpr int multiplier = PvNode ? 1536 : 1024;
+        constexpr int multiplier = PvNode ? 1024 : 768;
         update_correction_history(pos, ss, *this, multiplier * bonus / 1024);
     }
 
