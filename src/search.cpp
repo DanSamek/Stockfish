@@ -1163,7 +1163,7 @@ moves_loop:  // When in check, search starts here
             if (capture || givesCheck)
             {
                 Piece capturedPiece = pos.piece_on(move.to_sq());
-                int   captHist = captureHistory[movedPiece][move.to_sq()][type_of(capturedPiece)];
+                int   captHist = captureHistory[bucket_index(pos)][movedPiece][move.to_sq()][type_of(capturedPiece)];
 
                 // Futility pruning for captures
                 if (!givesCheck && lmrDepth < 8)
@@ -1324,7 +1324,7 @@ moves_loop:  // When in check, search starts here
 
         if (capture)
             ss->statScore = 873 * int(PieceValue[pos.captured_piece()]) / 128
-                          + captureHistory[movedPiece][move.to_sq()][type_of(pos.captured_piece())];
+                          + captureHistory[bucket_index(pos)][movedPiece][move.to_sq()][type_of(pos.captured_piece())];
         else
             ss->statScore =
               (2252 * mainHistory[us][move.raw()] + 1126 * (*contHist[0])[movedPiece][move.to_sq()]
@@ -1580,7 +1580,7 @@ moves_loop:  // When in check, search starts here
     {
         Piece capturedPiece = pos.captured_piece();
         assert(capturedPiece != NO_PIECE);
-        captureHistory[pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 892;
+        captureHistory[bucket_index(pos)][pos.piece_on(prevSq)][prevSq][type_of(capturedPiece)] << 892;
     }
 
     if (PvNode)
@@ -1966,7 +1966,7 @@ void update_all_stats(const Position& pos,
     {
         // Increase stats for the best move in case it was a capture move
         capturedPiece = type_of(pos.piece_on(bestMove.to_sq()));
-        captureHistory[movedPiece][bestMove.to_sq()][capturedPiece] << bonus * 1427 / 1024;
+        captureHistory[bucket_index(pos)][movedPiece][bestMove.to_sq()][capturedPiece] << bonus * 1427 / 1024;
     }
 
     // Extra penalty for a quiet early move that was not a TT move in
@@ -1979,7 +1979,7 @@ void update_all_stats(const Position& pos,
     {
         movedPiece    = pos.moved_piece(move);
         capturedPiece = type_of(pos.piece_on(move.to_sq()));
-        captureHistory[movedPiece][move.to_sq()][capturedPiece] << -malus * 1489 / 1024;
+        captureHistory[bucket_index(pos)][movedPiece][move.to_sq()][capturedPiece] << -malus * 1489 / 1024;
     }
 }
 
