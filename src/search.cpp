@@ -105,6 +105,20 @@ Value to_corrected_static_eval(const Value v, const int cv) {
     return std::clamp(v + cv / 131072, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 }
 
+inline void update_continuation_correction_history(const Position& pos,
+                                      Stack* const    ss,
+                                      const Move      move,
+                                      int             bonus)
+{
+    if (move.is_ok())
+    {
+        const Square to = move.to_sq();
+        const Piece  pc = pos.piece_on(to);
+        (*(ss - 2)->continuationCorrectionHistory)[pc][to] << bonus * 130 / 128;
+        (*(ss - 4)->continuationCorrectionHistory)[pc][to] << bonus * 70 / 128;
+    }
+}
+
 void update_correction_history(const Position& pos,
                                Stack* const    ss,
                                Search::Worker& workerThread,
@@ -120,13 +134,7 @@ void update_correction_history(const Position& pos,
     shared.nonpawn_correction_entry<WHITE>(pos)[us].nonPawnWhite << bonus * nonPawnWeight / 128;
     shared.nonpawn_correction_entry<BLACK>(pos)[us].nonPawnBlack << bonus * nonPawnWeight / 128;
 
-    if (m.is_ok())
-    {
-        const Square to = m.to_sq();
-        const Piece  pc = pos.piece_on(to);
-        (*(ss - 2)->continuationCorrectionHistory)[pc][to] << bonus * 130 / 128;
-        (*(ss - 4)->continuationCorrectionHistory)[pc][to] << bonus * 70 / 128;
-    }
+    update_continuation_correction_history(pos, ss, m, bonus);
 }
 
 // Add a small random component to draw evaluations to avoid 3-fold blindness
@@ -1392,6 +1400,17 @@ moves_loop:  // When in check, search starts here
 
                 // Post LMR continuation history updates
                 update_continuation_histories(ss, movedPiece, move.to_sq(), 1334);
+
+                // Post LMR continuation correction history updates
+                const Depth maxDepth = std::max(d, newDepth);
+                if (!ss->inCheck && maxDepth > 0)
+                {
+                    const int bonus =
+                        std::clamp(int(value - ss->staticEval) * maxDepth * 100 / 1024,
+                                 -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
+
+                    update_continuation_correction_history(pos, ss, move, bonus);
+                }
             }
         }
 
