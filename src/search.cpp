@@ -1406,7 +1406,7 @@ moves_loop:  // When in check, search starts here
                 if (!ss->inCheck && maxDepth > 0)
                 {
                     const int bonus =
-                        std::clamp(int(value - ss->staticEval) * maxDepth * 150 / 1024,
+                        std::clamp(int(value - ss->staticEval) * maxDepth * 250 / 1024,
                                  -CORRECTION_HISTORY_LIMIT / 4, CORRECTION_HISTORY_LIMIT / 4);
                                  
                     update_continuation_correction_history(pos, ss, move, bonus);
