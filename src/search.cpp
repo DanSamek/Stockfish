@@ -764,10 +764,12 @@ Value Search::Worker::search(
     Move  move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
-    bool  givesCheck, improving, priorCapture, opponentWorsening, iirFlag;
+    bool  givesCheck, improving, priorCapture, opponentWorsening;
     bool  capture, ttCapture;
     int   priorReduction;
     Piece movedPiece;
+
+    bool iirFlag = false;
 
     SearchedList capturesSearched;
     SearchedList quietsSearched;
