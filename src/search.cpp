@@ -764,7 +764,7 @@ Value Search::Worker::search(
     Move  move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, eval, maxValue, probCutBeta;
-    bool  givesCheck, improving, priorCapture, opponentWorsening;
+    bool  givesCheck, improving, priorCapture, opponentWorsening, iirFlag;
     bool  capture, ttCapture;
     int   priorReduction;
     Piece movedPiece;
@@ -1056,10 +1056,10 @@ Value Search::Worker::search(
     improving |= ss->staticEval >= beta;
 
     // Step 10. Internal iterative reductions
-    // At sufficient depth, reduce depth for PV/Cut nodes without a TTMove.
+    // Add more reduction in move loop for PV/Cut nodes without a TTMove.
     // (*Scaler) Making IIR more aggressive scales poorly.
     if (!ss->followPV && !allNode && depth >= 6 && !ttData.move)
-        depth--;
+        iirFlag = true;
 
     // Step 11. ProbCut
     // If we have a good enough capture (or queen promotion) and a reduced search
@@ -1174,6 +1174,9 @@ moves_loop:  // When in check, search starts here
         // Larger values scale well
         if (ss->ttPv)
             r += 929;
+
+        if (iirFlag)
+            r += 512;
 
         // Step 14. Pruning at shallow depths.
         // Depth conditions are important for mate finding.
