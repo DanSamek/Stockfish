@@ -691,6 +691,8 @@ void Search::Worker::clear() {
     mainHistory.fill(-5);
     captureHistory.fill(-742);
 
+    heavyNodeHistory.fill(0);
+
     // Each thread clears its part of the dynamically-sized shared histories.
     // The constant-size continuation history is initialized by thread 0 of each NUMA node.
     sharedHistory.correctionHistory.clear_range(-5, numaThreadIdx, numaTotal);
@@ -1116,6 +1118,9 @@ moves_loop:  // When in check, search starts here
     value = bestValue;
 
     int moveCount = 0;
+    int totalSearchedDepths = 0;
+
+    const int heavyScore = heavyNodeHistory[heavy_history_index(pos)][us];
 
     // Step 14. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1355,6 +1360,9 @@ moves_loop:  // When in check, search starts here
         if (!capture && !is_decisive(alpha))
             r += 3 * std::clamp(alpha - eval, -64, 96);
 
+        if (!PvNode && heavyScore < -3994)
+            r += 1024;
+
         // Scale up reductions for expected ALL nodes
         if (allNode)
             r += r * 276 / (256 * depth + 268);
@@ -1368,6 +1376,8 @@ moves_loop:  // When in check, search starts here
             // To prevent problems when the max value is less than the min value,
             // std::clamp has been replaced by a more robust implementation.
             Depth d = std::max(1, std::min(newDepth - r / 1024, newDepth + 2)) + PvNode;
+
+            totalSearchedDepths += d;
 
             ss->reduction = newDepth - d;
             value         = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, true);
@@ -1385,7 +1395,10 @@ moves_loop:  // When in check, search starts here
                 newDepth += doDeeperSearch - doShallowerSearch;
 
                 if (newDepth > d)
+                {
+                    totalSearchedDepths += newDepth;
                     value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, newDepth, !cutNode);
+                }
 
                 // Post LMR continuation history updates
                 update_continuation_histories(ss, movedPiece, move.to_sq(), 1334);
@@ -1399,9 +1412,10 @@ moves_loop:  // When in check, search starts here
             if (!ttData.move)
                 r += 1127;
 
+            Depth d = newDepth - (r > 5234) - (r > 5487 && newDepth > 2);
+            totalSearchedDepths += d;
             // Note that if expected reduction is high, we reduce search depth here
-            value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha,
-                                   newDepth - (r > 5234) - (r > 5487 && newDepth > 2), !cutNode);
+            value = -search<NonPV>(pos, ss + 1, -(alpha + 1), -alpha, d, !cutNode);
         }
 
         // Step 20. For PV nodes only, do a full PV search on the first move or after a fail high,
@@ -1559,6 +1573,21 @@ moves_loop:  // When in check, search starts here
     // Adjust best value for fail high cases
     if (bestValue >= beta && !is_decisive(bestValue) && !is_decisive(alpha))
         bestValue = (bestValue * depth + beta) / (depth + 1);
+
+    if (!PvNode && depth > 3)
+    {
+        if (moveCount == 0)
+        {
+            heavyNodeHistory[heavy_history_index(pos)][us] = 0;
+        }
+        else
+        {
+            const int avgSearchedDepths = totalSearchedDepths / moveCount;
+            const int expectedDepth = depth / 2;
+            const int bonus = (100 * (avgSearchedDepths - expectedDepth)) / expectedDepth;
+            heavyNodeHistory[heavy_history_index(pos)][us] << std::clamp(bonus, -HEAVY_HISTORY_LIMIT / 8, HEAVY_HISTORY_LIMIT / 8);
+        }
+    }
 
     if (!moveCount)
         bestValue = excludedMove ? alpha : ss->inCheck ? mated_in(ss->ply) : VALUE_DRAW;

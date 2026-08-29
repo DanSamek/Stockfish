@@ -353,6 +353,9 @@ class Worker {
 
     TTMoveHistory    ttMoveHistory;
     SharedHistories& sharedHistory;
+
+    HeavyNodeHistory heavyNodeHistory;
+
     ContinuationHistory (&continuationHistory)[2][2];
 
    private:
