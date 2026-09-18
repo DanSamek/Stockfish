@@ -765,6 +765,8 @@ Value Search::Worker::search(
     int   priorReduction;
     Piece movedPiece;
 
+    bool failedProbCut = false;
+
     SearchedList capturesSearched;
     SearchedList quietsSearched;
 
@@ -1076,6 +1078,7 @@ Value Search::Worker::search(
 
         MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &captureHistory);
         Depth      probCutDepth = depth - (improving ? 5 : 3);
+        failedProbCut           = true;
 
         while ((move = mp.next_move()) != Move::none())
         {
@@ -1103,6 +1106,8 @@ Value Search::Worker::search(
                 // Save ProbCut data into transposition table
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
+
+                failedProbCut = false;
 
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);
@@ -1372,6 +1377,9 @@ moves_loop:  // When in check, search starts here
         // Scale up reductions for expected ALL nodes
         if (allNode)
             r += r * 276 / (256 * depth + 268);
+
+        if (cutNode && failedProbCut && capture)
+            r = r * 5 / 4;
 
         // Apply the computed LMR
         if (depth >= 2 && moveCount > 1)
