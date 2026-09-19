@@ -769,6 +769,7 @@ Value Search::Worker::search(
     bool  capture, ttCapture;
     int   priorReduction;
     Piece movedPiece;
+    ProbCutResult probCutResult = UKNOWN;
 
     SearchedList capturesSearched;
     SearchedList quietsSearched;
@@ -1085,7 +1086,7 @@ Value Search::Worker::search(
 
         MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &captureHistory);
         Depth      probCutDepth = depth - (improving ? 5 : 3);
-
+        probCutResult           = FAILED;
         while ((move = mp.next_move()) != Move::none())
         {
             assert(move.is_ok());
@@ -1113,6 +1114,8 @@ Value Search::Worker::search(
                 ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER,
                                probCutDepth + 1, move, unadjustedStaticEval, tt.generation());
 
+                probCutResult = SUCCESS;
+
                 if (!is_decisive(value))
                     return value - (probCutBeta - beta);
             }
@@ -1123,8 +1126,8 @@ moves_loop:  // When in check, search starts here
 
     // Step 13. A small ProbCut idea
     probCutBeta = beta + 428;
-    if ((ttData.bound & BOUND_LOWER) && ttData.depth >= depth - 4 && ttData.value >= probCutBeta
-        && !is_decisive(beta) && is_valid(ttData.value) && !is_decisive(ttData.value))
+    if ((!ttCapture || probCutResult == UKNOWN) && (ttData.bound & BOUND_LOWER) && ttData.depth >= depth - 4
+        && ttData.value >= probCutBeta && !is_decisive(beta) && is_valid(ttData.value) && !is_decisive(ttData.value))
         return probCutBeta;
 
     const PieceToHistory* contHist[] = {

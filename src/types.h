@@ -144,6 +144,13 @@ enum Bound : u8 {
     BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
 };
 
+enum ProbCutResult : u8
+{
+    UKNOWN,
+    FAILED,
+    SUCCESS
+};
+
 // Value is used as an alias for int, this is done to differentiate between a search
 // value and any other integer value. The values used in search are always supposed
 // to be in the range (-VALUE_NONE, VALUE_NONE] and should not exceed this range.
