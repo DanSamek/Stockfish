@@ -1124,6 +1124,9 @@ Value Search::Worker::search(
         }
     }
 
+    if (!excludedMove && !ss->ttHit)
+        ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correction_value(*this, pos, ss));
+
 moves_loop:  // When in check, search starts here
 
     // Step 13. A small ProbCut idea
